@@ -65,3 +65,22 @@ Run backend checks with:
 .\.venv\Scripts\ruff.exe check backend tests migrations
 .\.venv\Scripts\python.exe -m pytest -q
 ```
+
+## Frontend Development
+
+```powershell
+npm install
+$env:VITE_API_BASE_URL = 'http://127.0.0.1:8765'
+$env:VITE_LAUNCH_TOKEN = $env:ACH_LAUNCH_TOKEN
+npm run dev
+```
+
+Open `http://127.0.0.1:5173`. The P0 shell includes all planned primary routes and
+reports authenticated sidecar health. Search and Capture remain visibly disabled
+until their Core commands exist.
+
+```powershell
+npm test
+npm run build
+cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
+```

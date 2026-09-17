@@ -36,6 +36,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.middleware("http")
     async def require_launch_token(request: Request, call_next):  # type: ignore[no-untyped-def]
+        if request.method == "OPTIONS":
+            return await call_next(request)
         expected = active_settings.launch_token
         provided = request.headers.get("authorization", "")
         if expected and not hmac.compare_digest(provided, f"Bearer {expected}"):
@@ -55,4 +57,3 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     return app
-

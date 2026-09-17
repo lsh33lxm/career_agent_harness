@@ -8,7 +8,7 @@ FOUNDATION & MIGRATION READY.
 
 # Last Verified Commit
 
-`d529f64` - `chore: initialize agent career harness repository`
+`1012723` - `feat: bootstrap python local backend and core`
 
 # Completed
 
@@ -28,14 +28,25 @@ FOUNDATION & MIGRATION READY.
   boundaries, LocalStepRunner contract, and content-addressed Artifact Store.
 - Verified atomic command commit and idempotent replay behavior.
 - Backend verification: Ruff passed; pytest passed 14 tests on Python 3.13.12.
+- Added React/TypeScript/Vite App Shell with Today, Discover, Opportunities, Resume,
+  Applications, Interviews, Prep, Insights, Evidence, and Settings routes.
+- Added typed bearer-authenticated frontend health client, loading/offline states,
+  error boundary, responsive navigation, and disabled future controls.
+- Fixed authenticated CORS preflight handling after real browser integration found
+  that `OPTIONS /health` was incorrectly rejected.
+- Added a minimal Tauri 2 shell and restrictive default capability/CSP boundary.
+- Frontend verification: Vitest passed 4 tests, Vite production build passed, npm
+  audit found 0 vulnerabilities, and browser verification displayed `Core 0.1.0`.
 
 # In Progress
 
-- React/TypeScript/Vite frontend and typed backend health connection.
+- Legacy Agent Radar read-only inventory and reconciliation implementation.
 
 # Blocked
 
-- None for current foundation work.
+- Tauri `cargo check` could not complete because crates.io index retrieval stalled;
+  offline resolution reports missing crate `jsonptr`. Rust 1.98 and Cargo 1.98 are
+  installed, so retry dependency resolution when network access is responsive.
 
 # Needs User Approval
 
@@ -46,10 +57,9 @@ FOUNDATION & MIGRATION READY.
 
 # Next Safe Tasks
 
-1. Bootstrap React/Vite frontend and health connectivity.
-2. Add the minimal Tauri 2 shell if the existing toolchain validates.
-3. Implement legacy read-only inventory, manifest, and reconciliation report.
-4. Add backup/restore rehearsal for disposable foundation data.
+1. Implement legacy read-only inventory, manifest, and reconciliation report.
+2. Add backup/restore rehearsal for disposable foundation data.
+3. Retry Tauri dependency resolution and `cargo check`.
 
 # Do Not Start Yet
 

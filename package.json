@@ -1,0 +1,14 @@
+{
+  "name": "agent-career-harness",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/desktop"
+  ],
+  "scripts": {
+    "dev": "npm --workspace @ach/desktop run dev",
+    "build": "npm --workspace @ach/desktop run build",
+    "test": "npm --workspace @ach/desktop run test",
+    "tauri": "npm --workspace @ach/desktop run tauri"
+  }
+}

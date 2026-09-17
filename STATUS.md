@@ -1,14 +1,15 @@
 # Current Phase
 
-P0F - New Application Foundation, with approval-free P0B migration preparation.
+P0F foundation and approval-free P0B migration preparation are complete and ready
+for user review.
 
 # Current Goal
 
-FOUNDATION & MIGRATION READY.
+FOUNDATION & MIGRATION READY - COMPLETE on 2026-09-18.
 
 # Last Verified Commit
 
-`0606030` - `feat: add legacy radar read-only importer`
+`02fe966` - `feat: enforce core lifecycle invariants and verify tauri`
 
 # Completed
 
@@ -62,7 +63,7 @@ FOUNDATION & MIGRATION READY.
 
 # In Progress
 
-- Final completion-standard audit and goal report.
+- None. See `GOAL_COMPLETION_REPORT.md`.
 
 # Blocked
 
@@ -77,10 +78,10 @@ FOUNDATION & MIGRATION READY.
 
 # Next Safe Tasks
 
-1. Run final completion-standard audit and full test suite.
-2. Create the goal completion report with any honest blockers/deferred scope.
-3. Implement packaged Python sidecar lifecycle with random-port/token injection in a
-   later P0F release task; development health connectivity is already verified.
+1. Await review/approval of ADR-013, ADR-014, ADR-015, and ADR-016.
+2. Await user adjudication of legacy source authority and reconciliation conflicts.
+3. After approval, start the recommended Packaged Sidecar & Approved Migration
+   Rehearsal goal.
 
 # Do Not Start Yet
 
@@ -98,4 +99,5 @@ python -m pytest
 npm --prefix apps/desktop test
 npm --prefix apps/desktop run build
 cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
+npm --prefix apps/desktop exec -- tauri build --debug --no-bundle
 ```

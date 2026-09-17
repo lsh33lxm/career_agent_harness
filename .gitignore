@@ -33,6 +33,7 @@ npm-debug.log*
 # Rust and Tauri
 target/
 apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
 
 # Runtime data and generated artifacts
 *.db
@@ -71,4 +72,3 @@ raw-data/
 Thumbs.db
 .idea/
 .vscode/
-

@@ -51,16 +51,22 @@ FOUNDATION & MIGRATION READY.
   secret values are persisted or logged.
 - Added consistent SQLite online backup, artifact manifest/hash verification,
   integrity check, non-overwriting restore, and a full restore rehearsal test.
+- Added typed Candidate, Market, Opportunity, Resume, Application, Interview, Prep,
+  Outcome, Approval, Run, and Snapshot skeletons plus a repository protocol.
+- Added executable invariants for Opportunity/Application separation,
+  Prepared/Submitted separation, workflow/business state separation, user-only final
+  approval, and TEST-to-PROD rejection.
+- Generated the standard Tauri icon set from a deterministic project SVG, resolved
+  Rust dependencies into `Cargo.lock`, passed `cargo check --locked`, and built the
+  Windows debug executable with `--no-bundle`.
 
 # In Progress
 
-- Final completion-standard audit and verification report.
+- Final completion-standard audit and goal report.
 
 # Blocked
 
-- Tauri `cargo check` could not complete because crates.io index retrieval stalled;
-  offline resolution reports missing crate `jsonptr`. Rust 1.98 and Cargo 1.98 are
-  installed, so retry dependency resolution when network access is responsive.
+- None for P0F/P0B preparation.
 
 # Needs User Approval
 
@@ -72,8 +78,9 @@ FOUNDATION & MIGRATION READY.
 # Next Safe Tasks
 
 1. Run final completion-standard audit and full test suite.
-2. Retry Tauri dependency resolution and `cargo check`.
-3. Create the goal completion report with any honest blockers/deferred scope.
+2. Create the goal completion report with any honest blockers/deferred scope.
+3. Implement packaged Python sidecar lifecycle with random-port/token injection in a
+   later P0F release task; development health connectivity is already verified.
 
 # Do Not Start Yet
 

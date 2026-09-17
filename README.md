@@ -83,6 +83,7 @@ until their Core commands exist.
 npm test
 npm run build
 cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
+npm --prefix apps/desktop exec -- tauri build --debug --no-bundle
 ```
 
 ## Legacy Read-only Inventory

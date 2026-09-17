@@ -8,7 +8,7 @@ FOUNDATION & MIGRATION READY.
 
 # Last Verified Commit
 
-None yet. Repository initialization is in progress.
+`d529f64` - `chore: initialize agent career harness repository`
 
 # Completed
 
@@ -19,11 +19,19 @@ None yet. Repository initialization is in progress.
   a Git repository.
 - Confirmed 38 source Project Cards exist in the read-only records directory.
 - Confirmed local Node, npm, Python, Rust, and Cargo toolchains are available.
+- Established security exclusions, architecture/migration documents, proposed
+  ADR-013 through ADR-016, and research indexes.
+- Added authenticated localhost-only FastAPI `/health` endpoint.
+- Added Alembic/SQLite fresh bootstrap with current state, immutable revision,
+  DomainEvent, idempotency, transactional outbox, and migration mismatch tables.
+- Added typed Evidence/ExtractedClaim/Fact, Command/revision, 11 Core module
+  boundaries, LocalStepRunner contract, and content-addressed Artifact Store.
+- Verified atomic command commit and idempotent replay behavior.
+- Backend verification: Ruff passed; pytest passed 14 tests on Python 3.13.12.
 
 # In Progress
 
-- Repository security baseline and durable project documentation.
-- Architecture, migration, ADR, and research indexes.
+- React/TypeScript/Vite frontend and typed backend health connection.
 
 # Blocked
 
@@ -38,11 +46,10 @@ None yet. Repository initialization is in progress.
 
 # Next Safe Tasks
 
-1. Verify and commit the documentation/security baseline.
-2. Bootstrap Python API, SQLite migrations, and core contracts with tests.
-3. Bootstrap React/Vite frontend and health connectivity.
-4. Add the minimal Tauri 2 shell if the existing toolchain validates.
-5. Implement legacy read-only inventory, manifest, and reconciliation report.
+1. Bootstrap React/Vite frontend and health connectivity.
+2. Add the minimal Tauri 2 shell if the existing toolchain validates.
+3. Implement legacy read-only inventory, manifest, and reconciliation report.
+4. Add backup/restore rehearsal for disposable foundation data.
 
 # Do Not Start Yet
 
@@ -61,4 +68,3 @@ npm --prefix apps/desktop test
 npm --prefix apps/desktop run build
 cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
 ```
-

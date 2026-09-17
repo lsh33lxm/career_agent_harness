@@ -46,3 +46,22 @@ See [`STATUS.md`](STATUS.md) for verified progress, blockers, and commands. This
 repository is in P0F/P0B foundation work; it is not a canonical cutover of legacy
 Agent Radar data and it performs no production Feishu or ATS writes.
 
+## Backend Development
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.lock
+.\.venv\Scripts\python.exe -m pip install --no-deps -e .
+$env:ACH_LAUNCH_TOKEN = python -c "import secrets; print(secrets.token_urlsafe(32))"
+.\.venv\Scripts\python.exe -m career_harness --token $env:ACH_LAUNCH_TOKEN
+```
+
+The API binds only to `127.0.0.1`. Call `GET /health` with
+`Authorization: Bearer <launch-token>`. Do not persist the generated token.
+
+Run backend checks with:
+
+```powershell
+.\.venv\Scripts\ruff.exe check backend tests migrations
+.\.venv\Scripts\python.exe -m pytest -q
+```

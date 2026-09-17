@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+import hmac
+
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict
+
+from career_harness import __version__
+from career_harness.config import Settings
+
+
+class HealthResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: str
+    service: str
+    version: str
+    environment: str
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    active_settings = settings or Settings()
+    app = FastAPI(title="Agent Career Harness Local API", version=__version__)
+    app.state.settings = active_settings
+
+    if active_settings.allowed_origin:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=[active_settings.allowed_origin],
+            allow_credentials=False,
+            allow_methods=["GET", "POST", "PATCH"],
+            allow_headers=["Authorization", "Content-Type", "X-Idempotency-Key"],
+        )
+
+    @app.middleware("http")
+    async def require_launch_token(request: Request, call_next):  # type: ignore[no-untyped-def]
+        expected = active_settings.launch_token
+        provided = request.headers.get("authorization", "")
+        if expected and not hmac.compare_digest(provided, f"Bearer {expected}"):
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "invalid launch token"},
+            )
+        return await call_next(request)
+
+    @app.get("/health", response_model=HealthResponse)
+    async def health() -> HealthResponse:
+        return HealthResponse(
+            status="ok",
+            service="agent-career-harness",
+            version=__version__,
+            environment=active_settings.environment,
+        )
+
+    return app
+

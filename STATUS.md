@@ -8,7 +8,7 @@ FOUNDATION & MIGRATION READY.
 
 # Last Verified Commit
 
-`ae6a192` - `feat: bootstrap desktop frontend and tauri shell`
+`0606030` - `feat: add legacy radar read-only importer`
 
 # Completed
 
@@ -45,10 +45,16 @@ FOUNDATION & MIGRATION READY.
 - Real legacy inventory verified 2,210 files (360,355,195 bytes), 286 snapshot
   candidates, and 11 workbooks without observed source metadata changes. Generated
   reconciliation contains 332 deferred candidate records.
+- Added OS-aware application data paths that keep ordinary artifacts, backups,
+  browser sessions, and logs separate.
+- Added a redacting SecretProvider boundary backed by environment injection; no
+  secret values are persisted or logged.
+- Added consistent SQLite online backup, artifact manifest/hash verification,
+  integrity check, non-overwriting restore, and a full restore rehearsal test.
 
 # In Progress
 
-- Consistent backup/restore rehearsal and app-data/config foundation.
+- Final completion-standard audit and verification report.
 
 # Blocked
 
@@ -65,9 +71,9 @@ FOUNDATION & MIGRATION READY.
 
 # Next Safe Tasks
 
-1. Add backup/restore rehearsal for disposable foundation data.
-2. Add app-data path and secret-provider abstractions.
-3. Retry Tauri dependency resolution and `cargo check`.
+1. Run final completion-standard audit and full test suite.
+2. Retry Tauri dependency resolution and `cargo check`.
+3. Create the goal completion report with any honest blockers/deferred scope.
 
 # Do Not Start Yet
 

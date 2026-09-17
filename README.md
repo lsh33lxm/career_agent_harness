@@ -84,3 +84,19 @@ npm test
 npm run build
 cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
 ```
+
+## Legacy Read-only Inventory
+
+```powershell
+.\.venv\Scripts\python.exe -m importers.agent_radar inventory `
+  --source 'D:\0.小红书投稿\小红书稿\9.15 三期\agent_rader' `
+  --output '.\LEGACY_IMPORT_MANIFEST.json' `
+  --verify
+.\.venv\Scripts\python.exe -m importers.agent_radar reconcile `
+  --manifest '.\LEGACY_IMPORT_MANIFEST.json' `
+  --output '.\LEGACY_RECONCILIATION_REPORT.md'
+```
+
+The importer refuses outputs inside the source workspace, does not follow links, and
+never approves a candidate identity. Generated manifest/report files are ignored by
+Git because their path inventory may contain private historical metadata.

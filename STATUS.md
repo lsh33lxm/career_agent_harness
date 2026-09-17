@@ -8,7 +8,7 @@ FOUNDATION & MIGRATION READY.
 
 # Last Verified Commit
 
-`1012723` - `feat: bootstrap python local backend and core`
+`ae6a192` - `feat: bootstrap desktop frontend and tauri shell`
 
 # Completed
 
@@ -37,10 +37,18 @@ FOUNDATION & MIGRATION READY.
 - Added a minimal Tauri 2 shell and restrictive default capability/CSP boundary.
 - Frontend verification: Vitest passed 4 tests, Vite production build passed, npm
   audit found 0 vulnerabilities, and browser verification displayed `Core 0.1.0`.
+- Added a read-only Agent Radar importer with no-link traversal, streaming SHA-256,
+  workbook structural metadata, output-boundary guards, and post-scan verification.
+- Added typed candidate manifest and reconciliation schemas. Identity mappings remain
+  null, approved entities remain empty, and conflict dispositions default explicitly
+  to `deferred`.
+- Real legacy inventory verified 2,210 files (360,355,195 bytes), 286 snapshot
+  candidates, and 11 workbooks without observed source metadata changes. Generated
+  reconciliation contains 332 deferred candidate records.
 
 # In Progress
 
-- Legacy Agent Radar read-only inventory and reconciliation implementation.
+- Consistent backup/restore rehearsal and app-data/config foundation.
 
 # Blocked
 
@@ -57,8 +65,8 @@ FOUNDATION & MIGRATION READY.
 
 # Next Safe Tasks
 
-1. Implement legacy read-only inventory, manifest, and reconciliation report.
-2. Add backup/restore rehearsal for disposable foundation data.
+1. Add backup/restore rehearsal for disposable foundation data.
+2. Add app-data path and secret-provider abstractions.
 3. Retry Tauri dependency resolution and `cargo check`.
 
 # Do Not Start Yet

@@ -48,7 +48,7 @@ export function OpportunitiesPage() {
   const [admissionError, setAdmissionError] = useState("");
   const [priorityDrafts, setPriorityDrafts] = useState<Record<string, PriorityLevel | "">>({});
   const [priorityReasons, setPriorityReasons] = useState<Record<string, string>>({});
-  const [priorityPending, setPriorityPending] = useState<string | null>(null);
+  const [priorityPending, setPriorityPending] = useState<Record<string, boolean>>({});
   const [priorityErrors, setPriorityErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -57,6 +57,7 @@ export function OpportunitiesPage() {
     try {
       const opportunities = await listOpportunities(signal);
       setItems(opportunities);
+      setPriorityErrors({});
       setLoadState("ready");
     } catch (error) {
       if (!signal?.aborted) {
@@ -79,11 +80,8 @@ export function OpportunitiesPage() {
     const jobId = String(data.get("jobId"));
     const jobRevision = Number(data.get("jobRevision"));
     const reason = String(data.get("reason") ?? "").trim();
-    const opportunityId = requestId("opportunity");
     const baseRequest = {
       command_id: requestId("command"),
-      opportunity_id: opportunityId,
-      decision_id: requestId("decision"),
       job_id: jobId,
       job_revision: jobRevision,
       ...(reason ? { reason } : {}),
@@ -105,16 +103,16 @@ export function OpportunitiesPage() {
       } else {
         await admitOpportunityManually(baseRequest, requestId("manual_admission"));
       }
-      const opportunities = await listOpportunities();
-      setItems(opportunities);
-      setLoadState("ready");
-      setAdmissionOpen(false);
-      form.reset();
     } catch (error) {
       setAdmissionError(errorMessage(error));
-    } finally {
       setAdmissionPending(false);
+      return;
     }
+
+    setAdmissionPending(false);
+    setAdmissionOpen(false);
+    form.reset();
+    await load();
   }
 
   async function handlePriority(event: FormEvent<HTMLFormElement>, item: OpportunitySummary) {
@@ -126,7 +124,7 @@ export function OpportunitiesPage() {
     }
 
     const reason = priorityReasons[opportunityId]?.trim();
-    setPriorityPending(opportunityId);
+    setPriorityPending((current) => ({ ...current, [opportunityId]: true }));
     setPriorityErrors((current) => ({ ...current, [opportunityId]: "" }));
     try {
       await setOpportunityUserPriority(
@@ -139,6 +137,13 @@ export function OpportunitiesPage() {
         },
         requestId("user_priority"),
       );
+    } catch (error) {
+      setPriorityErrors((current) => ({ ...current, [opportunityId]: errorMessage(error) }));
+      setPriorityPending((current) => ({ ...current, [opportunityId]: false }));
+      return;
+    }
+
+    try {
       const updated = await getOpportunity(opportunityId);
       setItems((current) =>
         current.map((opportunity) =>
@@ -148,9 +153,12 @@ export function OpportunitiesPage() {
       setPriorityDrafts((current) => ({ ...current, [opportunityId]: updated.user_priority?.level ?? "" }));
       setPriorityReasons((current) => ({ ...current, [opportunityId]: "" }));
     } catch (error) {
-      setPriorityErrors((current) => ({ ...current, [opportunityId]: errorMessage(error) }));
+      setPriorityErrors((current) => ({
+        ...current,
+        [opportunityId]: `Priority was saved, but refresh failed: ${errorMessage(error)}`,
+      }));
     } finally {
-      setPriorityPending(null);
+      setPriorityPending((current) => ({ ...current, [opportunityId]: false }));
     }
   }
 
@@ -296,6 +304,7 @@ export function OpportunitiesPage() {
               const opportunityId = item.opportunity.entity_id;
               const selectedPriority = priorityDrafts[opportunityId] ?? item.user_priority?.level ?? "";
               const priorityError = priorityErrors[opportunityId];
+              const priorityNeedsReload = priorityError?.startsWith("Priority was saved") ?? false;
               return (
                 <article className="opportunity-record" key={opportunityId}>
                   <header className="record-header">
@@ -327,7 +336,9 @@ export function OpportunitiesPage() {
                       </div>
                       {item.suggested_priority && (
                         <ul>
-                          {item.suggested_priority.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+                          {item.suggested_priority.reasons.map((reason, index) => (
+                            <li key={`${index}-${reason}`}>{reason}</li>
+                          ))}
                         </ul>
                       )}
                     </section>
@@ -379,13 +390,25 @@ export function OpportunitiesPage() {
                         <button
                           className="secondary-command"
                           type="submit"
-                          disabled={!selectedPriority || priorityPending === opportunityId}
+                          disabled={
+                            !selectedPriority || priorityPending[opportunityId] || priorityNeedsReload
+                          }
                         >
                           <Check size={16} aria-hidden="true" />
-                          <span>{priorityPending === opportunityId ? "Saving..." : "Save"}</span>
+                          <span>{priorityPending[opportunityId] ? "Saving..." : "Save"}</span>
                         </button>
                       </form>
-                      {priorityError && <p className="inline-error" role="alert">{priorityError}</p>}
+                      {priorityError && (
+                        <div className="priority-error" role="alert">
+                          <p className="inline-error">{priorityError}</p>
+                          {priorityNeedsReload && (
+                            <button className="secondary-command" type="button" onClick={() => void load()}>
+                              <RefreshCw size={15} aria-hidden="true" />
+                              <span>Reload</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </section>
                   </div>
                 </article>

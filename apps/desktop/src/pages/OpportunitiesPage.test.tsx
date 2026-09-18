@@ -113,7 +113,40 @@ describe("OpportunitiesPage", () => {
       expect.objectContaining({ job_id: "job_001", job_revision: 2 }),
       expect.stringMatching(/^manual_admission_/),
     );
+    const manualRequest = vi.mocked(admitOpportunityManually).mock.calls[0][0];
+    expect("opportunity_id" in manualRequest).toBe(false);
+    expect("decision_id" in manualRequest).toBe(false);
     expect(listOpportunities).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps a successful admission closed when the list refresh fails", async () => {
+    vi.mocked(listOpportunities)
+      .mockResolvedValueOnce([])
+      .mockRejectedValueOnce(new Error("Refresh unavailable"))
+      .mockResolvedValueOnce([opportunity()]);
+    vi.mocked(admitOpportunityManually).mockResolvedValue({
+      admission: { opportunity: null },
+      commit: {
+        entity_id: "opportunity_001",
+        revision: 1,
+        revision_id: "revision_001",
+        event_id: "event_001",
+      },
+    });
+
+    render(<OpportunitiesPage />);
+    await screen.findByRole("heading", { name: "No opportunities yet" });
+    fireEvent.click(screen.getByRole("button", { name: "Add opportunity" }));
+    fireEvent.change(screen.getByLabelText("Job ID"), { target: { value: "job_001" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add opportunity" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Refresh unavailable");
+    expect(screen.queryByRole("heading", { name: "Opportunity admission" })).toBeNull();
+    expect(admitOpportunityManually).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByRole("heading", { name: "job_001" })).toBeTruthy();
+    expect(admitOpportunityManually).toHaveBeenCalledTimes(1);
   });
 
   it("confirms an agent proposal through the proposal admission endpoint", async () => {
@@ -151,6 +184,9 @@ describe("OpportunitiesPage", () => {
       }),
       expect.stringMatching(/^proposal_admission_/),
     );
+    const proposalRequest = vi.mocked(admitOpportunityProposal).mock.calls[0][0];
+    expect("opportunity_id" in proposalRequest).toBe(false);
+    expect("decision_id" in proposalRequest).toBe(false);
   });
 
   it("updates user priority without changing the suggested projection", async () => {
@@ -182,6 +218,48 @@ describe("OpportunitiesPage", () => {
       expect.objectContaining({ expected_revision: 3, level: "urgent" }),
       expect.stringMatching(/^user_priority_/),
     );
+  });
+
+  it("reports a saved priority separately when detail refresh fails", async () => {
+    const initial = opportunity();
+    const updated = opportunity({
+      opportunity: { ...initial.opportunity, revision: 4 },
+      user_priority: { ...initial.user_priority!, level: "urgent" },
+    });
+    vi.mocked(listOpportunities)
+      .mockResolvedValueOnce([initial])
+      .mockResolvedValueOnce([updated]);
+    vi.mocked(setOpportunityUserPriority).mockResolvedValue({
+      entity_id: "opportunity_001",
+      revision: 4,
+      revision_id: "revision_004",
+      event_id: "event_004",
+    });
+    vi.mocked(getOpportunity).mockRejectedValue(new Error("Detail refresh unavailable"));
+
+    render(<OpportunitiesPage />);
+    const select = await screen.findByRole("combobox", { name: "Set user priority for job_001" });
+    fireEvent.change(select, { target: { value: "urgent" } });
+    const userPriority = screen.getByLabelText("User priority for job_001");
+    fireEvent.click(within(userPriority).getByRole("button", { name: "Save" }));
+
+    const refreshAlert = await screen.findByRole("alert");
+    expect(refreshAlert.textContent).toContain(
+      "Priority was saved, but refresh failed: Detail refresh unavailable",
+    );
+    expect(screen.getByLabelText("Suggested priority for job_001").textContent).toContain("High");
+    expect(setOpportunityUserPriority).toHaveBeenCalledTimes(1);
+    expect(within(userPriority).getByRole<HTMLButtonElement>("button", { name: "Save" }).disabled).toBe(
+      true,
+    );
+
+    fireEvent.click(within(refreshAlert).getByRole("button", { name: "Reload" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("User priority for job_001").textContent).toContain("Urgent"),
+    );
+    expect(screen.getByLabelText("Suggested priority for job_001").textContent).toContain("High");
+    expect(setOpportunityUserPriority).toHaveBeenCalledTimes(1);
+    expect(listOpportunities).toHaveBeenCalledTimes(2);
   });
 
   it("shows an API error and retries the list request", async () => {

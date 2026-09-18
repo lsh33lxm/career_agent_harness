@@ -117,8 +117,6 @@ describe("local API client", () => {
     await admitOpportunityManually(
       {
         command_id: "command_001",
-        opportunity_id: "opportunity_001",
-        decision_id: "decision_001",
         job_id: "job_001",
         job_revision: 1,
       },
@@ -132,6 +130,14 @@ describe("local API client", () => {
     expect(headers.get("Authorization")).toBe("Bearer ephemeral-test-token");
     expect(headers.get("X-Idempotency-Key")).toBe("manual-admission-001");
     expect(headers.get("Content-Type")).toBe("application/json");
+    const body = JSON.parse(String(request.body)) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      command_id: "command_001",
+      job_id: "job_001",
+      job_revision: 1,
+    });
+    expect("opportunity_id" in body).toBe(false);
+    expect("decision_id" in body).toBe(false);
   });
 
   it("encodes the target id and sends idempotency for priority changes", async () => {

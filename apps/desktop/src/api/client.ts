@@ -45,8 +45,6 @@ export interface CommandCommitResult {
 
 export interface ManualAdmissionRequest {
   command_id: string;
-  opportunity_id: string;
-  decision_id: string;
   job_id: string;
   job_revision: number;
   reason?: string;

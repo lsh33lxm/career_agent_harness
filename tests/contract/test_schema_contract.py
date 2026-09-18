@@ -59,3 +59,47 @@ def test_project_evidence_records_use_separate_typed_tables() -> None:
         "approval_revision",
     } <= set(Base.metadata.tables["project_capability_basis"].c.keys())
 
+
+def test_context_manifest_stores_audit_references_without_compiled_content() -> None:
+    tables = set(inspect(Base.metadata).tables)
+    assert {
+        "context_manifest",
+        "context_manifest_asset_ref",
+        "context_manifest_knowledge_ref",
+    } <= tables
+
+    context_tables = {
+        table_name: set(Base.metadata.tables[table_name].c.keys())
+        for table_name in (
+            "context_manifest",
+            "context_manifest_asset_ref",
+            "context_manifest_knowledge_ref",
+        )
+    }
+    manifest_columns = context_tables["context_manifest"]
+    assert {
+        "manifest_id",
+        "task_type",
+        "input_hash",
+        "provider",
+        "model_id",
+        "run_id",
+        "included_count",
+        "excluded_count",
+        "knowledge_ref_count",
+    } <= manifest_columns
+    forbidden_content_columns = {
+        "task_input",
+        "payload",
+        "compiled_context",
+        "compiled_prompt",
+        "content",
+        "prompt",
+        "messages",
+        "vertical_knowledge_payload",
+        "authorizes_fact_mutation",
+    }
+    assert all(
+        not forbidden_content_columns & columns for columns in context_tables.values()
+    )
+

@@ -9,6 +9,10 @@ from career_harness.core.context.compiler import (
 )
 from career_harness.core.context.models import (
     COMPRESSION_POLICY_VERSION,
+    CONTEXT_TERM_LIMIT,
+    CONTEXT_TERM_MAX_LENGTH,
+    CONTEXT_TOOL_NAME_LIMIT,
+    CONTEXT_TOOL_NAME_MAX_LENGTH,
     CONTRACT_VERSION,
     SELECTION_POLICY_VERSION,
     CompiledContext,
@@ -30,6 +34,10 @@ from career_harness.core.context.models import (
 __all__ = [
     "COMPRESSION_POLICY_VERSION",
     "CONTRACT_VERSION",
+    "CONTEXT_TERM_LIMIT",
+    "CONTEXT_TERM_MAX_LENGTH",
+    "CONTEXT_TOOL_NAME_LIMIT",
+    "CONTEXT_TOOL_NAME_MAX_LENGTH",
     "SELECTION_POLICY_VERSION",
     "BasicContextCompiler",
     "CompiledContext",

@@ -127,7 +127,11 @@ Market Evidence and Career History/Outcomes. It must not default to sending all 
 
 `ContextManifest` records task type, included refs with revisions, excluded refs with reasons,
 compression/selection policy version, vertical knowledge refs, model/provider, capabilities/skills,
-input hash, created_at and actor/run. Manifest creation does not authorize fact mutation.
+input hash, created_at and actor/run. Manifest creation does not authorize fact mutation. P0
+persistence stores this audit metadata only; it does not persist task input, asset/knowledge payloads,
+assembled context or compiled prompt content by default. Capability and skill audit names are
+bounded to 64 entries per list and 128 characters per entry so they cannot become content channels.
+Matched relevance terms use the same 64-entry and 128-character bounds.
 
 ## Resume truth
 

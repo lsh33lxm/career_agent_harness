@@ -837,3 +837,125 @@ class ProjectEnhancementTaskRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)
 
+
+class ContextManifestRow(Base):
+    __tablename__ = "context_manifest"
+    __table_args__ = (
+        CheckConstraint(
+            "selection_policy_version = 'context-relevance-v1'",
+            name="ck_context_manifest_selection_policy",
+        ),
+        CheckConstraint(
+            "compression_policy_version = 'context-no-compression-v1'",
+            name="ck_context_manifest_compression_policy",
+        ),
+        CheckConstraint(
+            "length(trim(contract_version)) > 0 AND length(trim(task_type)) > 0 "
+            "AND length(trim(provider)) > 0 AND length(trim(model_id)) > 0 "
+            "AND length(trim(actor)) > 0",
+            name="ck_context_manifest_required_text",
+        ),
+        CheckConstraint(
+            "length(input_hash) = 64 AND input_hash NOT GLOB '*[^0-9a-f]*'",
+            name="ck_context_manifest_input_hash",
+        ),
+        CheckConstraint(
+            "json_type(capabilities) = 'array' AND json_array_length(capabilities) <= 64",
+            name="ck_context_capabilities",
+        ),
+        CheckConstraint(
+            "json_type(skills) = 'array' AND json_array_length(skills) <= 64",
+            name="ck_context_skills",
+        ),
+        CheckConstraint(
+            "included_count >= 0 AND excluded_count >= 0 AND knowledge_ref_count >= 0",
+            name="ck_context_manifest_counts",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    contract_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    task_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    selection_policy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    compression_policy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    capabilities: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    skills: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    actor: Mapped[str] = mapped_column(String(255), nullable=False)
+    run_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    included_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    excluded_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    knowledge_ref_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ContextManifestAssetRefRow(Base):
+    __tablename__ = "context_manifest_asset_ref"
+    __table_args__ = (
+        UniqueConstraint("manifest_id", "disposition", "ordinal"),
+        CheckConstraint(
+            "asset_class IN ('personal_context', 'career_state', 'project_evidence', "
+            "'market_evidence', 'career_history_outcome')",
+            name="ck_context_asset_class",
+        ),
+        CheckConstraint("asset_revision >= 1", name="ck_context_asset_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_context_asset_ordinal"),
+        CheckConstraint(
+            "disposition IN ('included', 'excluded')",
+            name="ck_context_asset_disposition",
+        ),
+        CheckConstraint(
+            "(disposition = 'included' AND reason IN "
+            "('explicit_reference', 'relevance_term_match')) OR "
+            "(disposition = 'excluded' AND reason IN "
+            "('asset_class_not_allowed', 'no_relevance_match', 'selection_limit'))",
+            name="ck_context_asset_reason",
+        ),
+        CheckConstraint(
+            "json_type(matched_terms) = 'array' "
+            "AND json_array_length(matched_terms) <= 64 AND "
+            "((reason = 'relevance_term_match' AND json_array_length(matched_terms) > 0) "
+            "OR (reason != 'relevance_term_match' AND json_array_length(matched_terms) = 0))",
+            name="ck_context_asset_matched_terms",
+        ),
+        ForeignKeyConstraint(
+            ["manifest_id"],
+            ["context_manifest.manifest_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    asset_id: Mapped[str] = mapped_column(String(128), primary_key=True, index=True)
+    disposition: Mapped[str] = mapped_column(String(32), nullable=False)
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    asset_class: Mapped[str] = mapped_column(String(32), nullable=False)
+    asset_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str] = mapped_column(String(32), nullable=False)
+    matched_terms: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+
+
+class ContextManifestKnowledgeRefRow(Base):
+    __tablename__ = "context_manifest_knowledge_ref"
+    __table_args__ = (
+        UniqueConstraint("manifest_id", "knowledge_id", "knowledge_revision"),
+        CheckConstraint("knowledge_revision >= 1", name="ck_context_knowledge_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_context_knowledge_ordinal"),
+        ForeignKeyConstraint(
+            ["manifest_id"],
+            ["context_manifest.manifest_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    knowledge_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    knowledge_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+

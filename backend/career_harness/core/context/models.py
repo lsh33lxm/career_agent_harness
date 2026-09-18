@@ -8,9 +8,13 @@ from pydantic import Field, JsonValue, field_validator, model_validator
 
 from career_harness.core.common import FrozenModel, OpaqueId, utc_now
 
-CONTRACT_VERSION = "v1.4-contract-0.1.0"
+CONTRACT_VERSION = "v1.4-contract-0.2.0"
 SELECTION_POLICY_VERSION = "context-relevance-v1"
 COMPRESSION_POLICY_VERSION = "context-no-compression-v1"
+CONTEXT_TERM_LIMIT = 64
+CONTEXT_TERM_MAX_LENGTH = 128
+CONTEXT_TOOL_NAME_LIMIT = 64
+CONTEXT_TOOL_NAME_MAX_LENGTH = 128
 
 
 class ContextAssetClass(StrEnum):
@@ -43,6 +47,10 @@ def _normalize_terms(value: object) -> tuple[str, ...]:
     if any(not isinstance(term, str) for term in value):
         raise ValueError("relevance terms must be strings")
     normalized = tuple(dict.fromkeys(term.strip().casefold() for term in value if term.strip()))
+    if len(normalized) > CONTEXT_TERM_LIMIT:
+        raise ValueError("relevance terms exceed the audit limit")
+    if any(len(term) > CONTEXT_TERM_MAX_LENGTH for term in normalized):
+        raise ValueError("relevance terms exceed the audit term length")
     return normalized
 
 
@@ -52,6 +60,10 @@ def _normalize_names(value: object) -> tuple[str, ...]:
     if any(not isinstance(name, str) or not name.strip() for name in value):
         raise ValueError("capability and skill names cannot be empty")
     normalized = tuple(sorted(name.strip() for name in value))
+    if len(normalized) > CONTEXT_TOOL_NAME_LIMIT:
+        raise ValueError("capability and skill names exceed the audit limit")
+    if any(len(name) > CONTEXT_TOOL_NAME_MAX_LENGTH for name in normalized):
+        raise ValueError("capability and skill names exceed the audit name length")
     if len(set(normalized)) != len(normalized):
         raise ValueError("capability and skill names must be unique")
     return normalized
@@ -192,7 +204,7 @@ class ContextCompilationRequest(FrozenModel):
 
 class ContextManifest(FrozenModel):
     manifest_id: OpaqueId
-    contract_version: Literal["v1.4-contract-0.1.0"] = CONTRACT_VERSION
+    contract_version: Literal["v1.4-contract-0.2.0"] = CONTRACT_VERSION
     task_type: str = Field(min_length=1, max_length=128)
     included: tuple[IncludedContextAsset, ...]
     excluded: tuple[ExcludedContextAsset, ...]

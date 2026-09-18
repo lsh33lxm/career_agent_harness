@@ -15,6 +15,9 @@ from career_harness.db.models import (
     CapabilityIdentityRow,
     CapabilityInvestmentStateRow,
     CapabilityNodeRow,
+    ContextManifestAssetRefRow,
+    ContextManifestKnowledgeRefRow,
+    ContextManifestRow,
     EntityRevisionRow,
     EntityStateRow,
     OpportunityRecordRow,
@@ -49,6 +52,9 @@ def test_fresh_database_bootstraps_to_head(tmp_path: Path) -> None:
         "capability_market_binding",
         "capability_node",
         "capability_relation",
+        "context_manifest",
+        "context_manifest_asset_ref",
+        "context_manifest_knowledge_ref",
         "domain_event",
         "entity_revision",
         "entity_state",
@@ -1286,4 +1292,335 @@ def test_l1_enhancement_task_rejects_empty_plan_and_allows_new_revision(
             ("enhancement_001",),
         ).all()
     assert revisions == [(1, "proposed"), (2, "ready")]
+
+
+def _context_manifest_row(now: datetime) -> dict[str, object]:
+    return {
+        "manifest_id": "context_manifest_001",
+        "contract_version": "v1.4-contract-0.2.0",
+        "task_type": "opportunity_gap_analysis",
+        "selection_policy_version": "context-relevance-v1",
+        "compression_policy_version": "context-no-compression-v1",
+        "provider": "local-test-provider",
+        "model_id": "test-model",
+        "capabilities": ["structured_generation"],
+        "skills": ["gap_analysis"],
+        "input_hash": "a" * 64,
+        "actor": "user",
+        "run_id": "run_001",
+        "created_at": now,
+        "included_count": 0,
+        "excluded_count": 0,
+        "knowledge_ref_count": 0,
+    }
+
+
+def test_context_manifest_migration_preserves_project_data_and_downgrades(
+    tmp_path: Path,
+) -> None:
+    database_url = sqlite_url(tmp_path / "context-migration.db")
+    config = alembic_config(database_url)
+    command.upgrade(config, "0004_project_evidence")
+    engine = create_sqlite_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            ProjectIdentityRow.__table__.insert(),
+            {"project_id": "project_001"},
+        )
+
+    command.upgrade(config, "head")
+    with engine.connect() as connection:
+        project_id = connection.exec_driver_sql(
+            "SELECT project_id FROM project_identity"
+        ).scalar_one()
+    assert project_id == "project_001"
+
+    command.downgrade(config, "0004_project_evidence")
+    tables = set(inspect(engine).get_table_names())
+    assert "project_identity" in tables
+    assert not {
+        "context_manifest",
+        "context_manifest_asset_ref",
+        "context_manifest_knowledge_ref",
+    } & tables
+
+
+def test_empty_context_manifest_is_valid_and_stores_no_compiled_content(
+    tmp_path: Path,
+) -> None:
+    database_url = sqlite_url(tmp_path / "context-manifest.db")
+    upgrade_to_head(database_url)
+    engine = create_sqlite_engine(database_url)
+    now = datetime.now(UTC)
+    with engine.begin() as connection:
+        connection.execute(
+            ContextManifestRow.__table__.insert(),
+            _context_manifest_row(now),
+        )
+
+    with engine.connect() as connection:
+        manifest = connection.execute(ContextManifestRow.__table__.select()).one()
+    assert manifest.contract_version == "v1.4-contract-0.2.0"
+    assert (manifest.included_count, manifest.excluded_count) == (0, 0)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("capabilities", [f"capability_{index}" for index in range(65)]),
+        ("skills", ["raw prompt sentinel " + "x" * 110]),
+    ],
+)
+def test_context_manifest_tool_names_cannot_bypass_content_boundary(
+    tmp_path: Path,
+    field: str,
+    value: list[str],
+) -> None:
+    database_url = sqlite_url(tmp_path / f"context-manifest-{field}.db")
+    upgrade_to_head(database_url)
+    engine = create_sqlite_engine(database_url)
+    now = datetime.now(UTC)
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            ContextManifestRow.__table__.insert(),
+            {**_context_manifest_row(now), field: value},
+        )
+
+
+@pytest.mark.parametrize(
+    "matched_terms",
+    [
+        [f"term_{index}" for index in range(65)],
+        ["raw prompt sentinel " + "x" * 110],
+    ],
+)
+def test_context_manifest_terms_cannot_bypass_content_boundary(
+    tmp_path: Path,
+    matched_terms: list[str],
+) -> None:
+    database_url = sqlite_url(tmp_path / f"context-terms-{len(matched_terms)}.db")
+    upgrade_to_head(database_url)
+    engine = create_sqlite_engine(database_url)
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            ContextManifestAssetRefRow.__table__.insert(),
+            {
+                "manifest_id": "context_manifest_001",
+                "asset_id": "personal_context_001",
+                "disposition": "included",
+                "ordinal": 0,
+                "asset_class": "personal_context",
+                "asset_revision": 1,
+                "reason": "relevance_term_match",
+                "matched_terms": matched_terms,
+            },
+        )
+
+
+def test_context_manifest_persists_ordered_audit_references_atomically(
+    tmp_path: Path,
+) -> None:
+    database_url = sqlite_url(tmp_path / "context-manifest-aggregate.db")
+    upgrade_to_head(database_url)
+    engine = create_sqlite_engine(database_url)
+    now = datetime.now(UTC)
+    included = {
+        "manifest_id": "context_manifest_001",
+        "asset_id": "personal_context_001",
+        "disposition": "included",
+        "ordinal": 0,
+        "asset_class": "personal_context",
+        "asset_revision": 2,
+        "reason": "relevance_term_match",
+        "matched_terms": ["agent engineering"],
+    }
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(ContextManifestAssetRefRow.__table__.insert(), included)
+
+    with engine.begin() as connection:
+        connection.execute(ContextManifestAssetRefRow.__table__.insert(), included)
+        connection.execute(
+            ContextManifestAssetRefRow.__table__.insert(),
+            {
+                "manifest_id": "context_manifest_001",
+                "asset_id": "career_state_001",
+                "disposition": "excluded",
+                "ordinal": 0,
+                "asset_class": "career_state",
+                "asset_revision": 3,
+                "reason": "no_relevance_match",
+                "matched_terms": [],
+            },
+        )
+        connection.execute(
+            ContextManifestKnowledgeRefRow.__table__.insert(),
+            {
+                "manifest_id": "context_manifest_001",
+                "ordinal": 0,
+                "knowledge_id": "knowledge_agent_roles",
+                "knowledge_revision": 7,
+            },
+        )
+        connection.execute(
+            ContextManifestRow.__table__.insert(),
+            {
+                **_context_manifest_row(now),
+                "included_count": 1,
+                "excluded_count": 1,
+                "knowledge_ref_count": 1,
+            },
+        )
+
+    with engine.connect() as connection:
+        manifest = connection.execute(ContextManifestRow.__table__.select()).one()
+        refs = connection.execute(
+            ContextManifestAssetRefRow.__table__.select().order_by(
+                ContextManifestAssetRefRow.disposition,
+                ContextManifestAssetRefRow.ordinal,
+            )
+        ).all()
+    assert manifest.contract_version == "v1.4-contract-0.2.0"
+    assert manifest.capabilities == ["structured_generation"]
+    assert [(row.asset_id, row.disposition, row.ordinal) for row in refs] == [
+        ("career_state_001", "excluded", 0),
+        ("personal_context_001", "included", 0),
+    ]
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            ContextManifestAssetRefRow.__table__.insert(),
+            {**included, "asset_id": "personal_context_002", "ordinal": 1},
+        )
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            ContextManifestRow.__table__.update().values(model_id="changed-model")
+        )
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(ContextManifestRow.__table__.delete())
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            ContextManifestAssetRefRow.__table__.update().values(asset_revision=3)
+        )
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(ContextManifestKnowledgeRefRow.__table__.delete())
+
+
+def test_context_manifest_rejects_invalid_shape_and_partial_aggregate(
+    tmp_path: Path,
+) -> None:
+    database_url = sqlite_url(tmp_path / "context-manifest-authority.db")
+    upgrade_to_head(database_url)
+    engine = create_sqlite_engine(database_url)
+    now = datetime.now(UTC)
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            ContextManifestAssetRefRow.__table__.insert(),
+            {
+                "manifest_id": "context_manifest_001",
+                "asset_id": "personal_context_001",
+                "disposition": "included",
+                "ordinal": 0,
+                "asset_class": "personal_context",
+                "asset_revision": 2,
+                "reason": "relevance_term_match",
+                "matched_terms": ["Observability"],
+            },
+        )
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            ContextManifestAssetRefRow.__table__.insert(),
+            {
+                "manifest_id": "context_manifest_002",
+                "asset_id": "personal_context_001",
+                "disposition": "included",
+                "ordinal": 1,
+                "asset_class": "personal_context",
+                "asset_revision": 2,
+                "reason": "explicit_reference",
+                "matched_terms": [],
+            },
+        )
+        connection.execute(
+            ContextManifestRow.__table__.insert(),
+            {
+                **_context_manifest_row(now),
+                "manifest_id": "context_manifest_002",
+                "included_count": 1,
+            },
+        )
+
+
+def test_context_manifest_requires_exact_project_evidence_revision(tmp_path: Path) -> None:
+    database_url = sqlite_url(tmp_path / "context-project-evidence.db")
+    upgrade_to_head(database_url)
+    engine = create_sqlite_engine(database_url)
+    now = datetime.now(UTC)
+    with engine.begin() as connection:
+        _insert_project_foundation(connection, now)
+        connection.execute(
+            ProjectEvidenceRow.__table__.insert(),
+            {
+                "evidence_id": "project_evidence_001",
+                "revision": 1,
+                "project_id": "project_001",
+                "summary": "Router has an explicit fallback branch.",
+                "claim_kind": "technical_observation",
+                "manifest_id": "manifest_001",
+                "scanner": "fixture-scanner",
+                "scanner_version": "1",
+                "authority": "code_verified",
+                "freshness": "current",
+                "review_status": "accepted",
+                "reviewed_by": "project-evidence-policy-v1",
+                "reviewed_by_kind": "rule",
+                "review_reason": "Technical observation is supported by the manifest.",
+                "observed_at": now,
+                "schema_version": 1,
+                "created_at": now,
+                "created_by": "rule:project-scan",
+            },
+        )
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            ContextManifestAssetRefRow.__table__.insert(),
+            {
+                "manifest_id": "context_manifest_wrong_revision",
+                "asset_id": "project_evidence_001",
+                "disposition": "included",
+                "ordinal": 0,
+                "asset_class": "project_evidence",
+                "asset_revision": 2,
+                "reason": "relevance_term_match",
+                "matched_terms": ["observability"],
+            },
+        )
+
+    with engine.begin() as connection:
+        connection.execute(
+            ContextManifestAssetRefRow.__table__.insert(),
+            {
+                "manifest_id": "context_manifest_001",
+                "asset_id": "project_evidence_001",
+                "disposition": "included",
+                "ordinal": 0,
+                "asset_class": "project_evidence",
+                "asset_revision": 1,
+                "reason": "relevance_term_match",
+                "matched_terms": ["observability"],
+            },
+        )
+        connection.execute(
+            ContextManifestRow.__table__.insert(),
+            {**_context_manifest_row(now), "included_count": 1},
+        )
 

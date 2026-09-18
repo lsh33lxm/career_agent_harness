@@ -418,6 +418,7 @@ class CapabilityEvidenceBindingRow(Base):
     )
     evidence_ref_id: Mapped[str | None] = mapped_column(String(128))
     project_evidence_id: Mapped[str | None] = mapped_column(String(128))
+    project_evidence_revision: Mapped[int | None] = mapped_column(Integer)
     authority: Mapped[str] = mapped_column(String(32), nullable=False)
     scopes: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     bound_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -549,4 +550,290 @@ class CapabilityInvestmentStateRow(Base):
     opportunity_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     rule_version: Mapped[str] = mapped_column(String(64), nullable=False)
     calculated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ProjectIdentityRow(Base):
+    __tablename__ = "project_identity"
+
+    project_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+
+
+class ProjectRecordRow(Base):
+    __tablename__ = "project_record"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_project_record_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_record_schema_version"),
+    )
+
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("project_identity.project_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    root_locator: Mapped[str] = mapped_column(Text, nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ProjectScanScopeRow(Base):
+    __tablename__ = "project_scan_scope"
+    __table_args__ = (
+        UniqueConstraint("scope_id", "revision", "project_id"),
+        CheckConstraint("revision >= 1", name="ck_project_scope_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_scope_schema_version"),
+        CheckConstraint(
+            "json_type(allowed_paths) = 'array' AND json_array_length(allowed_paths) > 0",
+            name="ck_project_scope_allowed_paths",
+        ),
+        CheckConstraint(
+            "json_type(denied_paths) = 'array'",
+            name="ck_project_scope_denied_paths",
+        ),
+        CheckConstraint("follow_symlinks = 0", name="ck_project_scope_no_symlinks"),
+    )
+
+    scope_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("project_identity.project_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    allowed_paths: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    denied_paths: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    follow_symlinks: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ProjectSourceManifestRow(Base):
+    __tablename__ = "project_source_manifest"
+    __table_args__ = (
+        UniqueConstraint("manifest_id", "project_id"),
+        CheckConstraint("scan_scope_revision >= 1", name="ck_project_manifest_scope_revision"),
+        ForeignKeyConstraint(
+            ["scan_scope_id", "scan_scope_revision", "project_id"],
+            [
+                "project_scan_scope.scope_id",
+                "project_scan_scope.revision",
+                "project_scan_scope.project_id",
+            ],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    scan_scope_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    scan_scope_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ProjectSourceEntryRow(Base):
+    __tablename__ = "project_source_entry"
+    __table_args__ = (
+        CheckConstraint("length(relative_path) > 0", name="ck_project_source_relative_path"),
+        CheckConstraint(
+            "length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_project_source_sha256",
+        ),
+        CheckConstraint("byte_length >= 0", name="ck_project_source_byte_length"),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(
+        ForeignKey("project_source_manifest.manifest_id", ondelete="RESTRICT"), primary_key=True
+    )
+    relative_path: Mapped[str] = mapped_column(Text, primary_key=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    byte_length: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ProjectEvidenceRow(Base):
+    __tablename__ = "project_evidence"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_project_evidence_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_evidence_schema_version"),
+        CheckConstraint(
+            "claim_kind IN ('technical_observation', 'change', 'validation', 'performance', "
+            "'business_outcome', 'personal_contribution', 'ownership', 'usage')",
+            name="ck_project_evidence_claim_kind",
+        ),
+        CheckConstraint(
+            "authority IN ('code_verified', 'document_supported', 'user_confirmed', "
+            "'ai_inferred')",
+            name="ck_project_evidence_authority",
+        ),
+        CheckConstraint(
+            "freshness IN ('current', 'stale', 'unknown')",
+            name="ck_project_evidence_freshness",
+        ),
+        CheckConstraint(
+            "review_status IN ('proposed', 'accepted', 'rejected', 'superseded')",
+            name="ck_project_evidence_review_status",
+        ),
+        CheckConstraint(
+            "(review_status = 'proposed' AND reviewed_by IS NULL "
+            "AND reviewed_by_kind IS NULL AND review_reason IS NULL) OR "
+            "(review_status != 'proposed' AND reviewed_by IS NOT NULL "
+            "AND trim(reviewed_by) != '' AND reviewed_by_kind IN ('user', 'rule') "
+            "AND review_reason IS NOT NULL AND trim(review_reason) != '')",
+            name="ck_project_evidence_review_authority",
+        ),
+        CheckConstraint(
+            "NOT (authority = 'ai_inferred' AND review_status = 'accepted')",
+            name="ck_project_evidence_ai_requires_promotion",
+        ),
+        CheckConstraint(
+            "NOT (authority = 'code_verified' AND claim_kind IN "
+            "('performance', 'business_outcome', 'personal_contribution', "
+            "'ownership', 'usage'))",
+            name="ck_project_evidence_code_authority_limit",
+        ),
+        ForeignKeyConstraint(
+            ["manifest_id", "project_id"],
+            ["project_source_manifest.manifest_id", "project_source_manifest.project_id"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    evidence_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    claim_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    manifest_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    scanner: Mapped[str] = mapped_column(String(255), nullable=False)
+    scanner_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    authority: Mapped[str] = mapped_column(String(32), nullable=False)
+    freshness: Mapped[str] = mapped_column(String(32), nullable=False)
+    review_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by_kind: Mapped[str | None] = mapped_column(String(32))
+    review_reason: Mapped[str | None] = mapped_column(Text)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ProjectCapabilityStateRow(Base):
+    __tablename__ = "project_capability_state"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_project_capability_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_capability_schema_version"),
+        CheckConstraint(
+            "state IN ('existing', 'understood', 'modified', 'extended', "
+            "'validated', 'resume_ready')",
+            name="ck_project_capability_lifecycle",
+        ),
+    )
+
+    capability_state_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("project_identity.project_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    capability_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT"), nullable=False
+    )
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    finalized_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ProjectCapabilityBasisRow(Base):
+    __tablename__ = "project_capability_basis"
+    __table_args__ = (
+        CheckConstraint("state_revision >= 1", name="ck_project_basis_state_revision"),
+        CheckConstraint(
+            "basis_kind IN ('code_evidence', 'document_evidence', 'user_confirmation', "
+            "'change_evidence', 'validation_evidence', 'resume_approval')",
+            name="ck_project_basis_kind",
+        ),
+        CheckConstraint(
+            "(basis_kind = 'resume_approval' AND project_evidence_id IS NULL "
+            "AND project_evidence_revision IS NULL AND approval_id IS NOT NULL "
+            "AND approval_revision >= 1) OR (basis_kind != 'resume_approval' "
+            "AND project_evidence_id IS NOT NULL AND project_evidence_revision >= 1 "
+            "AND approval_id IS NULL AND approval_revision IS NULL)",
+            name="ck_project_basis_typed_reference",
+        ),
+        ForeignKeyConstraint(
+            ["capability_state_id", "state_revision"],
+            [
+                "project_capability_state.capability_state_id",
+                "project_capability_state.revision",
+            ],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        ForeignKeyConstraint(
+            ["project_evidence_id", "project_evidence_revision"],
+            ["project_evidence.evidence_id", "project_evidence.revision"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["approval_id", "approval_revision"],
+            ["entity_revision.entity_id", "entity_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    basis_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    capability_state_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    state_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    basis_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    project_evidence_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    project_evidence_revision: Mapped[int | None] = mapped_column(Integer)
+    approval_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    approval_revision: Mapped[int | None] = mapped_column(Integer)
+
+
+class ProjectEnhancementTaskRow(Base):
+    __tablename__ = "project_enhancement_task"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_project_enhancement_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_enhancement_schema_version"),
+        CheckConstraint(
+            "status IN ('proposed', 'ready', 'in_progress', 'awaiting_validation', "
+            "'completed', 'cancelled')",
+            name="ck_project_enhancement_status",
+        ),
+        CheckConstraint(
+            "json_type(learning_plan) = 'array' AND json_array_length(learning_plan) > 0 "
+            "AND json_type(files_to_review) = 'array' "
+            "AND json_array_length(files_to_review) > 0 "
+            "AND json_type(change_plan) = 'array' AND json_array_length(change_plan) > 0 "
+            "AND json_type(experiment_plan) = 'array' "
+            "AND json_array_length(experiment_plan) > 0 "
+            "AND json_type(validation_plan) = 'array' "
+            "AND json_array_length(validation_plan) > 0 "
+            "AND json_type(expected_evidence) = 'array' "
+            "AND json_array_length(expected_evidence) > 0",
+            name="ck_project_enhancement_plans",
+        ),
+    )
+
+    task_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("project_identity.project_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    target_gap_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    target_capability_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT"), nullable=False
+    )
+    learning_plan: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    files_to_review: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    change_plan: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    experiment_plan: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    validation_plan: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    expected_evidence: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
 

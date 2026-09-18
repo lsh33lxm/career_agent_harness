@@ -74,6 +74,9 @@ def test_agent_cannot_provide_final_approval() -> None:
         Approval(
             entity_id="approval_001",
             revision=1,
+            subject_id="project_capability_001",
+            subject_revision=2,
+            purpose="project_capability_resume_ready",
             status=ApprovalStatus.APPROVED,
             proposer_kind=ActorKind.AGENT,
             approver_kind=ActorKind.AGENT,

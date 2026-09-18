@@ -3,7 +3,7 @@
 **Observed repository:** commit `63ca32f` on 2026-09-18  
 **Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
 **Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
-**Contract version:** `v1.4-contract-0.1.0`
+**Contract version:** `v1.4-contract-0.2.0`
 
 ## Current architecture
 
@@ -134,4 +134,3 @@ shared IDs/evidence/event/ownership contracts
     -> Today/read APIs and UI
     -> optional adapters/executors
 ```
-

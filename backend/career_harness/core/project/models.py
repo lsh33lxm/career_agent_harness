@@ -102,6 +102,7 @@ class ProjectSourceEntry(FrozenModel):
 class ProjectSourceManifest(FrozenModel):
     manifest_id: OpaqueId
     scan_scope_id: OpaqueId
+    scan_scope_revision: int = Field(ge=1)
     entries: tuple[ProjectSourceEntry, ...] = Field(min_length=1)
     generated_at: datetime = Field(default_factory=utc_now)
 
@@ -122,6 +123,8 @@ class ProjectEvidenceAuthority(StrEnum):
 
 class ProjectEvidenceClaimKind(StrEnum):
     TECHNICAL_OBSERVATION = "technical_observation"
+    CHANGE = "change"
+    VALIDATION = "validation"
     PERFORMANCE = "performance"
     BUSINESS_OUTCOME = "business_outcome"
     PERSONAL_CONTRIBUTION = "personal_contribution"
@@ -153,10 +156,20 @@ class ProjectEvidence(ProjectRecord):
     authority: ProjectEvidenceAuthority
     freshness: ProjectEvidenceFreshness = ProjectEvidenceFreshness.CURRENT
     review_status: ProjectEvidenceReviewStatus = ProjectEvidenceReviewStatus.PROPOSED
+    reviewed_by: str | None = Field(default=None, min_length=1, max_length=255)
+    reviewed_by_kind: Literal["user", "rule"] | None = None
+    review_reason: str | None = Field(default=None, min_length=1, max_length=2048)
     observed_at: datetime = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
     def enforce_evidence_authority(self) -> ProjectEvidence:
+        review_fields = (self.reviewed_by, self.reviewed_by_kind, self.review_reason)
+        if self.review_status is ProjectEvidenceReviewStatus.PROPOSED:
+            if any(item is not None for item in review_fields):
+                raise ValueError("proposed project evidence cannot carry a review decision")
+        elif any(item is None for item in review_fields):
+            raise ValueError("reviewed project evidence requires user or rule authority")
+
         if (
             self.authority is ProjectEvidenceAuthority.AI_INFERRED
             and self.review_status is ProjectEvidenceReviewStatus.ACCEPTED
@@ -199,6 +212,7 @@ class ProjectCapabilityBasisKind(StrEnum):
 class ProjectCapabilityBasis(FrozenModel):
     kind: ProjectCapabilityBasisKind
     reference_id: OpaqueId
+    reference_revision: int = Field(ge=1)
 
 
 class ProjectCapabilityState(ProjectRecord):

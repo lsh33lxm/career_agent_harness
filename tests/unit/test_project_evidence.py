@@ -19,6 +19,7 @@ def make_manifest() -> ProjectSourceManifest:
     return ProjectSourceManifest(
         manifest_id="manifest_001",
         scan_scope_id="scope_001",
+        scan_scope_revision=1,
         entries=(
             ProjectSourceEntry(
                 relative_path="src/router.py",
@@ -39,6 +40,9 @@ def test_code_can_support_a_reviewed_technical_observation() -> None:
         scanner_version="1",
         authority=ProjectEvidenceAuthority.CODE_VERIFIED,
         review_status=ProjectEvidenceReviewStatus.ACCEPTED,
+        reviewed_by="project-evidence-policy-v1",
+        reviewed_by_kind="rule",
+        review_reason="Technical observation is directly supported by the manifest.",
         created_by="rule:project-scan",
     )
 
@@ -72,6 +76,9 @@ def test_ai_inference_cannot_be_accepted_without_promotion() -> None:
             scanner_version="1",
             authority=ProjectEvidenceAuthority.AI_INFERRED,
             review_status=ProjectEvidenceReviewStatus.ACCEPTED,
+            reviewed_by="project-evidence-policy-v1",
+            reviewed_by_kind="rule",
+            review_reason="Model claim was reviewed but not promoted by a user.",
             created_by="agent",
         )
 
@@ -87,6 +94,7 @@ def test_code_presence_cannot_make_a_capability_resume_ready() -> None:
                 ProjectCapabilityBasis(
                     kind=ProjectCapabilityBasisKind.CODE_EVIDENCE,
                     reference_id="project_evidence_001",
+                    reference_revision=1,
                 ),
             ),
             created_by="agent",
@@ -103,10 +111,12 @@ def test_resume_ready_requires_validation_and_explicit_resume_approval() -> None
             ProjectCapabilityBasis(
                 kind=ProjectCapabilityBasisKind.VALIDATION_EVIDENCE,
                 reference_id="project_evidence_validation",
+                reference_revision=1,
             ),
             ProjectCapabilityBasis(
                 kind=ProjectCapabilityBasisKind.RESUME_APPROVAL,
                 reference_id="approval_001",
+                reference_revision=1,
             ),
         ),
         created_by="user",

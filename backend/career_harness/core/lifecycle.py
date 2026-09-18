@@ -105,7 +105,14 @@ class ActorKind(StrEnum):
     RULE = "rule"
 
 
+class ApprovalPurpose(StrEnum):
+    PROJECT_CAPABILITY_RESUME_READY = "project_capability_resume_ready"
+
+
 class Approval(DomainEntity):
+    subject_id: OpaqueId
+    subject_revision: int = Field(ge=1)
+    purpose: ApprovalPurpose
     status: ApprovalStatus
     proposer_kind: ActorKind
     approver_kind: ActorKind | None = None

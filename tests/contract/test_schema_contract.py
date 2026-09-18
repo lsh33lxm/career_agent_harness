@@ -31,3 +31,31 @@ def test_capability_graph_and_personal_overlay_use_separate_tables() -> None:
         "personal_capability_state"
     ]
 
+
+def test_project_evidence_records_use_separate_typed_tables() -> None:
+    tables = set(inspect(Base.metadata).tables)
+
+    assert {
+        "project_identity",
+        "project_record",
+        "project_scan_scope",
+        "project_source_manifest",
+        "project_source_entry",
+        "project_evidence",
+        "project_capability_basis",
+        "project_capability_state",
+        "project_enhancement_task",
+    } <= tables
+    assert "scan_scope_revision" in Base.metadata.tables["project_source_manifest"].c
+    state_table = Base.metadata.tables["project_capability_state"]
+    assert "basis" not in state_table.c
+    assert not state_table.c.state.nullable
+    assert not state_table.c.finalized_at.nullable
+    assert {
+        "basis_kind",
+        "project_evidence_id",
+        "project_evidence_revision",
+        "approval_id",
+        "approval_revision",
+    } <= set(Base.metadata.tables["project_capability_basis"].c.keys())
+

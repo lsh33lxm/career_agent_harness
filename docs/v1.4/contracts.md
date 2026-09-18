@@ -1,8 +1,13 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.1.0`  
+**Version:** `v1.4-contract-0.2.0`
 **Status:** FROZEN FOR WAVE 1 IMPLEMENTATION  
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
+
+`0.2.0` pins source manifests to scan-scope revisions, pins project capability bases to exact
+evidence/approval revisions, scopes approvals to a subject revision and purpose, and requires
+explicit user/rule review metadata for non-proposed Project Evidence. Existing Opportunity and
+Capability Graph contracts are unchanged.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -22,6 +27,8 @@ No workstream may define a competing representation. Missing fields or behavior 
 
 Desktop and Feishu are projections. Adapters, models, scanners, Skills and coding executors never
 own truth and never approve their own proposals.
+Every approval pins a subject ID and revision plus a typed purpose; an unrelated approval cannot
+authorize another domain transition.
 
 ## IDs and revisions
 
@@ -102,11 +109,12 @@ joined into one read model.
 - `Project`: user-connected project identity and display metadata. A filesystem path is a locator.
 - `ProjectScanScope`: explicit allowed paths plus denied paths. Deny wins. No implicit full-disk
   scan, symlink escape or secret/session path access.
-- `ProjectEvidence`: evidence-backed observation with source manifest, scanner/version, authority,
-  freshness and review status.
+- `ProjectEvidence`: evidence-backed observation with a source manifest pinned to the exact
+  `ProjectScanScope` revision, scanner/version, authority, freshness and review status.
 - `ProjectCapabilityState`: one of `EXISTING`, `UNDERSTOOD`, `MODIFIED`, `EXTENDED`, `VALIDATED`,
-  `RESUME_READY`; transitions require appropriate evidence and never infer user mastery merely from
-  code presence.
+  `RESUME_READY`; each basis pins an exact evidence/approval revision, transitions require
+  appropriate evidence, and code presence never implies user mastery. A state and all of its typed
+  basis rows are one atomic write; incomplete draft states are not canonical records.
 - `ProjectEnhancementTask`: target gap, selected project, learning/files/change/experiment/
   validation plan, expected evidence and status.
 - P0 executor is `ManualExecutor`/L1 plan generation. Executor output is a candidate; tests and

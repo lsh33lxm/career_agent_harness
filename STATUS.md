@@ -9,7 +9,7 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # Last Verified Commit
 
-`01e2bbe` - `feat: commit opportunity truth atomically`
+`d1004b2` - `feat: expose authenticated opportunity API`
 
 # Completed
 
@@ -63,7 +63,7 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # In Progress
 
-- Opportunity priority command/query API on the atomic persistence boundary.
+- Opportunity desktop UI using the authenticated API.
 - Capability, Project Evidence, and Context additive relational schema design.
 
 # Blocked

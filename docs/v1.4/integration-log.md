@@ -11,6 +11,8 @@ No feature branches have been integrated yet.
 | integration | `3f102f0` | Opportunity relational schema/migration | 75 passed, 1 skipped; Ruff passed; upgrade/downgrade passed | None | Additive 0002 | Typed repository must join revision/event transaction |
 | `codex/v14-context-core` | `c294937` (merge `647f45e`) | Context assets, selector, compiler, manifest | 86 passed, 1 skipped; Ruff passed | None | None | Lead-owned persistence/API and `context.compiled` event |
 | integration | `01e2bbe` | Atomic command hook and Opportunity application service | 92 passed, 1 skipped; Ruff passed; rollback/replay passed | None | None | Add typed priority commands and Local API |
+| integration | `878d222` | Independent Suggested/User Priority writes and read repository | 97 passed, 1 skipped; Ruff passed | None | None | API/UI projection |
+| integration | `d1004b2` | Authenticated Opportunity API and runtime DB bootstrap | 103 passed, 1 skipped; Ruff passed | None | Runtime applies 0001/0002 | Desktop Opportunity UI |
 
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.

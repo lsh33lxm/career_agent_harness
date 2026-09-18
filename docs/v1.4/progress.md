@@ -5,18 +5,19 @@
 | Repository reconnaissance | DONE | 2026-09-18 | `architecture-map.md`; baseline commands run. |
 | PRD/Handoff version control | DONE | 2026-09-18 | `main` commit `63ca32f`. |
 | Integration branch/worktree | DONE | 2026-09-18 | `refactor/v1.4-integration`. |
-| Shared contract freeze | DONE | 2026-09-18 | `75f973b`; contract version `0.1.0`. |
+| Shared contract freeze | DONE | 2026-09-19 | `158547b`; contract version `0.2.0`. |
 | Repository contract alignment | DONE | 2026-09-18 | `32 passed, 1 skipped`; Ruff passed. |
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
 | Wave 1 domain contracts | DONE | 2026-09-18 | Capability, Opportunity, Project Evidence and Context integrated. |
-| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-18 | Opportunity slice and Capability schema done; Project/Context persistence pending. |
+| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-19 | Opportunity, Capability and Project schema done; Context persistence pending. |
 | Opportunity typed persistence | DONE | 2026-09-18 | `3f102f0`; 0002 migration, ORM parity, upgrade/downgrade tests. |
 | Atomic Opportunity command path | DONE | 2026-09-18 | `01e2bbe`; typed/generic truth, event and idempotency share one transaction. |
 | Opportunity Priority/read repository | DONE | 2026-09-18 | `878d222`; independent priorities and aggregate revisions tested. |
 | Opportunity Local API/runtime | DONE | 2026-09-18 | `d1004b2`; auth, idempotency, conflict redaction and bootstrap tested. |
 | Capability typed persistence | DONE | 2026-09-18 | `2b7901d`; additive 0003, immutable graph and overlay/binding constraints. |
 | Opportunity desktop UI | DONE | 2026-09-18 | `f888f9a`, `c990589`, merge `f37b92b`, layout fix `0cee6c6`; 16 tests/build and desktop/390/320 visual checks passed. |
+| Project Evidence typed persistence | DONE | 2026-09-19 | `158547b`; additive 0004, atomic relational basis, authority/scope and upgrade/downgrade tests. |
 
 ## Integrated workstreams
 
@@ -39,6 +40,9 @@
 - Opportunity Desktop: `f888f9a`, `c990589` merged as `f37b92b`, with integration layout fix
   `0cee6c6`; backend `115 passed, 1 skipped`, Ruff passed, frontend `16 passed`, Vite build passed,
   npm audit found 0 vulnerabilities, and desktop/390/320 visual checks passed without overflow.
+- Project Evidence Persistence: `158547b`; full pytest `136 passed, 1 skipped`, Ruff passed and
+  `0003 -> 0004 -> 0003 -> 0004` rehearsal passed. Canonical capability state and typed basis are
+  one deferred-FK transaction; real scanner containment and read repositories remain follow-ups.
 
 ## Baseline verification
 

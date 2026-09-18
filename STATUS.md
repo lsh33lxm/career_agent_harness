@@ -5,12 +5,12 @@ integrated, and the first real desktop projection is complete.
 
 # Current Goal
 
-Complete Project Evidence and Context persistence before Match/Gap, Resume and Outcome
-integration.
+Complete Context persistence, then add Project/Capability read paths before Match/Gap, Resume and
+Outcome integration.
 
 # Last Verified Commit
 
-`0cee6c6` - `fix: prevent nested desktop scrolling`
+`158547b` - `feat: persist scoped project evidence`
 
 # Completed
 
@@ -73,10 +73,17 @@ integration.
   retry-safe mutation refresh behavior.
 - Verified the Opportunity UI at desktop, 390 px and 320 px widths with no horizontal
   overflow or incoherent overlap; Vitest passed 16 tests and the Vite build passed.
+- Added additive Project Evidence migration `0004` with revisioned scan scopes/manifests,
+  immutable evidence, exact Capability evidence revisions, relational Project Capability basis
+  rows and L1 enhancement tasks.
+- Enforced deny-wins normalized paths, non-empty immutable manifests, evidence authority/review
+  limits and atomic Project Capability aggregate writes at the SQLite boundary.
+- Verified `0003 -> 0004 -> 0003 -> 0004`, Ruff, and backend `136 passed, 1 skipped`; the skip is
+  the existing Windows symlink-permission limitation.
 
 # In Progress
 
-- Project Evidence and Context additive relational schema design.
+- Context Manifest additive relational schema design.
 
 # Blocked
 
@@ -91,8 +98,8 @@ integration.
 
 # Next Safe Tasks
 
-1. Add Project Evidence schema and repository parity in a small additive migration.
-2. Persist immutable ContextManifest records without storing full compiled context by default.
+1. Persist immutable ContextManifest records without storing full compiled context by default.
+2. Add Project Evidence repository/scanner with resolved-path and reparse-point containment.
 3. Add Capability and Project Evidence read repositories/APIs needed by Match/Gap.
 4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 

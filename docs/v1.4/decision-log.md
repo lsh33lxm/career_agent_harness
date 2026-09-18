@@ -120,3 +120,26 @@ official graph upgrades mutate the user's capability overlay.
 
 **Impact:** Graph publishing requires one transaction with the release row staged last. Capability
 repository work must preserve this order and use additive graph versions for every change.
+
+## D-008 - Persist Project Capability provenance as an atomic relational aggregate
+
+**Decision:** ACCEPTED in migration `0004_project_evidence`.
+
+**Context:** `ProjectCapabilityState` must distinguish code presence from user mastery and must pin
+the exact Evidence and user Approval revisions that authorize stronger states such as
+`RESUME_READY`. A JSON basis cannot enforce reference authority, revision identity or project scope.
+
+**Alternatives:** Keep basis as JSON; persist an independently committed nullable draft state;
+introduce a separate staging table.
+
+**Chosen:** Store typed basis edges in `project_capability_basis`. Insert basis rows first and the
+non-null canonical state last in one transaction using a deferred composite FK. SQLite triggers
+validate accepted Evidence authority, same-project scope, required basis kinds and a user-approved
+subject/revision/purpose before the aggregate commits, then seal both state and basis as immutable.
+
+**Reason:** The database can reject orphan, cross-project, unrelated-approval and partially formed
+canonical states without introducing a workflow engine or storing queryable provenance as JSON.
+
+**Impact:** Repository writes must stage all basis rows and the final state in one transaction.
+Migrations never scan project files; resolved-path and reparse-point containment remains scanner
+responsibility.

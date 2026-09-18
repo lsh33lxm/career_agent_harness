@@ -16,7 +16,8 @@
 | --- | --- | --- | --- |
 | M0 | Align in-code repository contract | None | Revert code commit. |
 | M1 | Add shared relational identity/priority/event support if required | Empty additive tables/columns | Alembic downgrade on rehearsal DB. |
-| M2 | Add Opportunity/Watchlist and Capability records | No automatic legacy conversion | Drop new empty tables before release. |
+| M2a | Add typed Opportunity/Watchlist/Priority records | Completed in `3f102f0`; no automatic legacy conversion | Tested downgrade to 0001 on disposable DB. |
+| M2b | Add Capability records | Not started; official graph and personal overlay remain separate | Drop new empty tables before release. |
 | M3 | Add Project/Context records | No filesystem scan on migration | Drop new empty tables; artifacts untouched. |
 | M4 | Compatibility transform for `OpportunityState.WATCHING` | Explicit rehearsal report; user approval if real records exist | Preserve original revisions; reverse mapping. |
 | M5 | Resume/Application/Outcome vertical slice | Additive records with evidence refs | Tombstone new records; retain audit. |
@@ -30,10 +31,11 @@
 - Foreign keys prevent deleting referenced evidence/official graph versions.
 - Official graph upgrade does not overwrite personal capability state.
 - Suggested priority updates do not modify user priority.
+- Opportunity proposal, user decision, canonical record, SuggestedPriority and UserPriority use
+  distinct tables and DB authority checks.
 - Downgrade is tested only on disposable databases; production rollback uses backup/restore.
 
 ## Approval gates
 
 `NEEDS USER APPROVAL`: destructive migration, real legacy cutover, retention, encryption, backup
 medium, or final opaque ID format. No current Wave 0 change crosses these gates.
-

@@ -10,6 +10,7 @@
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
 | Wave 1 implementation | IN_PROGRESS | 2026-09-18 | Three domain cores integrated; Context Core is next. |
+| Opportunity typed persistence | DONE | 2026-09-18 | `3f102f0`; 0002 migration, ORM parity, upgrade/downgrade tests. |
 
 ## Integrated workstreams
 
@@ -19,6 +20,8 @@
   Ruff passed. Persistence/API and heuristic versioning remain Lead-owned.
 - Project Evidence Core: `6df933e` merged as `989fa9e`; combined pytest `72 passed, 1 skipped`,
   Ruff passed. Real scanner resolved-path enforcement remains a follow-up.
+- Opportunity Persistence: `3f102f0`; full pytest `75 passed, 1 skipped`, Ruff passed. No legacy
+  conversion or production database write occurred.
 
 ## Baseline verification
 

@@ -64,3 +64,19 @@ return a typed result.
 
 **Impact:** Existing internal call sites are updated; there is no public domain API yet.
 
+## D-005 - Physically separate Opportunity authority records
+
+**Decision:** ACCEPTED in Wave 1 migration 0002.
+
+**Context:** AI proposals, user admission decisions, canonical Opportunities, system priority and
+user priority have different owners and mutation rules.
+
+**Alternatives:** Store all fields in one Opportunity JSON/table; use one mutable priority column.
+
+**Chosen:** Use distinct relational tables for Watchlist, admission proposal, admission decision,
+canonical Opportunity, SuggestedPriority and UserPriority. Enforce user-only decision/priority at
+both Pydantic and SQLite constraint boundaries.
+
+**Reason:** Prevents recomputation or adapter writes from silently becoming user intent.
+
+**Impact:** More explicit joins, but authority and audit semantics stay inspectable and testable.

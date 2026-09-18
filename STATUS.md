@@ -9,7 +9,7 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # Last Verified Commit
 
-`989fa9e` - `merge: integrate v1.4 project evidence core`
+`3f102f0` - `feat: add typed opportunity persistence schema`
 
 # Completed
 

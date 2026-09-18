@@ -5,7 +5,7 @@ No feature branches have been integrated yet.
 | Branch | Commit | Modules | Tests | Conflicts | Migration | Follow-up |
 | --- | --- | --- | --- | --- | --- | --- |
 | `main` baseline | `63ca32f` | v1.4 PRD/Handoff | Read/verified | None | None | Wave 0 contract freeze |
+| `codex/v14-opportunity-core` | `e09c9a8` (merge `04bccfa`) | Opportunity admission, Watchlist, priorities | 41 passed, 1 skipped; Ruff passed | None | None | Lead-owned persistence/API; link admitted Opportunity to Job in schema |
 
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.
-

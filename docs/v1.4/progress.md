@@ -11,6 +11,11 @@
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
 | Wave 1 implementation | IN_PROGRESS | 2026-09-18 | Capability, Opportunity, Project Evidence agents active. |
 
+## Integrated workstreams
+
+- Opportunity Core: `e09c9a8` merged as `04bccfa`; integration pytest `41 passed, 1 skipped`,
+  Ruff passed. Persistence/API follow-up remains Lead-owned.
+
 ## Baseline verification
 
 - Python: `31 passed, 1 skipped` before Wave 0 edits.

@@ -10,6 +10,7 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from career_harness.core.commands import Command, require_expected_revision
+from career_harness.core.revisions import CommandCommitResult
 from career_harness.db.models import (
     DomainEventRow,
     EntityRevisionRow,
@@ -24,11 +25,15 @@ class IdempotencyConflict(RuntimeError):
 
 
 def _request_hash(
-    command: Command, next_state: dict[str, Any], outbox_destination: str | None
+    command: Command,
+    next_state: dict[str, Any],
+    event_type: str,
+    outbox_destination: str | None,
 ) -> str:
     value = {
         "command": command.model_dump(mode="json", exclude={"issued_at"}),
         "next_state": next_state,
+        "event_type": event_type,
         "outbox_destination": outbox_destination,
     }
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
@@ -44,9 +49,10 @@ class CommandService:
         command: Command,
         next_state: dict[str, Any],
         *,
+        event_type: str,
         outbox_destination: str | None = None,
-    ) -> dict[str, Any]:
-        request_hash = _request_hash(command, next_state, outbox_destination)
+    ) -> CommandCommitResult:
+        request_hash = _request_hash(command, next_state, event_type, outbox_destination)
         now = datetime.now(UTC)
 
         with Session(self.engine) as session, session.begin():
@@ -54,7 +60,7 @@ class CommandService:
             if existing is not None:
                 if existing.request_hash != request_hash:
                     raise IdempotencyConflict("idempotency key was reused with different input")
-                return dict(existing.response)
+                return CommandCommitResult.model_validate(existing.response)
 
             current = session.get(EntityStateRow, command.target.entity_id)
             actual_revision = current.revision if current is not None else 0
@@ -96,7 +102,7 @@ class CommandService:
             session.add(
                 DomainEventRow(
                     event_id=event_id,
-                    event_type=f"{command.command_type}.committed",
+                    event_type=event_type,
                     entity_id=command.target.entity_id,
                     entity_revision=new_revision,
                     command_id=command.command_id,
@@ -118,19 +124,19 @@ class CommandService:
                     )
                 )
 
-            response = {
-                "entity_id": command.target.entity_id,
-                "revision": new_revision,
-                "revision_id": revision_id,
-                "event_id": event_id,
-            }
+            result = CommandCommitResult(
+                entity_id=command.target.entity_id,
+                revision=new_revision,
+                revision_id=revision_id,
+                event_id=event_id,
+            )
             session.add(
                 IdempotencyRecordRow(
                     idempotency_key=command.idempotency_key,
                     command_id=command.command_id,
                     request_hash=request_hash,
-                    response=response,
+                    response=result.model_dump(mode="json"),
                     created_at=now,
                 )
             )
-            return response
+            return result

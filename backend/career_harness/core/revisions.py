@@ -35,3 +35,10 @@ class DomainEvent(FrozenModel):
     payload: dict[str, Any] = Field(default_factory=dict)
     occurred_at: datetime = Field(default_factory=utc_now)
 
+
+class CommandCommitResult(FrozenModel):
+    entity_id: OpaqueId
+    revision: int = Field(ge=1)
+    revision_id: OpaqueId
+    event_id: OpaqueId
+

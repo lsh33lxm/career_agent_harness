@@ -31,23 +31,48 @@ def test_command_commits_revision_event_outbox_and_idempotency(tmp_path: Path) -
     engine = create_sqlite_engine(database_url)
     service = CommandService(engine)
 
-    first = service.commit(_command(), {"display_name": "Candidate"}, outbox_destination="test")
-    replay = service.commit(_command(), {"display_name": "Candidate"}, outbox_destination="test")
+    first = service.commit(
+        _command(),
+        {"display_name": "Candidate"},
+        event_type="candidate.created",
+        outbox_destination="test",
+    )
+    replay = service.commit(
+        _command(),
+        {"display_name": "Candidate"},
+        event_type="candidate.created",
+        outbox_destination="test",
+    )
 
     assert replay == first
-    assert first["revision"] == 1
+    assert first.revision == 1
     with Session(engine) as session:
         assert session.scalar(select(func.count()).select_from(EntityRevisionRow)) == 1
         assert session.scalar(select(func.count()).select_from(DomainEventRow)) == 1
         assert session.scalar(select(func.count()).select_from(OutboxMessageRow)) == 1
+        assert session.scalar(select(DomainEventRow.event_type)) == "candidate.created"
 
 
 def test_idempotency_key_reuse_with_different_input_is_rejected(tmp_path: Path) -> None:
     database_url = sqlite_url(tmp_path / "conflict.db")
     upgrade_to_head(database_url)
     service = CommandService(create_sqlite_engine(database_url))
-    service.commit(_command(), {"display_name": "First"})
+    service.commit(_command(), {"display_name": "First"}, event_type="candidate.created")
 
     with pytest.raises(IdempotencyConflict):
-        service.commit(_command(), {"display_name": "Different"})
+        service.commit(
+            _command(),
+            {"display_name": "Different"},
+            event_type="candidate.created",
+        )
+
+
+def test_idempotency_key_cannot_be_reused_for_a_different_event_type(tmp_path: Path) -> None:
+    database_url = sqlite_url(tmp_path / "event-type-conflict.db")
+    upgrade_to_head(database_url)
+    service = CommandService(create_sqlite_engine(database_url))
+    service.commit(_command(), {"display_name": "Candidate"}, event_type="candidate.created")
+
+    with pytest.raises(IdempotencyConflict):
+        service.commit(_command(), {"display_name": "Candidate"}, event_type="candidate.updated")
 

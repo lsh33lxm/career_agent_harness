@@ -1,15 +1,15 @@
 # Current Phase
 
-P0F foundation and approval-free P0B migration preparation are complete and ready
-for user review.
+PRD v1.4 Wave 0 is in progress: repository reconciliation, shared contract freeze,
+additive migration planning, and test baseline stabilization.
 
 # Current Goal
 
-FOUNDATION & MIGRATION READY - COMPLETE on 2026-09-18.
+Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees begin.
 
 # Last Verified Commit
 
-`02fe966` - `feat: enforce core lifecycle invariants and verify tauri`
+`63ca32f` - `docs: add v1.4 product baseline`; Wave 0 edits are not yet committed.
 
 # Completed
 
@@ -63,7 +63,9 @@ FOUNDATION & MIGRATION READY - COMPLETE on 2026-09-18.
 
 # In Progress
 
-- None. See `GOAL_COMPLETION_REPORT.md`.
+- v1.4 architecture/gap mapping and shared contract freeze.
+- Repository/CommandService contract alignment.
+- Additive migration and Wave 1 worktree planning.
 
 # Blocked
 
@@ -78,10 +80,11 @@ FOUNDATION & MIGRATION READY - COMPLETE on 2026-09-18.
 
 # Next Safe Tasks
 
-1. Await review/approval of ADR-013, ADR-014, ADR-015, and ADR-016.
-2. Await user adjudication of legacy source authority and reconciliation conflicts.
-3. After approval, start the recommended Packaged Sidecar & Approved Migration
-   Rehearsal goal.
+1. Validate and commit Wave 0 contracts on `refactor/v1.4-integration`.
+2. Create scoped Capability, Opportunity, Project Evidence, and Context worktrees only
+   where shared schema ownership does not overlap.
+3. Keep global migrations and shared API/event definitions Lead-owned.
+4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet
 

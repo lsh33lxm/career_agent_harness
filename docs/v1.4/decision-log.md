@@ -143,3 +143,26 @@ canonical states without introducing a workflow engine or storing queryable prov
 **Impact:** Repository writes must stage all basis rows and the final state in one transaction.
 Migrations never scan project files; resolved-path and reparse-point containment remains scanner
 responsibility.
+
+## D-009 - Persist Context Manifest metadata without compiled content
+
+**Decision:** ACCEPTED in migration `0005_context_manifest`.
+
+**Context:** Important model calls need auditable input selection and model/tool provenance, but
+persisting task input, asset payloads, injected knowledge or assembled prompts would duplicate
+sensitive long-term context and enlarge the local disclosure surface.
+
+**Alternatives:** Store the full compiled request/prompt; store all refs and metadata in one JSON
+blob; store no invocation provenance.
+
+**Chosen:** Persist an immutable parent-last aggregate containing policy/model/run metadata plus
+ordered relational asset and knowledge references. Capabilities, skills and matched terms are
+bounded to 64 entries and 128 characters per entry. Store only the deterministic input hash, never
+the compiled content or a fact-mutation authority flag.
+
+**Reason:** Exact revisions and exclusions remain queryable for Preview AI Context and audit while
+sensitive source content stays in its canonical domain stores and transient compiler output.
+
+**Impact:** A future write service must stage children then seal the parent in the same command
+transaction and emit metadata-only `context.compiled`. Retention remains append-only until the user
+approves a retention policy.

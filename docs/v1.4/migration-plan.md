@@ -19,7 +19,7 @@
 | M2a | Add typed Opportunity/Watchlist/Priority records | Completed in `3f102f0`; no automatic legacy conversion | Tested downgrade to 0001 on disposable DB. |
 | M2b | Add Capability records | Completed in `2b7901d`; no automatic seed/import | Tested downgrade to 0002 on disposable DB. |
 | M3a | Add Project Evidence records | Completed in `158547b`; no filesystem scan or legacy import | Tested downgrade to 0003 on disposable DB. |
-| M3b | Add Context Manifest records | Store selection/provenance metadata, not compiled prompt content by default | Drop new empty tables; artifacts untouched. |
+| M3b | Add Context Manifest records | Completed in `95d3df6`; bounded selection/provenance metadata only | Tested downgrade to 0004 on disposable DB. |
 | M4 | Compatibility transform for `OpportunityState.WATCHING` | Explicit rehearsal report; user approval if real records exist | Preserve original revisions; reverse mapping. |
 | M5 | Resume/Application/Outcome vertical slice | Additive records with evidence refs | Tombstone new records; retain audit. |
 | M6 | Legacy import (future gate) | Approved manifest only | Restore verified pre-import backup. |
@@ -39,6 +39,8 @@
 - Project scan manifests pin the exact scope revision; evidence pins a non-empty immutable manifest.
 - Project Capability state and relational basis commit atomically through a deferred FK; evidence
   and user Approval references are exact, scoped and immutable.
+- Context Manifest refs are ordered, counted, immutable and sealed parent-last; Project Evidence
+  refs use exact revisions and no compiled/task/asset payload content is stored.
 - Downgrade is tested only on disposable databases; production rollback uses backup/restore.
 
 ## Approval gates

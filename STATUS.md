@@ -5,12 +5,12 @@ integrated, and the first real desktop projection is complete.
 
 # Current Goal
 
-Complete Context persistence, then add Project/Capability read paths before Match/Gap, Resume and
-Outcome integration.
+Add the atomic Context Manifest write/read path, then Project/Capability read paths before
+Match/Gap, Resume and Outcome integration.
 
 # Last Verified Commit
 
-`158547b` - `feat: persist scoped project evidence`
+`95d3df6` - `feat: persist immutable context manifests`
 
 # Completed
 
@@ -80,10 +80,15 @@ Outcome integration.
   limits and atomic Project Capability aggregate writes at the SQLite boundary.
 - Verified `0003 -> 0004 -> 0003 -> 0004`, Ruff, and backend `136 passed, 1 skipped`; the skip is
   the existing Windows symlink-permission limitation.
+- Added additive Context Manifest migration `0005` with immutable ordered asset/knowledge refs,
+  exact Project Evidence revisions, parent-last aggregate finalization and contract `0.2.0`.
+- Context persistence stores only bounded audit metadata and hashes; it does not store task input,
+  asset/knowledge payloads, assembled context, compiled prompts or fact-mutation authority.
+- Verified `0004 -> 0005 -> 0004 -> 0005`, Ruff, and backend `151 passed, 1 skipped`.
 
 # In Progress
 
-- Context Manifest additive relational schema design.
+- Atomic `context.compiled` write service and Context Manifest read repository.
 
 # Blocked
 
@@ -98,7 +103,7 @@ Outcome integration.
 
 # Next Safe Tasks
 
-1. Persist immutable ContextManifest records without storing full compiled context by default.
+1. Persist Context Manifest aggregates through the command transaction and add exact readback.
 2. Add Project Evidence repository/scanner with resolved-path and reparse-point containment.
 3. Add Capability and Project Evidence read repositories/APIs needed by Match/Gap.
 4. Continue awaiting user adjudication for destructive legacy cutover decisions.

@@ -78,12 +78,12 @@ Local Artifact Store and isolated session/extension/reference directories
 | --- | --- | --- |
 | Personal Context | MISSING | Candidate skeleton has no context facts/preferences/goals. |
 | Career State | PARTIAL | Opportunity/Application/Outcome skeletons only. |
-| Project Evidence | MISSING | Generic Evidence exists; no Project, scope, scan or binding. |
+| Project Evidence | PARTIAL | Core and additive 0004 schema exist; real scanner/repository/API remain. |
 | Target Market Evidence | MISSING | Market skeleton cannot distinguish target evidence. |
 | Broad Market Trend | MISSING | Deferred beyond initial vertical slice. |
 | Career History / Outcomes | PARTIAL | Outcome skeleton only; no history/query/provenance. |
-| Context Compiler | MISSING | No relevance selector, compressor or assembler. |
-| Context Manifest | MISSING | No invocation input/exclusion/model/capability audit record. |
+| Context Compiler | PARTIAL | Deterministic five-asset selector/compiler exists; advanced compression remains. |
+| Context Manifest | PARTIAL | Immutable metadata-only 0005 schema exists; atomic write/read service remains. |
 | Discover | STUB | UI route and legacy enum value only. |
 | Watchlist | LEGACY_CONFLICT | `WATCHING` is an Opportunity state; v1.4 requires a separate funnel stage. |
 | Opportunity | PARTIAL | Typed state only; no admission confirmation, JD or repository. |

@@ -68,6 +68,42 @@ async def test_opportunity_api_requires_token_and_supports_read_flow(tmp_path: P
 
 
 @pytest.mark.asyncio
+async def test_core_generates_stable_admission_ids_when_client_omits_them(tmp_path: Path) -> None:
+    transport = httpx.ASGITransport(app=app_for_test(tmp_path))
+    admission = {
+        "command_id": "command_generated_ids_001",
+        "job_id": "job_generated_ids_001",
+        "job_revision": 1,
+    }
+    headers = {**AUTH, "X-Idempotency-Key": "generated-admission-001"}
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        created = await client.post(
+            "/api/v1/opportunities/manual-admissions",
+            headers=headers,
+            json=admission,
+        )
+        replay = await client.post(
+            "/api/v1/opportunities/manual-admissions",
+            headers=headers,
+            json=admission,
+        )
+        opportunity_id = created.json()["admission"]["opportunity"]["entity_id"]
+        detail = await client.get(f"/api/v1/opportunities/{opportunity_id}", headers=AUTH)
+
+    decision_id = created.json()["admission"]["decision"]["decision_id"]
+    assert created.status_code == 201
+    assert replay.status_code == 201
+    assert replay.json()["commit"] == created.json()["commit"]
+    assert replay.json()["admission"]["opportunity"]["entity_id"] == opportunity_id
+    assert replay.json()["admission"]["decision"]["decision_id"] == decision_id
+    assert opportunity_id.startswith("opportunity_")
+    assert decision_id.startswith("decision_")
+    assert detail.status_code == 200
+    assert detail.json()["job"]["job_id"] == "job_generated_ids_001"
+
+
+@pytest.mark.asyncio
 async def test_user_priority_api_uses_revision_and_preserves_user_authority(tmp_path: Path) -> None:
     transport = httpx.ASGITransport(app=app_for_test(tmp_path))
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
@@ -138,8 +174,6 @@ async def test_ai_proposal_requires_user_confirmation_endpoint(tmp_path: Path) -
             headers=headers,
             json={
                 "command_id": "command_admit_001",
-                "opportunity_id": "opportunity_001",
-                "decision_id": "decision_001",
                 "proposal_id": "proposal_001",
                 "job_id": "job_001",
                 "job_revision": 1,
@@ -148,9 +182,11 @@ async def test_ai_proposal_requires_user_confirmation_endpoint(tmp_path: Path) -
                 "proposed_by": "agent",
             },
         )
-        detail = await client.get("/api/v1/opportunities/opportunity_001", headers=AUTH)
+        opportunity_id = response.json()["admission"]["opportunity"]["entity_id"]
+        detail = await client.get(f"/api/v1/opportunities/{opportunity_id}", headers=AUTH)
 
     assert response.status_code == 201
+    assert opportunity_id.startswith("opportunity_")
     assert response.json()["admission"]["decision"]["proposal_id"] == "proposal_001"
     assert detail.status_code == 200
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 from career_harness.core.approval import ActorKind
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, FrozenModel, OpaqueId
@@ -32,6 +34,19 @@ class OpportunityAdmissionCommit(FrozenModel):
 class OpportunityService:
     def __init__(self, commands: CommandService) -> None:
         self.commands = commands
+
+    @staticmethod
+    def admission_ids(
+        command_id: OpaqueId,
+        *,
+        opportunity_id: OpaqueId | None = None,
+        decision_id: OpaqueId | None = None,
+    ) -> tuple[OpaqueId, OpaqueId]:
+        def derive(prefix: str) -> str:
+            seed = f"agent-career-harness:{prefix}:{command_id}"
+            return f"{prefix}_{uuid.uuid5(uuid.NAMESPACE_URL, seed).hex}"
+
+        return opportunity_id or derive("opportunity"), decision_id or derive("decision")
 
     def admit_manually(
         self,

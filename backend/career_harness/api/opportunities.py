@@ -36,8 +36,8 @@ class ApiModel(BaseModel):
 
 class ManualAdmissionRequest(ApiModel):
     command_id: OpaqueId
-    opportunity_id: OpaqueId
-    decision_id: OpaqueId
+    opportunity_id: OpaqueId | None = None
+    decision_id: OpaqueId | None = None
     job_id: OpaqueId
     job_revision: int = Field(ge=1)
     reason: str | None = Field(default=None, max_length=2048)
@@ -97,11 +97,16 @@ def create_opportunity_router(api: OpportunityApi) -> APIRouter:
         request: ManualAdmissionRequest,
         idempotency_key: IdempotencyHeader,
     ) -> OpportunityAdmissionCommit:
+        opportunity_id, decision_id = api.service.admission_ids(
+            request.command_id,
+            opportunity_id=request.opportunity_id,
+            decision_id=request.decision_id,
+        )
         command = Command(
             command_id=request.command_id,
             command_type="opportunity.admit_manual",
             target=EntityRef(
-                entity_id=request.opportunity_id,
+                entity_id=opportunity_id,
                 kind=EntityKind.OPPORTUNITY,
             ),
             expected_revision=0,
@@ -112,8 +117,8 @@ def create_opportunity_router(api: OpportunityApi) -> APIRouter:
             return api.service.admit_manually(
                 command,
                 JobRef(job_id=request.job_id, revision=request.job_revision),
-                opportunity_id=request.opportunity_id,
-                decision_id=request.decision_id,
+                opportunity_id=opportunity_id,
+                decision_id=decision_id,
                 reason=request.reason,
             )
         except (RevisionConflict, IdempotencyConflict, IntegrityError) as error:
@@ -133,11 +138,16 @@ def create_opportunity_router(api: OpportunityApi) -> APIRouter:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="user-originated opportunities use manual admission",
             )
+        opportunity_id, decision_id = api.service.admission_ids(
+            request.command_id,
+            opportunity_id=request.opportunity_id,
+            decision_id=request.decision_id,
+        )
         command = Command(
             command_id=request.command_id,
             command_type="opportunity.admit_proposal",
             target=EntityRef(
-                entity_id=request.opportunity_id,
+                entity_id=opportunity_id,
                 kind=EntityKind.OPPORTUNITY,
             ),
             expected_revision=0,
@@ -154,8 +164,8 @@ def create_opportunity_router(api: OpportunityApi) -> APIRouter:
             return api.service.review_proposal(
                 command,
                 proposal,
-                decision_id=request.decision_id,
-                opportunity_id=request.opportunity_id,
+                decision_id=decision_id,
+                opportunity_id=opportunity_id,
                 reason=request.reason,
             )
         except (RevisionConflict, IdempotencyConflict, IntegrityError) as error:

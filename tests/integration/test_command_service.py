@@ -151,3 +151,19 @@ def test_event_payload_cannot_override_revision_identity(tmp_path: Path) -> None
             event_payload={"revision_id": "revision_forged"},
         )
 
+
+def test_get_returns_typed_current_state_and_rejects_kind_mismatch(tmp_path: Path) -> None:
+    database_url = sqlite_url(tmp_path / "get-current.db")
+    upgrade_to_head(database_url)
+    service = CommandService(create_sqlite_engine(database_url))
+    command = _command()
+    service.commit(command, {"display_name": "Candidate"}, event_type="candidate.created")
+
+    current = service.get(command.target)
+    assert current is not None
+    assert current.revision == 1
+    assert current.state == {"display_name": "Candidate"}
+
+    with pytest.raises(ValueError, match="different kind"):
+        service.get(EntityRef(entity_id="candidate_001", kind=EntityKind.OPPORTUNITY))
+

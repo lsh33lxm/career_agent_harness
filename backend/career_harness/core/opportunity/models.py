@@ -132,3 +132,17 @@ class OpportunityPriority(FrozenModel):
         if self.user is not None and self.user.opportunity_id != self.opportunity_id:
             raise ValueError("user priority must belong to the opportunity")
         return self
+
+
+class OpportunityDetail(FrozenModel):
+    opportunity: Opportunity
+    job: JobRef
+    suggested_priority: SuggestedPriority | None = None
+    user_priority: UserPriority | None = None
+
+    @model_validator(mode="after")
+    def priorities_match_opportunity(self) -> OpportunityDetail:
+        for priority in (self.suggested_priority, self.user_priority):
+            if priority is not None and priority.opportunity_id != self.opportunity.entity_id:
+                raise ValueError("priority read model must belong to the opportunity")
+        return self

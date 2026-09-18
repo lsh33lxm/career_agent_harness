@@ -8,11 +8,15 @@ from sqlalchemy.orm import Session
 from career_harness.core.opportunity import (
     OpportunityAdmissionProposal,
     OpportunityAdmissionResult,
+    SuggestedPriority,
+    UserPriority,
 )
 from career_harness.db.models import (
     OpportunityAdmissionDecisionRow,
     OpportunityAdmissionProposalRow,
     OpportunityRecordRow,
+    SuggestedPriorityRow,
+    UserPriorityRow,
 )
 
 
@@ -99,3 +103,89 @@ class OpportunityAdmissionWrite:
                 decided_at=decision.decided_at,
             )
         )
+
+
+class SuggestedPriorityWrite:
+    def __init__(self, priority: SuggestedPriority) -> None:
+        self.priority = priority
+
+    def idempotency_payload(self) -> dict[str, Any]:
+        return {
+            "contract": "suggested-priority-write-v1",
+            "priority": self.priority.model_dump(mode="json", exclude={"calculated_at"}),
+        }
+
+    def stage(
+        self,
+        session: Session,
+        *,
+        entity_revision: int,
+        occurred_at: datetime,
+    ) -> None:
+        opportunity = session.get(OpportunityRecordRow, self.priority.opportunity_id)
+        if opportunity is None:
+            raise ValueError("suggested priority requires a persisted opportunity")
+        opportunity.revision = entity_revision
+        row = session.get(SuggestedPriorityRow, self.priority.opportunity_id)
+        values = {
+            "revision": entity_revision,
+            "level": self.priority.level.value,
+            "score": self.priority.score,
+            "rank": self.priority.rank,
+            "reasons": list(self.priority.reasons),
+            "input_revisions": [
+                item.model_dump(mode="json") for item in self.priority.input_revisions
+            ],
+            "calculated_at": occurred_at,
+        }
+        if row is None:
+            session.add(
+                SuggestedPriorityRow(
+                    opportunity_id=self.priority.opportunity_id,
+                    **values,
+                )
+            )
+        else:
+            for name, value in values.items():
+                setattr(row, name, value)
+
+
+class UserPriorityWrite:
+    def __init__(self, priority: UserPriority) -> None:
+        self.priority = priority
+
+    def idempotency_payload(self) -> dict[str, Any]:
+        return {
+            "contract": "user-priority-write-v1",
+            "priority": self.priority.model_dump(mode="json", exclude={"set_at"}),
+        }
+
+    def stage(
+        self,
+        session: Session,
+        *,
+        entity_revision: int,
+        occurred_at: datetime,
+    ) -> None:
+        opportunity = session.get(OpportunityRecordRow, self.priority.opportunity_id)
+        if opportunity is None:
+            raise ValueError("user priority requires a persisted opportunity")
+        opportunity.revision = entity_revision
+        row = session.get(UserPriorityRow, self.priority.opportunity_id)
+        values = {
+            "revision": entity_revision,
+            "level": self.priority.level.value,
+            "actor": self.priority.actor.value,
+            "set_at": occurred_at,
+            "reason": self.priority.reason,
+        }
+        if row is None:
+            session.add(
+                UserPriorityRow(
+                    opportunity_id=self.priority.opportunity_id,
+                    **values,
+                )
+            )
+        else:
+            for name, value in values.items():
+                setattr(row, name, value)

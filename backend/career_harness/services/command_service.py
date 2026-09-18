@@ -10,7 +10,8 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from career_harness.core.commands import Command, require_expected_revision
-from career_harness.core.revisions import CommandCommitResult
+from career_harness.core.common import EntityRef
+from career_harness.core.revisions import CommandCommitResult, CurrentState
 from career_harness.db.models import (
     DomainEventRow,
     EntityRevisionRow,
@@ -61,6 +62,21 @@ def _request_hash(
 class CommandService:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
+
+    def get(self, entity: EntityRef) -> CurrentState | None:
+        with Session(self.engine) as session:
+            current = session.get(EntityStateRow, entity.entity_id)
+            if current is None:
+                return None
+            if current.entity_kind != entity.kind.value:
+                raise ValueError("entity id exists with a different kind")
+            return CurrentState(
+                entity=entity,
+                revision=current.revision,
+                schema_version=current.schema_version,
+                state=dict(current.state),
+                updated_at=current.updated_at,
+            )
 
     def commit(
         self,

@@ -9,7 +9,7 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # Last Verified Commit
 
-`63ca32f` - `docs: add v1.4 product baseline`; Wave 0 edits are not yet committed.
+`75f973b` - `refactor: freeze v1.4 wave 0 contracts`
 
 # Completed
 
@@ -63,9 +63,8 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # In Progress
 
-- v1.4 architecture/gap mapping and shared contract freeze.
-- Repository/CommandService contract alignment.
-- Additive migration and Wave 1 worktree planning.
+- Wave 1 scoped prompt, branch, and worktree creation.
+- Capability, Opportunity, and Project Evidence pure Core implementation.
 
 # Blocked
 

@@ -9,7 +9,7 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # Last Verified Commit
 
-`75f973b` - `refactor: freeze v1.4 wave 0 contracts`
+`989fa9e` - `merge: integrate v1.4 project evidence core`
 
 # Completed
 
@@ -63,8 +63,8 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # In Progress
 
-- Wave 1 scoped prompt, branch, and worktree creation.
-- Capability, Opportunity, and Project Evidence pure Core implementation.
+- Context Compiler and ContextManifest pure Core implementation.
+- Lead-owned relational schema and repository integration design for the completed domain cores.
 
 # Blocked
 

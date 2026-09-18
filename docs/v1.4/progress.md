@@ -9,12 +9,16 @@
 | Repository contract alignment | DONE | 2026-09-18 | `32 passed, 1 skipped`; Ruff passed. |
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
-| Wave 1 implementation | IN_PROGRESS | 2026-09-18 | Capability, Opportunity, Project Evidence agents active. |
+| Wave 1 implementation | IN_PROGRESS | 2026-09-18 | Three domain cores integrated; Context Core is next. |
 
 ## Integrated workstreams
 
 - Opportunity Core: `e09c9a8` merged as `04bccfa`; integration pytest `41 passed, 1 skipped`,
   Ruff passed. Persistence/API follow-up remains Lead-owned.
+- Capability Core: `5468c52` merged as `cd5728c`; combined pytest `57 passed, 1 skipped`,
+  Ruff passed. Persistence/API and heuristic versioning remain Lead-owned.
+- Project Evidence Core: `6df933e` merged as `989fa9e`; combined pytest `72 passed, 1 skipped`,
+  Ruff passed. Real scanner resolved-path enforcement remains a follow-up.
 
 ## Baseline verification
 

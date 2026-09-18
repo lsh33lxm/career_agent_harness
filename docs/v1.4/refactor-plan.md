@@ -17,9 +17,9 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 
 | ID | Description | Dependencies | Owner | Worktree | Status | Risk | Definition of Done |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| W1-CAP | Capability core and personal overlay | W0-02 | Subagent | capability | IN_PROGRESS | High | Models/services/tests enforce official/personal separation. |
+| W1-CAP | Capability core and personal overlay | W0-02 | Subagent | capability | DONE | High | Models/services/tests enforce official/personal separation. |
 | W1-OPP | Watchlist/Opportunity/Priority core | W0-02 | Subagent | opportunity | DONE | High | User-gated admission and priority independence tested. |
-| W1-PROJ | Project scope/evidence/enhancement L1 core | W0-02 | Subagent | project-evidence | IN_PROGRESS | High | Deny-wins scope and evidence candidates tested. |
+| W1-PROJ | Project scope/evidence/enhancement L1 core | W0-02 | Subagent | project-evidence | DONE | High | Deny-wins scope and evidence candidates tested. |
 | W1-CTX | Five-asset Context Compiler basic | W0-02, domain read ports | Subagent | context | READY | Medium | Relevance selection and ContextManifest tests pass. |
 | W1-INT | Lead-owned shared schema/API integration | W1-* contracts | Lead | integration | NOT_STARTED | High | Additive migration and integration tests pass. |
 

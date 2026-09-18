@@ -4,7 +4,7 @@ import hashlib
 import json
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Protocol
 
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
@@ -24,17 +24,35 @@ class IdempotencyConflict(RuntimeError):
     pass
 
 
+class TransactionalWrite(Protocol):
+    def idempotency_payload(self) -> dict[str, Any]: ...
+
+    def stage(
+        self,
+        session: Session,
+        *,
+        entity_revision: int,
+        occurred_at: datetime,
+    ) -> None: ...
+
+
 def _request_hash(
     command: Command,
     next_state: dict[str, Any],
     event_type: str,
+    event_payload: dict[str, Any],
     outbox_destination: str | None,
+    transactional_write: TransactionalWrite | None,
 ) -> str:
     value = {
         "command": command.model_dump(mode="json", exclude={"issued_at"}),
         "next_state": next_state,
         "event_type": event_type,
+        "event_payload": event_payload,
         "outbox_destination": outbox_destination,
+        "transactional_write": (
+            transactional_write.idempotency_payload() if transactional_write else None
+        ),
     }
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
@@ -50,9 +68,21 @@ class CommandService:
         next_state: dict[str, Any],
         *,
         event_type: str,
+        event_payload: dict[str, Any] | None = None,
         outbox_destination: str | None = None,
+        transactional_write: TransactionalWrite | None = None,
     ) -> CommandCommitResult:
-        request_hash = _request_hash(command, next_state, event_type, outbox_destination)
+        domain_event_payload = event_payload or {}
+        if "revision_id" in domain_event_payload:
+            raise ValueError("event payload cannot override revision_id")
+        request_hash = _request_hash(
+            command,
+            next_state,
+            event_type,
+            domain_event_payload,
+            outbox_destination,
+            transactional_write,
+        )
         now = datetime.now(UTC)
 
         with Session(self.engine) as session, session.begin():
@@ -106,10 +136,16 @@ class CommandService:
                     entity_id=command.target.entity_id,
                     entity_revision=new_revision,
                     command_id=command.command_id,
-                    payload={"revision_id": revision_id},
+                    payload={"revision_id": revision_id, **domain_event_payload},
                     occurred_at=now,
                 )
             )
+            if transactional_write is not None:
+                transactional_write.stage(
+                    session,
+                    entity_revision=new_revision,
+                    occurred_at=now,
+                )
             if outbox_destination:
                 session.flush()
                 session.add(

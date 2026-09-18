@@ -16,6 +16,7 @@ class RevisionRepository(Protocol):
         next_state: dict[str, Any],
         *,
         event_type: str,
+        event_payload: dict[str, Any] | None = None,
         outbox_destination: str | None = None,
     ) -> CommandCommitResult: ...
 

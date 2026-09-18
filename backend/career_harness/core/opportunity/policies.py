@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from career_harness.core.approval import ActorKind
-from career_harness.core.common import OpaqueId
+from career_harness.core.common import OpaqueId, utc_now
 from career_harness.core.lifecycle import Opportunity, OpportunityState
 from career_harness.core.opportunity.models import (
     AdmissionDecision,
@@ -23,6 +25,7 @@ def review_admission_proposal(
     decided_by: ActorKind,
     opportunity_id: OpaqueId | None = None,
     reason: str | None = None,
+    decided_at: datetime | None = None,
 ) -> OpportunityAdmissionResult:
     admission_decision = OpportunityAdmissionDecision(
         decision_id=decision_id,
@@ -33,6 +36,7 @@ def review_admission_proposal(
         proposal_id=proposal.proposal_id,
         opportunity_id=opportunity_id,
         reason=reason,
+        decided_at=decided_at or utc_now(),
     )
     opportunity = _create_opportunity(admission_decision)
     return OpportunityAdmissionResult(
@@ -48,6 +52,7 @@ def admit_opportunity_manually(
     opportunity_id: OpaqueId,
     decided_by: ActorKind,
     reason: str | None = None,
+    decided_at: datetime | None = None,
 ) -> OpportunityAdmissionResult:
     admission_decision = OpportunityAdmissionDecision(
         decision_id=decision_id,
@@ -57,6 +62,7 @@ def admit_opportunity_manually(
         decided_by=decided_by,
         opportunity_id=opportunity_id,
         reason=reason,
+        decided_at=decided_at or utc_now(),
     )
     return OpportunityAdmissionResult(
         decision=admission_decision,

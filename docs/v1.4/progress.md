@@ -20,6 +20,8 @@
 | Project Evidence typed persistence | DONE | 2026-09-19 | `158547b`; additive 0004, atomic relational basis, authority/scope and upgrade/downgrade tests. |
 | Context Manifest typed persistence | DONE | 2026-09-19 | `95d3df6`; additive 0005, ordered immutable refs and metadata-only privacy boundary. |
 | Context Manifest atomic service/read | DONE | 2026-09-19 | `6ca47cc`; one transaction, canonical replay, exact ordered readback and compiler-output binding. |
+| Project typed reads / safe scanner | READY | 2026-09-19 | Prompt `agents/project-read-scanner.md`; new worktree pending. |
+| Capability typed read repository | READY | 2026-09-19 | Prompt `agents/capability-read.md`; new worktree pending. |
 
 ## Integrated workstreams
 

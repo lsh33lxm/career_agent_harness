@@ -31,7 +31,7 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-RESUME | Resume Base/Patch/Revision integration | W1-PROJ, W2-MATCH | TBD | TBD | NOT_STARTED | High | Unverified claims cannot enter accepted patch. |
 | W2-APP | Application/Outcome/history completion | W1-OPP, W2-RESUME | TBD | TBD | NOT_STARTED | High | Prepared/submitted and outcome authority tested. |
 | W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | TBD | TBD | NOT_STARTED | Medium | Real read models replace selected placeholders. |
-| W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | IN_REVIEW | Medium | UI commit done; canonical ID ownership contract must be corrected before merge. |
+| W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | DONE | Medium | Authenticated UI uses Core-owned IDs, preserves priority separation and passes responsive validation. |
 
 ## Wave 3+ deferred
 

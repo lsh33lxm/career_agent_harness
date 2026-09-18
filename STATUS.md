@@ -1,16 +1,16 @@
 # Current Phase
 
-PRD v1.4 Wave 1 integration is in progress: typed persistence, authenticated Local API,
-and the first real desktop projection.
+PRD v1.4 Wave 1 integration is in progress: Opportunity and Capability persistence are
+integrated, and the first real desktop projection is complete.
 
 # Current Goal
 
-Complete the smallest evidence-constrained Opportunity/Capability vertical slices before
-Project Evidence, Context and Resume integration.
+Complete Project Evidence and Context persistence before Match/Gap, Resume and Outcome
+integration.
 
 # Last Verified Commit
 
-`2b7901d` - `feat: persist versioned capability graph`
+`0cee6c6` - `fix: prevent nested desktop scrolling`
 
 # Completed
 
@@ -68,10 +68,14 @@ Project Evidence, Context and Resume integration.
   inbox, personal overlay, evidence/market binding and explainable investment records.
 - Enforced immutable released graphs, authority allowlists, revision-preserving personal
   state, binding consistency and investment rule consistency at the SQLite boundary.
+- Integrated the Opportunity desktop page with authenticated read/admission/priority APIs,
+  Core-owned canonical ID generation, independent Suggested/User Priority projections and
+  retry-safe mutation refresh behavior.
+- Verified the Opportunity UI at desktop, 390 px and 320 px widths with no horizontal
+  overflow or incoherent overlap; Vitest passed 16 tests and the Vite build passed.
 
 # In Progress
 
-- Opportunity desktop UI integration review and canonical ID ownership correction.
 - Project Evidence and Context additive relational schema design.
 
 # Blocked
@@ -87,9 +91,9 @@ Project Evidence, Context and Resume integration.
 
 # Next Safe Tasks
 
-1. Move Opportunity/decision ID generation from Desktop requests into Career Core.
-2. Review, adapt and merge the Opportunity desktop worktree; run frontend build/tests.
-3. Add Project Evidence and Context schemas in small additive migrations.
+1. Add Project Evidence schema and repository parity in a small additive migration.
+2. Persist immutable ContextManifest records without storing full compiled context by default.
+3. Add Capability and Project Evidence read repositories/APIs needed by Match/Gap.
 4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet

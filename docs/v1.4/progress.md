@@ -16,7 +16,7 @@
 | Opportunity Priority/read repository | DONE | 2026-09-18 | `878d222`; independent priorities and aggregate revisions tested. |
 | Opportunity Local API/runtime | DONE | 2026-09-18 | `d1004b2`; auth, idempotency, conflict redaction and bootstrap tested. |
 | Capability typed persistence | DONE | 2026-09-18 | `2b7901d`; additive 0003, immutable graph and overlay/binding constraints. |
-| Opportunity desktop UI | IN_REVIEW | 2026-09-18 | `f888f9a`; contract review found client-owned canonical IDs. |
+| Opportunity desktop UI | DONE | 2026-09-18 | `f888f9a`, `c990589`, merge `f37b92b`, layout fix `0cee6c6`; 16 tests/build and desktop/390/320 visual checks passed. |
 
 ## Integrated workstreams
 
@@ -36,6 +36,9 @@
   Manual and Agent-proposal/user-confirmation admissions are available through authenticated API.
 - Capability Persistence: `2b7901d`; full pytest `114 passed, 1 skipped`, Ruff passed. Official
   graph releases are immutable and separate from revision-preserving personal overlays.
+- Opportunity Desktop: `f888f9a`, `c990589` merged as `f37b92b`, with integration layout fix
+  `0cee6c6`; backend `115 passed, 1 skipped`, Ruff passed, frontend `16 passed`, Vite build passed,
+  npm audit found 0 vulnerabilities, and desktop/390/320 visual checks passed without overflow.
 
 ## Baseline verification
 

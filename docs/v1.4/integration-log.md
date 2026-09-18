@@ -10,6 +10,7 @@ No feature branches have been integrated yet.
 | `codex/v14-project-evidence-core` | `6df933e` (merge `989fa9e`) | Scan scope, project evidence/state, L1 executor | 72 passed, 1 skipped; Ruff passed | None | None | Lead-owned persistence/API; scanner must enforce resolved-path/reparse safety |
 | integration | `3f102f0` | Opportunity relational schema/migration | 75 passed, 1 skipped; Ruff passed; upgrade/downgrade passed | None | Additive 0002 | Typed repository must join revision/event transaction |
 | `codex/v14-context-core` | `c294937` (merge `647f45e`) | Context assets, selector, compiler, manifest | 86 passed, 1 skipped; Ruff passed | None | None | Lead-owned persistence/API and `context.compiled` event |
+| integration | `01e2bbe` | Atomic command hook and Opportunity application service | 92 passed, 1 skipped; Ruff passed; rollback/replay passed | None | None | Add typed priority commands and Local API |
 
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.

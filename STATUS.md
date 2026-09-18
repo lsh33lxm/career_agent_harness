@@ -9,7 +9,7 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # Last Verified Commit
 
-`647f45e` - `merge: integrate v1.4 context core`
+`01e2bbe` - `feat: commit opportunity truth atomically`
 
 # Completed
 
@@ -63,7 +63,7 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # In Progress
 
-- Lead-owned atomic typed repository integration with revision/event/idempotency transactions.
+- Opportunity priority command/query API on the atomic persistence boundary.
 - Capability, Project Evidence, and Context additive relational schema design.
 
 # Blocked
@@ -79,9 +79,8 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # Next Safe Tasks
 
-1. Add a tested transaction hook/unit-of-work boundary so typed domain rows and generic
-   revision/event/idempotency records commit atomically.
-2. Implement the Opportunity repository/application service on that boundary.
+1. Add atomic SuggestedPriority/UserPriority commands and Opportunity read repository.
+2. Expose a typed localhost Opportunity read/mutation API with existing auth/CORS guarantees.
 3. Add Capability, Project Evidence, and Context schemas in small additive migrations.
 4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 

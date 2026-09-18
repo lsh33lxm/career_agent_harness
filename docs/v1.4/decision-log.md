@@ -80,3 +80,22 @@ both Pydantic and SQLite constraint boundaries.
 **Reason:** Prevents recomputation or adapter writes from silently becoming user intent.
 
 **Impact:** More explicit joins, but authority and audit semantics stay inspectable and testable.
+
+## D-006 - Typed domain writes participate in the command transaction
+
+**Decision:** ACCEPTED in `01e2bbe`.
+
+**Context:** `CommandService` previously owned its Session, so typed Opportunity rows could only be
+written before or after revision/event records in a separate transaction.
+
+**Alternatives:** Best-effort dual write; move transaction ownership into every domain service;
+provide a versioned transaction participant.
+
+**Chosen:** `CommandService` accepts a `TransactionalWrite` that exposes a versioned idempotency
+payload and stages typed rows after revision validation within the same Session.
+
+**Reason:** Preserves the existing atomic revision/event/idempotency kernel without teaching it
+Opportunity semantics or allowing partial canonical truth.
+
+**Impact:** Domain DB mappers remain infrastructure adapters. Hook failure rolls back all records;
+replay returns the original receipt without staging the hook again.

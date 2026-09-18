@@ -12,6 +12,7 @@
 | Wave 1 domain contracts | DONE | 2026-09-18 | Capability, Opportunity, Project Evidence and Context integrated. |
 | Wave 1 persistence/integration | IN_PROGRESS | 2026-09-18 | Opportunity schema done; atomic typed repository/API pending. |
 | Opportunity typed persistence | DONE | 2026-09-18 | `3f102f0`; 0002 migration, ORM parity, upgrade/downgrade tests. |
+| Atomic Opportunity command path | DONE | 2026-09-18 | `01e2bbe`; typed/generic truth, event and idempotency share one transaction. |
 
 ## Integrated workstreams
 
@@ -25,6 +26,8 @@
   conversion or production database write occurred.
 - Context Core: `c294937` merged as `647f45e`; combined pytest `86 passed, 1 skipped`, Ruff passed.
   Empty relevance selects no context and manifests cannot authorize fact mutation.
+- Atomic Opportunity Service: `01e2bbe`; full pytest `92 passed, 1 skipped`, Ruff passed. Hook
+  failure rollback, replay and changed typed input conflict are covered.
 
 ## Baseline verification
 

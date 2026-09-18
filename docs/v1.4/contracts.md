@@ -32,6 +32,10 @@ own truth and never approve their own proposals.
 - Mutable canonical entities carry `revision >= 1`, `schema_version >= 1`, timestamps and actor.
 - Commands require `expected_revision` and `idempotency_key`.
 - A commit atomically writes current state, immutable revision, DomainEvent and optional outbox.
+- Typed domain rows join that same transaction through a versioned `TransactionalWrite`; its
+  business payload participates in the idempotency hash and it is not staged during replay.
+- Transactional write failures roll back typed rows, current state, revision, event, outbox and
+  idempotency together. Separate best-effort dual writes are forbidden.
 - Deletes default to tombstone/supersession; destructive Evidence deletion requires approval.
 
 ## Evidence and fact authority
@@ -133,6 +137,10 @@ The shared envelope remains `event_id`, `event_type`, entity ref/revision, comma
 occurred_at. Event types are explicit inputs to repository commits, use past-tense domain language
 (for example `opportunity.admitted`) and are included in the idempotency request hash.
 
+Domain event payloads may add reviewed domain references but cannot override the Core-generated
+`revision_id`. Audit-only timestamps are excluded from business idempotency payloads; IDs,
+revisions, decisions and other typed domain inputs are included.
+
 Minimum P0 events include proposal created/reviewed, opportunity admitted, priority suggested/user
 set, project scanned/evidence proposed, capability binding/state changed, context compiled, resume
 patch proposed/reviewed, application prepared/submitted and outcome recorded.
@@ -144,4 +152,3 @@ patch proposed/reviewed, application prepared/submitted and outcome recorded.
 - Wave 1 domain storage is relational SQLite. JSON is allowed for bounded immutable payloads, not
   as a substitute for identity, lifecycle or queryable relationships.
 - Existing generic entity tables remain for compatibility until migrated; no destructive rewrite.
-

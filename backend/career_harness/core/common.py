@@ -30,9 +30,9 @@ class EntityKind(StrEnum):
     APPROVAL = "approval"
     RUN = "run"
     SNAPSHOT = "snapshot"
+    CONTEXT_MANIFEST = "context_manifest"
 
 
 class EntityRef(FrozenModel):
     entity_id: OpaqueId
     kind: EntityKind
-

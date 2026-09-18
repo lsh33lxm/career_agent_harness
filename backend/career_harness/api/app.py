@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
 from career_harness import __version__
+from career_harness.api.opportunities import OpportunityApi, create_opportunity_router
 from career_harness.config import Settings
 
 
@@ -20,7 +21,11 @@ class HealthResponse(BaseModel):
     environment: str
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    *,
+    opportunity_api: OpportunityApi | None = None,
+) -> FastAPI:
     active_settings = settings or Settings()
     app = FastAPI(title="Agent Career Harness Local API", version=__version__)
     app.state.settings = active_settings
@@ -55,5 +60,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             version=__version__,
             environment=active_settings.environment,
         )
+
+    if opportunity_api is not None:
+        app.include_router(create_opportunity_router(opportunity_api))
 
     return app

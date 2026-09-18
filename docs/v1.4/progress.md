@@ -8,8 +8,8 @@
 | Shared contract freeze | DONE | 2026-09-18 | `75f973b`; contract version `0.1.0`. |
 | Repository contract alignment | DONE | 2026-09-18 | `32 passed, 1 skipped`; Ruff passed. |
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
-| Wave 1 decomposition/prompts | IN_PROGRESS | 2026-09-18 | Four scoped prompts created; three worktrees pending. |
-| Wave 1 implementation | NOT_STARTED | 2026-09-18 | Contract freeze dependency. |
+| Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
+| Wave 1 implementation | IN_PROGRESS | 2026-09-18 | Capability, Opportunity, Project Evidence agents active. |
 
 ## Baseline verification
 

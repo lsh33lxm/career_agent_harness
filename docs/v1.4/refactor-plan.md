@@ -11,15 +11,15 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W0-03 | Align command repository/service contract | W0-01 | Lead | integration | DONE | Medium | Typed result, explicit event type, tests pass. |
 | W0-04 | Define additive migration strategy | W0-02 | Lead | integration | DONE | High | No cutover/data-loss assumptions; schema ownership clear. |
 | W0-05 | Establish full test baseline | None | Lead | integration | DONE | Low | Python tests and Ruff pass; frontend/Rust baseline recorded. |
-| W0-06 | Create scoped Wave 1 worktrees/prompts | W0-02..04 | Lead | integration | IN_PROGRESS | Medium | Ownership has no shared-schema overlap. |
+| W0-06 | Create scoped Wave 1 worktrees/prompts | W0-02..04 | Lead | integration | DONE | Medium | Ownership has no shared-schema overlap. |
 
 ## Wave 1 - P0 domain cores
 
 | ID | Description | Dependencies | Owner | Worktree | Status | Risk | Definition of Done |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| W1-CAP | Capability core and personal overlay | W0-02 | Subagent | capability | READY | High | Models/services/tests enforce official/personal separation. |
-| W1-OPP | Watchlist/Opportunity/Priority core | W0-02 | Subagent | opportunity | READY | High | User-gated admission and priority independence tested. |
-| W1-PROJ | Project scope/evidence/enhancement L1 core | W0-02 | Subagent | project-evidence | READY | High | Deny-wins scope and evidence candidates tested. |
+| W1-CAP | Capability core and personal overlay | W0-02 | Subagent | capability | IN_PROGRESS | High | Models/services/tests enforce official/personal separation. |
+| W1-OPP | Watchlist/Opportunity/Priority core | W0-02 | Subagent | opportunity | IN_PROGRESS | High | User-gated admission and priority independence tested. |
+| W1-PROJ | Project scope/evidence/enhancement L1 core | W0-02 | Subagent | project-evidence | IN_PROGRESS | High | Deny-wins scope and evidence candidates tested. |
 | W1-CTX | Five-asset Context Compiler basic | W0-02, domain read ports | Subagent | context | READY | Medium | Relevance selection and ContextManifest tests pass. |
 | W1-INT | Lead-owned shared schema/API integration | W1-* contracts | Lead | integration | NOT_STARTED | High | Additive migration and integration tests pass. |
 

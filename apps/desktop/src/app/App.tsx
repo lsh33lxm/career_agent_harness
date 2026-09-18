@@ -1,13 +1,13 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { SectionPage } from "../pages/SectionPage";
+import { OpportunitiesPage } from "../pages/OpportunitiesPage";
 import { TodayPage } from "../pages/TodayPage";
 import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
 
 const sections = [
   ["discover", "Discover", "No new market observations"],
-  ["opportunities", "Opportunities", "No qualified opportunities"],
   ["resume", "Resume", "No resume revisions"],
   ["applications", "Applications", "No applications in progress"],
   ["interviews", "Interviews", "No interviews scheduled"],
@@ -24,6 +24,7 @@ export function App() {
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<TodayPage />} />
+            <Route path="opportunities" element={<OpportunitiesPage />} />
             {sections.map(([path, title, emptyLabel]) => (
               <Route
                 key={path}

@@ -17,6 +17,7 @@ Feature branches are integrated only after contract and test review; `main` rema
 | `codex/v14-opportunity-ui` | `f888f9a`, `c990589` (merge `f37b92b`; layout `0cee6c6`) | Authenticated Opportunity desktop workspace and responsive shell | Backend 115 passed, 1 skipped; Ruff passed; frontend 16 passed; build passed; npm audit 0; desktop/390/320 visual checks passed | None | None | Project/Capability read projections after persistence |
 | integration | `158547b` | Scoped Project Evidence, relational capability basis and L1 enhancement persistence | 136 passed, 1 skipped; Ruff and diff check passed; `0003 -> 0004 -> 0003 -> 0004` passed | None | Additive 0004 | Realpath/reparse-safe scanner; Project/Capability read repositories and API |
 | integration | `95d3df6` | Immutable metadata-only Context Manifest persistence | 151 passed, 1 skipped; Ruff and diff check passed; `0004 -> 0005 -> 0004 -> 0005` passed | None | Additive 0005 | Atomic `context.compiled` command/event write and exact read repository |
+| integration | `6ca47cc` | Atomic Context compilation service, typed write and exact read repository | 159 passed, 1 skipped; Ruff, format and diff checks passed; scoped review found no remaining P0/P1 | Compiler-output identity P1 fixed before commit | None | Project Evidence scanner/repository and Capability read paths |
 
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.

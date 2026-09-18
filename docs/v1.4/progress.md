@@ -10,7 +10,7 @@
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
 | Wave 1 domain contracts | DONE | 2026-09-18 | Capability, Opportunity, Project Evidence and Context integrated. |
-| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-19 | Opportunity, Capability, Project and Context schemas done; Context service and remaining read paths pending. |
+| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-19 | All Wave 1 schemas and Context atomic service done; Project/Capability read paths pending. |
 | Opportunity typed persistence | DONE | 2026-09-18 | `3f102f0`; 0002 migration, ORM parity, upgrade/downgrade tests. |
 | Atomic Opportunity command path | DONE | 2026-09-18 | `01e2bbe`; typed/generic truth, event and idempotency share one transaction. |
 | Opportunity Priority/read repository | DONE | 2026-09-18 | `878d222`; independent priorities and aggregate revisions tested. |
@@ -19,6 +19,7 @@
 | Opportunity desktop UI | DONE | 2026-09-18 | `f888f9a`, `c990589`, merge `f37b92b`, layout fix `0cee6c6`; 16 tests/build and desktop/390/320 visual checks passed. |
 | Project Evidence typed persistence | DONE | 2026-09-19 | `158547b`; additive 0004, atomic relational basis, authority/scope and upgrade/downgrade tests. |
 | Context Manifest typed persistence | DONE | 2026-09-19 | `95d3df6`; additive 0005, ordered immutable refs and metadata-only privacy boundary. |
+| Context Manifest atomic service/read | DONE | 2026-09-19 | `6ca47cc`; one transaction, canonical replay, exact ordered readback and compiler-output binding. |
 
 ## Integrated workstreams
 
@@ -44,9 +45,10 @@
 - Project Evidence Persistence: `158547b`; full pytest `136 passed, 1 skipped`, Ruff passed and
   `0003 -> 0004 -> 0003 -> 0004` rehearsal passed. Canonical capability state and typed basis are
   one deferred-FK transaction; real scanner containment and read repositories remain follow-ups.
-- Context Manifest Persistence: `95d3df6`; full pytest `151 passed, 1 skipped`, Ruff passed and
-  `0004 -> 0005 -> 0004 -> 0005` rehearsal passed. Ordered refs and bounded audit metadata are
-  immutable; compiled content is not stored. Atomic command/event integration remains a follow-up.
+- Context Manifest Persistence/Service: `95d3df6`, `6ca47cc`; full pytest `159 passed, 1 skipped`,
+  Ruff and format checks passed, and `0004 -> 0005 -> 0004 -> 0005` rehearsal passed. Ordered refs
+  and bounded audit metadata are immutable; typed rows, generic revision, event and idempotency are
+  atomic; replay returns the first canonical timestamp; compiled content is not stored.
 
 ## Baseline verification
 

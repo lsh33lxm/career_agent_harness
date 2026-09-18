@@ -1,16 +1,16 @@
 # Current Phase
 
-PRD v1.4 Wave 1 integration is in progress: Opportunity and Capability persistence are
-integrated, and the first real desktop projection is complete.
+PRD v1.4 Wave 1 integration is in progress: Opportunity, Capability, Project Evidence and
+Context persistence are integrated, and the first real desktop projection is complete.
 
 # Current Goal
 
-Add the atomic Context Manifest write/read path, then Project/Capability read paths before
-Match/Gap, Resume and Outcome integration.
+Add Project Evidence scanner/repository and Capability read paths before Match/Gap, Resume and
+Outcome integration.
 
 # Last Verified Commit
 
-`95d3df6` - `feat: persist immutable context manifests`
+`6ca47cc` - `feat: atomically record context compilations`
 
 # Completed
 
@@ -85,10 +85,15 @@ Match/Gap, Resume and Outcome integration.
 - Context persistence stores only bounded audit metadata and hashes; it does not store task input,
   asset/knowledge payloads, assembled context, compiled prompts or fact-mutation authority.
 - Verified `0004 -> 0005 -> 0004 -> 0005`, Ruff, and backend `151 passed, 1 skipped`.
+- Added atomic Context compilation write/read integration: typed manifest, generic revision,
+  `context.compiled` event and idempotency now share one transaction.
+- Replay returns the first canonical manifest timestamp; compiler output is rebound to the exact
+  request before persistence, and payload content cannot use generic audit rows as a storage path.
+- Verified backend `159 passed, 1 skipped`, full Ruff lint, focused format and diff checks.
 
 # In Progress
 
-- Atomic `context.compiled` write service and Context Manifest read repository.
+- Project Evidence scanner/repository and Capability read paths.
 
 # Blocked
 
@@ -103,10 +108,9 @@ Match/Gap, Resume and Outcome integration.
 
 # Next Safe Tasks
 
-1. Persist Context Manifest aggregates through the command transaction and add exact readback.
-2. Add Project Evidence repository/scanner with resolved-path and reparse-point containment.
-3. Add Capability and Project Evidence read repositories/APIs needed by Match/Gap.
-4. Continue awaiting user adjudication for destructive legacy cutover decisions.
+1. Add Project Evidence repository/scanner with resolved-path and reparse-point containment.
+2. Add Capability and Project Evidence read repositories/APIs needed by Match/Gap.
+3. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet
 

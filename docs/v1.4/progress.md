@@ -10,11 +10,13 @@
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
 | Wave 1 domain contracts | DONE | 2026-09-18 | Capability, Opportunity, Project Evidence and Context integrated. |
-| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-18 | Opportunity schema done; atomic typed repository/API pending. |
+| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-18 | Opportunity slice and Capability schema done; Project/Context persistence pending. |
 | Opportunity typed persistence | DONE | 2026-09-18 | `3f102f0`; 0002 migration, ORM parity, upgrade/downgrade tests. |
 | Atomic Opportunity command path | DONE | 2026-09-18 | `01e2bbe`; typed/generic truth, event and idempotency share one transaction. |
 | Opportunity Priority/read repository | DONE | 2026-09-18 | `878d222`; independent priorities and aggregate revisions tested. |
 | Opportunity Local API/runtime | DONE | 2026-09-18 | `d1004b2`; auth, idempotency, conflict redaction and bootstrap tested. |
+| Capability typed persistence | DONE | 2026-09-18 | `2b7901d`; additive 0003, immutable graph and overlay/binding constraints. |
+| Opportunity desktop UI | IN_REVIEW | 2026-09-18 | `f888f9a`; contract review found client-owned canonical IDs. |
 
 ## Integrated workstreams
 
@@ -32,6 +34,8 @@
   failure rollback, replay and changed typed input conflict are covered.
 - Priority/Read/API: `878d222`, `d1004b2`; full pytest `103 passed, 1 skipped`, Ruff passed.
   Manual and Agent-proposal/user-confirmation admissions are available through authenticated API.
+- Capability Persistence: `2b7901d`; full pytest `114 passed, 1 skipped`, Ruff passed. Official
+  graph releases are immutable and separate from revision-preserving personal overlays.
 
 ## Baseline verification
 

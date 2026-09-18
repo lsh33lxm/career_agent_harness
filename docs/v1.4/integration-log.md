@@ -13,6 +13,7 @@ No feature branches have been integrated yet.
 | integration | `01e2bbe` | Atomic command hook and Opportunity application service | 92 passed, 1 skipped; Ruff passed; rollback/replay passed | None | None | Add typed priority commands and Local API |
 | integration | `878d222` | Independent Suggested/User Priority writes and read repository | 97 passed, 1 skipped; Ruff passed | None | None | API/UI projection |
 | integration | `d1004b2` | Authenticated Opportunity API and runtime DB bootstrap | 103 passed, 1 skipped; Ruff passed | None | Runtime applies 0001/0002 | Desktop Opportunity UI |
+| integration | `2b7901d` | Versioned Capability relational schema | 114 passed, 1 skipped; Ruff passed; upgrade/downgrade passed | None | Additive 0003 | Capability repository/API; Project/Context schema |
 
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.

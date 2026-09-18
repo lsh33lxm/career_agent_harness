@@ -1,15 +1,16 @@
 # Current Phase
 
-PRD v1.4 Wave 0 is in progress: repository reconciliation, shared contract freeze,
-additive migration planning, and test baseline stabilization.
+PRD v1.4 Wave 1 integration is in progress: typed persistence, authenticated Local API,
+and the first real desktop projection.
 
 # Current Goal
 
-Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees begin.
+Complete the smallest evidence-constrained Opportunity/Capability vertical slices before
+Project Evidence, Context and Resume integration.
 
 # Last Verified Commit
 
-`d1004b2` - `feat: expose authenticated opportunity API`
+`2b7901d` - `feat: persist versioned capability graph`
 
 # Completed
 
@@ -60,11 +61,18 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 - Generated the standard Tauri icon set from a deterministic project SVG, resolved
   Rust dependencies into `Cargo.lock`, passed `cargo check --locked`, and built the
   Windows debug executable with `--no-bundle`.
+- Integrated Capability, Opportunity, Project Evidence and Context Core contracts.
+- Added typed Opportunity persistence, atomic command writes, independent priorities,
+  read repository and authenticated Local API.
+- Added additive Capability migration `0003` with separate official graph, candidate
+  inbox, personal overlay, evidence/market binding and explainable investment records.
+- Enforced immutable released graphs, authority allowlists, revision-preserving personal
+  state, binding consistency and investment rule consistency at the SQLite boundary.
 
 # In Progress
 
-- Opportunity desktop UI using the authenticated API.
-- Capability, Project Evidence, and Context additive relational schema design.
+- Opportunity desktop UI integration review and canonical ID ownership correction.
+- Project Evidence and Context additive relational schema design.
 
 # Blocked
 
@@ -79,9 +87,9 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # Next Safe Tasks
 
-1. Add atomic SuggestedPriority/UserPriority commands and Opportunity read repository.
-2. Expose a typed localhost Opportunity read/mutation API with existing auth/CORS guarantees.
-3. Add Capability, Project Evidence, and Context schemas in small additive migrations.
+1. Move Opportunity/decision ID generation from Desktop requests into Career Core.
+2. Review, adapt and merge the Opportunity desktop worktree; run frontend build/tests.
+3. Add Project Evidence and Context schemas in small additive migrations.
 4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet

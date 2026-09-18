@@ -17,7 +17,7 @@
 | M0 | Align in-code repository contract | None | Revert code commit. |
 | M1 | Add shared relational identity/priority/event support if required | Empty additive tables/columns | Alembic downgrade on rehearsal DB. |
 | M2a | Add typed Opportunity/Watchlist/Priority records | Completed in `3f102f0`; no automatic legacy conversion | Tested downgrade to 0001 on disposable DB. |
-| M2b | Add Capability records | Not started; official graph and personal overlay remain separate | Drop new empty tables before release. |
+| M2b | Add Capability records | Completed in `2b7901d`; no automatic seed/import | Tested downgrade to 0002 on disposable DB. |
 | M3 | Add Project/Context records | No filesystem scan on migration | Drop new empty tables; artifacts untouched. |
 | M4 | Compatibility transform for `OpportunityState.WATCHING` | Explicit rehearsal report; user approval if real records exist | Preserve original revisions; reverse mapping. |
 | M5 | Resume/Application/Outcome vertical slice | Additive records with evidence refs | Tombstone new records; retain audit. |
@@ -30,6 +30,8 @@
 - Existing `0001_foundation` data survives every additive migration.
 - Foreign keys prevent deleting referenced evidence/official graph versions.
 - Official graph upgrade does not overwrite personal capability state.
+- Released official graph rows are append/update/delete protected; new releases are assembled in
+  one deferred-FK transaction and sealed by inserting the graph version last.
 - Suggested priority updates do not modify user priority.
 - Opportunity proposal, user decision, canonical record, SuggestedPriority and UserPriority use
   distinct tables and DB authority checks.

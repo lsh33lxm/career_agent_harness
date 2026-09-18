@@ -21,7 +21,7 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W1-OPP | Watchlist/Opportunity/Priority core | W0-02 | Subagent | opportunity | DONE | High | User-gated admission and priority independence tested. |
 | W1-PROJ | Project scope/evidence/enhancement L1 core | W0-02 | Subagent | project-evidence | DONE | High | Deny-wins scope and evidence candidates tested. |
 | W1-CTX | Five-asset Context Compiler basic | W0-02, domain read ports | Subagent | context | DONE | Medium | Relevance selection and ContextManifest tests pass. |
-| W1-INT | Lead-owned shared schema/API integration | W1-* contracts | Lead | integration | IN_PROGRESS | High | Opportunity schema, atomic commands and API done; remaining schemas pending. |
+| W1-INT | Lead-owned shared schema/API integration | W1-* contracts | Lead | integration | IN_PROGRESS | High | Opportunity slice and Capability schema done; Project/Context schemas pending. |
 
 ## Wave 2 - Vertical career loop
 
@@ -31,7 +31,7 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-RESUME | Resume Base/Patch/Revision integration | W1-PROJ, W2-MATCH | TBD | TBD | NOT_STARTED | High | Unverified claims cannot enter accepted patch. |
 | W2-APP | Application/Outcome/history completion | W1-OPP, W2-RESUME | TBD | TBD | NOT_STARTED | High | Prepared/submitted and outcome authority tested. |
 | W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | TBD | TBD | NOT_STARTED | Medium | Real read models replace selected placeholders. |
-| W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | READY | Medium | Placeholder replaced by tested real projection/mutations. |
+| W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | IN_REVIEW | Medium | UI commit done; canonical ID ownership contract must be corrected before merge. |
 
 ## Wave 3+ deferred
 

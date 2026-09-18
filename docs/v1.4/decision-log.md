@@ -99,3 +99,24 @@ Opportunity semantics or allowing partial canonical truth.
 
 **Impact:** Domain DB mappers remain infrastructure adapters. Hook failure rolls back all records;
 replay returns the original receipt without staging the hook again.
+
+## D-007 - Version official capability data around a stable identity
+
+**Decision:** ACCEPTED in migration `0003_capability_core`.
+
+**Context:** Official nodes retain a stable capability ID across immutable graph releases, while
+personal state and bindings must survive ontology upgrades without being overwritten.
+
+**Alternatives:** Make capability ID unique per release; overwrite one mutable node row; store the
+graph and overlay together as JSON.
+
+**Chosen:** Store stable IDs in `capability_identity`, version official nodes by the composite
+`(capability_id, graph_version_id)`, and keep revisioned personal state in a separate table. Build a
+release in one deferred-FK transaction and insert its graph version last; SQLite triggers then seal
+the version, nodes and relations against append/update/delete.
+
+**Reason:** Preserves stable cross-domain references and immutable ontology history without letting
+official graph upgrades mutate the user's capability overlay.
+
+**Impact:** Graph publishing requires one transaction with the release row staged last. Capability
+repository work must preserve this order and use additive graph versions for every change.

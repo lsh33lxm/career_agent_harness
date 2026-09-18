@@ -9,7 +9,7 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # Last Verified Commit
 
-`3f102f0` - `feat: add typed opportunity persistence schema`
+`647f45e` - `merge: integrate v1.4 context core`
 
 # Completed
 
@@ -63,8 +63,8 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # In Progress
 
-- Context Compiler and ContextManifest pure Core implementation.
-- Lead-owned relational schema and repository integration design for the completed domain cores.
+- Lead-owned atomic typed repository integration with revision/event/idempotency transactions.
+- Capability, Project Evidence, and Context additive relational schema design.
 
 # Blocked
 
@@ -79,10 +79,10 @@ Establish a reviewable v1.4 integration baseline before scoped Wave 1 worktrees 
 
 # Next Safe Tasks
 
-1. Validate and commit Wave 0 contracts on `refactor/v1.4-integration`.
-2. Create scoped Capability, Opportunity, Project Evidence, and Context worktrees only
-   where shared schema ownership does not overlap.
-3. Keep global migrations and shared API/event definitions Lead-owned.
+1. Add a tested transaction hook/unit-of-work boundary so typed domain rows and generic
+   revision/event/idempotency records commit atomically.
+2. Implement the Opportunity repository/application service on that boundary.
+3. Add Capability, Project Evidence, and Context schemas in small additive migrations.
 4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet

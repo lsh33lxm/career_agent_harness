@@ -9,7 +9,8 @@
 | Repository contract alignment | DONE | 2026-09-18 | `32 passed, 1 skipped`; Ruff passed. |
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
-| Wave 1 implementation | IN_PROGRESS | 2026-09-18 | Three domain cores integrated; Context Core is next. |
+| Wave 1 domain contracts | DONE | 2026-09-18 | Capability, Opportunity, Project Evidence and Context integrated. |
+| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-18 | Opportunity schema done; atomic typed repository/API pending. |
 | Opportunity typed persistence | DONE | 2026-09-18 | `3f102f0`; 0002 migration, ORM parity, upgrade/downgrade tests. |
 
 ## Integrated workstreams
@@ -22,6 +23,8 @@
   Ruff passed. Real scanner resolved-path enforcement remains a follow-up.
 - Opportunity Persistence: `3f102f0`; full pytest `75 passed, 1 skipped`, Ruff passed. No legacy
   conversion or production database write occurred.
+- Context Core: `c294937` merged as `647f45e`; combined pytest `86 passed, 1 skipped`, Ruff passed.
+  Empty relevance selects no context and manifests cannot authorize fact mutation.
 
 ## Baseline verification
 

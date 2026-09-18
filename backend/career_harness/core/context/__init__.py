@@ -1,0 +1,53 @@
+"""Deterministic five-asset context compilation and audit contracts."""
+
+from career_harness.core.context.compiler import (
+    BasicContextCompiler,
+    ContextCompilerPort,
+    DeterministicRelevanceSelector,
+    RelevanceSelector,
+    context_input_hash,
+)
+from career_harness.core.context.models import (
+    COMPRESSION_POLICY_VERSION,
+    CONTRACT_VERSION,
+    SELECTION_POLICY_VERSION,
+    CompiledContext,
+    ContextAsset,
+    ContextAssetClass,
+    ContextAssetRef,
+    ContextCompilationRequest,
+    ContextManifest,
+    ContextSelectionResult,
+    ExcludedContextAsset,
+    ExclusionReason,
+    IncludedContextAsset,
+    MarketEvidenceScope,
+    SelectionReason,
+    VerticalKnowledgeAsset,
+    VerticalKnowledgeRef,
+)
+
+__all__ = [
+    "COMPRESSION_POLICY_VERSION",
+    "CONTRACT_VERSION",
+    "SELECTION_POLICY_VERSION",
+    "BasicContextCompiler",
+    "CompiledContext",
+    "ContextAsset",
+    "ContextAssetClass",
+    "ContextAssetRef",
+    "ContextCompilationRequest",
+    "ContextCompilerPort",
+    "ContextManifest",
+    "ContextSelectionResult",
+    "DeterministicRelevanceSelector",
+    "ExcludedContextAsset",
+    "ExclusionReason",
+    "IncludedContextAsset",
+    "MarketEvidenceScope",
+    "RelevanceSelector",
+    "SelectionReason",
+    "VerticalKnowledgeAsset",
+    "VerticalKnowledgeRef",
+    "context_input_hash",
+]

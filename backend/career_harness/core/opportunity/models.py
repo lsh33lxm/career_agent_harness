@@ -7,12 +7,8 @@ from pydantic import Field, model_validator
 
 from career_harness.core.approval import ActorKind
 from career_harness.core.common import FrozenModel, OpaqueId, utc_now
+from career_harness.core.job import JobRef
 from career_harness.core.lifecycle import Opportunity
-
-
-class JobRef(FrozenModel):
-    job_id: OpaqueId
-    revision: int = Field(ge=1)
 
 
 class WatchlistItem(FrozenModel):

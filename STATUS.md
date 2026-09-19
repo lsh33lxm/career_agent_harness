@@ -13,8 +13,8 @@ new feature; transfer the verified integration state to Kimi.
 
 # Last Verified Commit
 
-`1d86b65` - `merge: integrate core today read model` (Today contract `0.8.0`; P0 vertical slice
-proof integrated at `f132709`; full suite 355 passed, 3 skipped)
+`c986936` - `merge: integrate today ui core api adapter` (Today contract `0.8.0`; Core read model
+`1d86b65`; P0 vertical slice proof `f132709`; full suite 355 passed, 3 skipped; Vitest 22 passed)
 
 # Completed
 
@@ -182,7 +182,9 @@ proof integrated at `f132709`; full suite 355 passed, 3 skipped)
 - Codex-to-Kimi engineering handoff complete; Today read model contract `0.8.0` is frozen and the
   P0 vertical slice proof is integrated (`f132709`).
 - Core Today read model is integrated (`1d86b65`): deterministic projection, closed item kinds,
-  authenticated `GET /today`, zero writes; the desktop fallback replacement is the next slice.
+  authenticated `GET /today`, zero writes.
+- The desktop Today page now renders the Core projection (`c986936`); static fallback no longer
+  appears in the production path, and error/offline states are explicit.
 - `W2-UI` remains incomplete because Today uses typed fallback and other primary views remain
   placeholders or lack product read projections.
 

@@ -355,7 +355,7 @@ exact Opportunity/Resume/Evidence refs, preserve submission authority across lat
 avoid hidden mutations of Resume, Facts, Match, Capability or priorities. Real ATS submission and
 sensitive form/credential persistence remain forbidden.
 
-## D-017 - Today as a deterministic Core projection, never a persisted queue
+## D-018 - Today as a deterministic Core projection, never a persisted queue
 
 **Decision:** ACCEPTED in contract `0.8.0` (docs-only freeze; no schema change).
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     JSON,
@@ -1358,4 +1359,182 @@ class MatchGapRow(Base):
     requirement_revision: Mapped[int] = mapped_column(Integer, nullable=False)
     capability_id: Mapped[str] = mapped_column(String(128), nullable=False)
     classification: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class ExtractedClaimIdentityRow(Base):
+    __tablename__ = "extracted_claim_identity"
+
+    claim_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+
+
+class ExtractedClaimRevisionRow(Base):
+    __tablename__ = "extracted_claim_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_extracted_claim_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_extracted_claim_schema_version"),
+        CheckConstraint("length(trim(claim_type)) > 0", name="ck_extracted_claim_claim_type"),
+        CheckConstraint(
+            "json_type(proposed_value) IS NOT NULL AND length(proposed_value) <= 65536",
+            name="ck_extracted_claim_proposed_value",
+        ),
+        CheckConstraint(
+            "length(trim(extractor)) > 0 AND length(trim(extractor_version)) > 0",
+            name="ck_extracted_claim_extractor",
+        ),
+        CheckConstraint(
+            "confidence >= 0 AND confidence <= 1", name="ck_extracted_claim_confidence"
+        ),
+        CheckConstraint(
+            "status IN ('proposed', 'accepted', 'rejected', 'superseded')",
+            name="ck_extracted_claim_status",
+        ),
+        CheckConstraint("evidence_count >= 1", name="ck_extracted_claim_evidence_count"),
+        CheckConstraint(
+            "length(trim(proposed_by)) > 0 AND proposed_by_kind IN ('user', 'agent', 'rule')",
+            name="ck_extracted_claim_proposer",
+        ),
+        CheckConstraint(
+            "(status = 'proposed' AND reviewed_by IS NULL AND reviewed_by_kind IS NULL "
+            "AND review_reason IS NULL AND reviewed_at IS NULL) OR "
+            "(status != 'proposed' AND length(trim(reviewed_by)) > 0 "
+            "AND reviewed_by_kind IN ('user', 'rule') "
+            "AND length(trim(review_reason)) > 0 AND reviewed_at IS NOT NULL)",
+            name="ck_extracted_claim_review",
+        ),
+        ForeignKeyConstraint(
+            ["claim_id"], ["extracted_claim_identity.claim_id"], ondelete="RESTRICT"
+        ),
+        Index(
+            "ix_extracted_claim_revision_subject",
+            "subject_entity_id",
+            "subject_entity_kind",
+        ),
+    )
+
+    claim_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    claim_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    subject_entity_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    subject_entity_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    proposed_value: Mapped[Any] = mapped_column(JSON, nullable=False)
+    extractor: Mapped[str] = mapped_column(String(255), nullable=False)
+    extractor_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    proposed_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    proposed_by_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by_kind: Mapped[str | None] = mapped_column(String(32))
+    review_reason: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ExtractedClaimEvidenceRefRow(Base):
+    __tablename__ = "extracted_claim_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint("claim_id", "claim_revision", "evidence_ref_id"),
+        CheckConstraint("claim_revision >= 1", name="ck_extracted_claim_evidence_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_extracted_claim_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["claim_id", "claim_revision"],
+            ["extracted_claim_revision.claim_id", "extracted_claim_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    claim_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    claim_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+
+class FactIdentityRow(Base):
+    __tablename__ = "fact_identity"
+
+    fact_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    candidate_id: Mapped[str | None] = mapped_column(String(128))
+
+
+class FactRevisionRow(Base):
+    __tablename__ = "fact_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_fact_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_fact_schema_version"),
+        CheckConstraint("length(trim(fact_type)) > 0", name="ck_fact_fact_type"),
+        CheckConstraint(
+            "json_type(value) IS NOT NULL AND length(value) <= 65536",
+            name="ck_fact_value",
+        ),
+        CheckConstraint(
+            "authority IN ('user_asserted', 'document_supported', 'rule_verified')",
+            name="ck_fact_authority",
+        ),
+        CheckConstraint("source_claim_revision >= 1", name="ck_fact_source_claim_revision"),
+        CheckConstraint("evidence_count >= 0", name="ck_fact_evidence_count"),
+        CheckConstraint("length(trim(verified_by)) > 0", name="ck_fact_verified_by"),
+        ForeignKeyConstraint(["fact_id"], ["fact_identity.fact_id"], ondelete="RESTRICT"),
+        ForeignKeyConstraint(
+            ["source_claim_id", "source_claim_revision"],
+            ["extracted_claim_revision.claim_id", "extracted_claim_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        Index(
+            "ix_fact_revision_subject",
+            "subject_entity_id",
+            "subject_entity_kind",
+        ),
+        Index(
+            "ix_fact_revision_source_claim",
+            "source_claim_id",
+            "source_claim_revision",
+        ),
+    )
+
+    fact_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    subject_entity_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    subject_entity_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    fact_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    value: Mapped[Any] = mapped_column(JSON, nullable=False)
+    authority: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_claim_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_claim_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    verified_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class FactEvidenceRefRow(Base):
+    __tablename__ = "fact_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint("fact_id", "fact_revision", "evidence_ref_id"),
+        CheckConstraint("fact_revision >= 1", name="ck_fact_evidence_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_fact_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["fact_id", "fact_revision"],
+            ["fact_revision.fact_id", "fact_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    fact_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    fact_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
 

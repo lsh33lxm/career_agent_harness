@@ -7,13 +7,11 @@ import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
 
 const sections = [
-  ["discover", "Discover", "No new market observations"],
+  ["projects", "Projects", "No connected projects"],
+  ["capabilities", "Capabilities", "No capability projection yet"],
   ["resume", "Resume", "No resume revisions"],
-  ["applications", "Applications", "No applications in progress"],
-  ["interviews", "Interviews", "No interviews scheduled"],
-  ["prep", "Prep", "No preparation tasks"],
-  ["insights", "Insights", "No outcome data yet"],
-  ["evidence", "Evidence", "No evidence captured"],
+  ["history", "History", "No career outcomes yet"],
+  ["context", "Me / Context", "No personal context configured"],
   ["settings", "Settings", "No local preferences configured"],
 ] as const;
 

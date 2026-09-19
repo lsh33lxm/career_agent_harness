@@ -19,16 +19,14 @@ it("renders the complete P0 application navigation", () => {
   render(<App />);
 
   for (const label of [
-    "Today",
-    "Discover",
-    "Opportunities",
-    "Resume",
-    "Applications",
-    "Interviews",
-    "Prep",
-    "Insights",
-    "Evidence",
-    "Settings",
+    "今天",
+    "机会",
+    "项目",
+    "能力",
+    "简历",
+    "历史",
+    "我的",
+    "设置",
   ]) {
     expect(screen.getByRole("link", { name: label })).toBeTruthy();
   }

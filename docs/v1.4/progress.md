@@ -28,7 +28,7 @@
 | Job/JobRequirement persistence | DONE | 2026-09-19 | `3b33525`, `0ee6388`; additive 0008, typed reads and atomic USER-gated review path. |
 | Match/Gap pure policy | DONE | 2026-09-19 | `073d3d1`; 15 focused tests, deterministic three-way classification over frozen exact inputs. |
 | Match/Gap persistence | DONE | 2026-09-19 | `f3c646e`, `4ff1ac3` merged as `b04d08e`; additive 0009, immutable assessment/result/gap, atomic record service. |
-| Match/Gap resolver/replay | READY | 2026-09-19 | Contract `0.4.0`; prompt `docs/v1.4/agents/match-resolver.md`; depends on merged persistence. |
+| Match/Gap resolver/replay | DONE | 2026-09-19 | `dd77bd8`, `38616c3` merged as `288ee30`; exact-read resolver, assess orchestration, stored-manifest replay; read-path gap capability check `e82d6cc`. |
 
 ## Integrated workstreams
 
@@ -87,6 +87,14 @@
   exact Opportunity revision read. Independent review found one P1 (missing Opportunity JobRef
   binding) and P2 validation gaps, all fixed and tested before merge. Full integration passed
   `274 passed, 3 skipped`; Ruff and diff checks passed.
+
+- Match/Gap Resolver/Replay: `dd77bd8`, `38616c3` merged as `288ee30`; the resolver builds
+  `MatchPolicyInput` from exact reads only (fail loud on any dangling/missing/identity-drifting
+  ref), `assess` orchestrates resolve → pure policy → atomic record, and `replay` re-resolves the
+  stored manifest with the stored policy version and fails loud on any drift. Independent review
+  found no P0/P1; replay drift-branch tests were added before merge, and the Lead added a
+  read-path gap capability check (`e82d6cc`). Full integration passed `292 passed, 3 skipped`;
+  Ruff and diff checks passed.
 
 ## Recorded follow-ups (non-blocking)
 

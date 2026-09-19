@@ -13,7 +13,7 @@ before Resume and Outcome integration.
 
 # Last Verified Commit
 
-`b04d08e` - `merge: integrate durable match gap persistence`
+`e82d6cc` - `fix: validate gap capability on match read path`
 
 # Completed
 
@@ -133,10 +133,16 @@ before Resume and Outcome integration.
   Opportunity revision read. Independent review found one P1 (Opportunity JobRef binding) plus P2
   validation gaps; all fixed before merge. Backend verification passed `274` tests with `3` known
   Windows symlink-permission skips; Ruff and diff checks passed.
+- Added the exact Match input resolver, assess orchestration and stored-manifest replay (merge
+  `288ee30`): all inputs resolve through exact reads and fail loud on dangling or drifting
+  provenance; replay re-runs the stored policy version against the stored manifest and never
+  writes. Independent review found no P0/P1. Backend verification passed `292` tests with `3`
+  known Windows symlink-permission skips; Ruff and diff checks passed.
 
 # In Progress
 
-- Match resolver/replay workstream (exact reads, assess orchestration, stored-manifest replay).
+- None active; the Match/Gap vertical (pure policy, durable persistence, resolver, replay) is
+  integrated. Next: Project Enhancement linkage to canonical Gaps.
 
 # Blocked
 
@@ -151,8 +157,8 @@ before Resume and Outcome integration.
 
 # Next Safe Tasks
 
-1. Implement the Match input resolver and replay per contract `0.4.0`
-   (prompt: `docs/v1.4/agents/match-resolver.md`), then review and merge.
+1. Link `ProjectEnhancementTask.target_gap_id` to canonical Gaps with write-path fail-loud
+   validation, then wire the Gap → enhancement → evidence loop.
 2. Add only the Project/Capability Local API projections required by the vertical loop.
 3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.

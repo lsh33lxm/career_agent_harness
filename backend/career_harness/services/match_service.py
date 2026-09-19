@@ -4,7 +4,12 @@ import uuid
 
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, FrozenModel, OpaqueId
-from career_harness.core.match_gap import MatchAssessment, MatchClassification
+from career_harness.core.match_gap import (
+    MATCH_POLICY_VERSION,
+    MatchAssessment,
+    MatchClassification,
+    assess_match,
+)
 from career_harness.core.revisions import CommandCommitResult
 from career_harness.db.match_repository import (
     MatchAssessmentRecord,
@@ -13,6 +18,11 @@ from career_harness.db.match_repository import (
 )
 from career_harness.db.match_writes import MatchAssessmentWrite
 from career_harness.services.command_service import CommandService
+from career_harness.services.match_resolver import MatchInputResolver
+
+
+class MatchReplayError(RuntimeError):
+    """A stored MatchAssessment cannot be faithfully replayed from canonical inputs."""
 
 
 class MatchAssessmentCommit(FrozenModel):
@@ -27,9 +37,15 @@ def derive_gap_id(command_id: OpaqueId, requirement_id: OpaqueId) -> OpaqueId:
 
 
 class MatchService:
-    def __init__(self, commands: CommandService, repository: MatchRepository) -> None:
+    def __init__(
+        self,
+        commands: CommandService,
+        repository: MatchRepository,
+        resolver: MatchInputResolver | None = None,
+    ) -> None:
         self.commands = commands
         self.repository = repository
+        self.resolver = resolver
 
     def record_assessment(
         self,
@@ -96,3 +112,61 @@ class MatchService:
         if persisted is None:
             raise RuntimeError("MatchAssessment commit did not persist the typed aggregate")
         return MatchAssessmentCommit(assessment=persisted, commit=commit)
+
+    def assess(
+        self,
+        command: Command,
+        *,
+        candidate_id: OpaqueId,
+        opportunity_id: OpaqueId,
+        opportunity_revision: int,
+        requirements: tuple[tuple[OpaqueId, int], ...],
+        project_capability_states: tuple[tuple[OpaqueId, int], ...] = (),
+    ) -> MatchAssessmentCommit:
+        """Resolve exact frozen inputs, run the pure policy and persist the proposal.
+
+        The assessment is a proposal only: it never mutates Career Facts, Personal
+        Capability State, priorities, ontology or Resume material.
+        """
+        inputs = self._require_resolver().resolve(
+            opportunity_id=opportunity_id,
+            opportunity_revision=opportunity_revision,
+            candidate_id=candidate_id,
+            requirements=requirements,
+            project_capability_states=project_capability_states,
+        )
+        return self.record_assessment(
+            command, assessment=assess_match(inputs), candidate_id=candidate_id
+        )
+
+    def replay(self, assessment_id: str) -> MatchAssessmentRecord:
+        """Re-resolve a stored manifest through exact reads and verify the stored output.
+
+        Replay never writes and never uses latest-at-read APIs. Any drift, missing ref or
+        unsupported stored policy version fails loud.
+        """
+        record = self.repository.get_assessment(assessment_id)
+        if record is None:
+            raise MatchReplayError(f"unknown match assessment: {assessment_id}")
+        if record.header.policy_version != MATCH_POLICY_VERSION:
+            raise MatchReplayError(
+                f"unsupported match policy version: {record.header.policy_version}"
+            )
+        inputs = self._require_resolver().resolve_manifest(
+            record.manifest, candidate_id=record.header.candidate_id
+        )
+        replayed = assess_match(inputs)
+        if replayed.inputs != record.manifest:
+            raise MatchReplayError(
+                f"re-resolved inputs drift from the stored manifest: {assessment_id}"
+            )
+        if replayed.requirements != record.results:
+            raise MatchReplayError(
+                f"replayed results drift from the stored results: {assessment_id}"
+            )
+        return record
+
+    def _require_resolver(self) -> MatchInputResolver:
+        if self.resolver is None:
+            raise RuntimeError("MatchService assess/replay requires a MatchInputResolver")
+        return self.resolver

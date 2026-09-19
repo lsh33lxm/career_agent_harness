@@ -666,6 +666,32 @@ def test_malformed_persisted_manifest_fails_loud(tmp_path: Path) -> None:
         repository.get_assessment("assessment_malformed")
 
 
+def test_tampered_gap_capability_fails_loud(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    repository, service = _services(engine)
+    service.record_assessment(
+        _command("assessment_001", command_id="command_assessment_001"),
+        assessment=assess_match(_policy_input()),
+        candidate_id="candidate_001",
+    )
+    assert repository.get_assessment("assessment_001") is not None
+
+    with engine.begin() as connection:
+        connection.execute(
+            CapabilityIdentityRow.__table__.insert(),
+            {"capability_id": "capability_other"},
+        )
+        # Simulate a bypassed write path: the immutable trigger is dropped so the UPDATE lands.
+        connection.exec_driver_sql("DROP TRIGGER trg_match_gap_no_update")
+        connection.exec_driver_sql(
+            "UPDATE match_gap SET capability_id = 'capability_other' "
+            "WHERE assessment_id = 'assessment_001'"
+        )
+
+    with pytest.raises(RuntimeError, match="capability disagrees"):
+        repository.get_assessment("assessment_001")
+
+
 def test_list_assessments_for_opportunity_is_stable_latest_first(tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     repository, service = _services(engine)

@@ -141,10 +141,17 @@ class MatchRepository:
         results_by_key = {
             (item.requirement.entity_id, item.requirement.revision): item for item in results
         }
+        manifest_capabilities = {
+            (item.requirement_id, item.revision): item.capability_id
+            for item in manifest.requirements
+        }
         for gap in gaps:
-            result = results_by_key[(gap.requirement_id, gap.requirement_revision)]
+            key = (gap.requirement_id, gap.requirement_revision)
+            result = results_by_key[key]
             if gap.classification is not result.classification:
                 raise RuntimeError("persisted match gap classification disagrees with its result")
+            if gap.capability_id != manifest_capabilities[key]:
+                raise RuntimeError("persisted match gap capability disagrees with the manifest")
         return MatchAssessmentRecord(header=header, manifest=manifest, results=results, gaps=gaps)
 
     @staticmethod

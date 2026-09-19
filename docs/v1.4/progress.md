@@ -37,6 +37,7 @@
 | Application/Outcome typed invariants | DONE | 2026-09-20 | `5727af6`; exact Opportunity/Application refs, submission authority and receipt evidence gates; 329 passed, 3 skipped. |
 | Application/Outcome persistence | DONE | 2026-09-20 | `4b0bb68`; additive 0012, immutable revisions/outcomes, atomic USER-gated services; 332 passed, 3 skipped. |
 | Resume/Application/Outcome read API | DONE | 2026-09-20 | `83b7b91`; authenticated read-only exact/latest projections; 334 passed, 3 skipped. |
+| Codex to Kimi engineering handoff | DONE | 2026-09-20 | `HANDOFF_CODEX_TO_KIMI_2026-09-20.md`; Git/worktrees, contracts, migrations, UI and verification re-audited. |
 
 ## Integrated workstreams
 
@@ -154,9 +155,13 @@
 - Typed fact revision chains have no continuity check on the read path; unreachable via the
   service and guarded by the generic expected-revision check (review P3, defense in depth).
 
-## Baseline verification
+## Latest handoff verification
 
-- Python: `31 passed, 1 skipped` before Wave 0 edits.
-- Ruff: passed before Wave 0 edits.
-- Frontend/Rust: last full verified results are in `GOAL_COMPLETION_REPORT.md`; rerun at Wave 0
-  close because shared backend-only changes do not touch those surfaces.
+- Backend full suite: `334 passed, 3 skipped`; skips are Windows symlink privilege limitations.
+- Migration focus: Alembic head `0012_application_outcome`; `49 passed`.
+- Ruff lint: passed with cache-write permission warnings only.
+- Ruff format check: baseline failure, 57 files would be reformatted and 97 were already formatted;
+  no broad formatting change was made during handoff.
+- Frontend: `16 passed`; `tsc -b && vite build` passed.
+- Browser responsive and Tauri/Rust checks were not re-run during handoff; prior results remain in
+  the integration log and handoff file.

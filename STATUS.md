@@ -1,17 +1,19 @@
 # Current Phase
 
-PRD v1.4 Wave 1 is integrated. Wave 2 now includes exact Match/Gap resolution, canonical Fact
-promotion and the Resume Base/Patch/Revision truth path. The desktop has a responsive Today
-composition over typed fallback data; a Core-owned Today read model remains future work.
+PRD v1.4 Wave 1 and the implemented Wave 2 Core slices are integrated through Application/Outcome
+persistence and authenticated career-history reads. The desktop has a responsive Today composition
+over typed fallback data; a Core-owned Today read model is not yet frozen or implemented.
 
 # Current Goal
 
-Keep the integrated Resume/Today/Application vertical slice stable; the next optional slice is a
-Core-owned Today read model replacing typed fallback data.
+Complete the PRD v1.4 stage rather than any single milestone: prove the P0 career/capability/L1
+enhancement slices end to end, implement the listed P1 capabilities, validate section 29
+pluggability and close the four section 32 feedback loops. During this handoff, do not implement a
+new feature; transfer the verified integration state to Kimi.
 
 # Last Verified Commit
 
-`83b7b91` - `feat(api): expose career history reads`
+`1fe3982` - `docs: record career read projections` (pre-handoff implementation baseline)
 
 # Completed
 
@@ -176,11 +178,13 @@ Core-owned Today read model replacing typed fallback data.
 
 # In Progress
 
-- None in the completed Resume Core + Today UI goal scope.
+- Codex-to-Kimi engineering handoff only; no feature implementation is active.
+- `W2-UI` remains incomplete because Today uses typed fallback and other primary views remain
+  placeholders or lack product read projections.
 
 # Blocked
 
-- None for P0F/P0B preparation.
+- No engineering blocker. The full PRD v1.4 stage has not passed acceptance.
 
 # Needs User Approval
 
@@ -191,17 +195,19 @@ Core-owned Today read model replacing typed fallback data.
 
 # Next Safe Tasks
 
-1. Freeze a Core-owned Today read model before replacing the typed fallback adapter.
-2. Add only the Project/Capability read projections required by an actual UI consumer.
-3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
+1. Freeze a Core-owned Today read model and Suggested Priority recomputation contract before
+   replacing the typed fallback adapter.
+2. Add a coherent P0 vertical-slice integration/acceptance test across existing Core services.
+3. Implement the Today queue/read API and then connect the existing UI adapter.
+4. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.
-4. Continue awaiting user adjudication for destructive legacy cutover decisions.
+5. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet
 
-- P1/P2 features, real ATS actions, final submission, or legal/identity automation.
+- P2 L3 executor/worktree automation, real ATS actions, final submission, or legal/identity
+  automation.
 - Production Feishu writes or canonical legacy cutover.
-- Playwright installation or browser automation.
 - Multi-agent runtime, plugin marketplace, or external workflow engine.
 - Large global/system toolchain installation.
 

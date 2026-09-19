@@ -21,7 +21,7 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W1-OPP | Watchlist/Opportunity/Priority core | W0-02 | Subagent | opportunity | DONE | High | User-gated admission and priority independence tested. |
 | W1-PROJ | Project scope/evidence/enhancement L1 core | W0-02 | Subagent | project-evidence | DONE | High | Deny-wins scope and evidence candidates tested. |
 | W1-CTX | Five-asset Context Compiler basic | W0-02, domain read ports | Subagent | context | DONE | Medium | Relevance selection and ContextManifest tests pass. |
-| W1-INT | Lead-owned shared schema/API integration | W1-* contracts | Lead | integration | IN_PROGRESS | High | Schemas, Context service, typed reads and scanner done; vertical Match/Gap integration remains. |
+| W1-INT | Lead-owned shared schema/API integration | W1-* contracts | Lead | integration | DONE | High | Schemas, Context service, typed reads, scanner and vertical Match/Gap integration are tested. |
 | W1-PROJ-READ | Project typed reads and scope-safe local scanner | W1-PROJ, 0004 | Subagent | project-read | DONE | High | Exact reads; scanner rejects scope, symlink/reparse and secret/session escapes. |
 | W1-CAP-READ | Capability graph and personal overlay typed reads | W1-CAP, 0003 | Subagent | capability-read | DONE | Medium | Version-exact official/personal/market/investment queries preserve separation. |
 | W1-PROJ-STATE-READ | Project capability state/basis and enhancement task reads | W1-PROJ, 0004 | Subagent | project-state-read | DONE | Medium | Exact/latest aggregates retain basis revisions, finalization time and stable ordering. |
@@ -44,8 +44,12 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-CAREER-READ | Authenticated Resume/Application/Outcome reads | W2-RESUME, W2-APP | Lead | integration | DONE | Medium | Exact/latest read-only projections pass auth, 404 and no-write-route tests. |
 | W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | DONE | Medium | Authenticated UI uses Core-owned IDs, preserves priority separation and passes responsive validation. |
 
-## Wave 3+ deferred
+## P1 and P2 status
 
-Today dynamic queue, Capability Inbox UI, broad market trends, incremental scanning and optional
-Claude/Codex CLI adapters are P1. L3 executor/worktree automation and advanced graph versioning are
-P2. They do not begin until the P0 vertical loop is integrated and verified.
+Today dynamic queue, Capability Inbox review/UI, broad market trends, incremental scanning and
+optional Claude/Codex CLI adapters are P1 and are not implemented. The Core-owned Today read model
+contract is the next READY design slice; a coherent P0 end-to-end acceptance fixture remains
+required before the P0 vertical loop can be declared stage-complete.
+
+L3 executor/worktree automation, advanced graph versioning and outcome-driven recommendation are
+P2 and remain deferred.

@@ -329,7 +329,8 @@ desktop diff UI are later projections over these records.
 
 ## D-017 - Application submission and Outcome are separate user-authorized truth
 
-**Decision:** ACCEPTED in contract `0.7.0` (docs-only freeze; no migration assigned yet).
+**Decision:** ACCEPTED in contract `0.7.0` and implemented by additive migration
+`0012_application_outcome` plus Application/Outcome services and read projections.
 
 **Context:** ResumeRevision now provides an immutable artifact for a real opportunity, but the
 existing lifecycle skeleton alone cannot prove which opportunity/resume was submitted, distinguish
@@ -349,7 +350,7 @@ of generic state/events; P0 performs no real ATS submission.
 keeps adapters from owning truth, and preserves reconstructable history without retaining browser
 credentials or uncontrolled legal/identity answers.
 
-**Impact:** The next implementation slice defines typed Application/Outcome models and transition
-tests before any additive migration. Persistence must be atomic and idempotent, resolve exact
-Opportunity/Resume/Evidence refs, preserve submission authority across later revisions and have no
-hidden mutations of Resume, Facts, Match, Capability or priorities.
+**Impact:** Typed Application/Outcome models, additive persistence and atomic services now resolve
+exact Opportunity/Resume/Evidence refs, preserve submission authority across later revisions and
+avoid hidden mutations of Resume, Facts, Match, Capability or priorities. Real ATS submission and
+sensitive form/credential persistence remain forbidden.

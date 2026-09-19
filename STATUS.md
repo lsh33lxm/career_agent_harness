@@ -13,7 +13,7 @@ before Resume and Outcome integration.
 
 # Last Verified Commit
 
-`cadba69` - `merge: integrate enhancement task gap linkage`
+`d43ebe4` - `merge: integrate claim review and fact promotion`
 
 # Completed
 
@@ -144,10 +144,16 @@ before Resume and Outcome integration.
   APPROVE with no P0/P1; Lead fixed the transition generic-state shape and added transition
   idempotency coverage before merge. Backend verification passed `302` tests with `3` known
   Windows symlink-permission skips; Ruff and diff checks passed.
+- Added claim review and Fact promotion (merge `d43ebe4`): additive migration 0010 with immutable
+  claim/fact revision tables, typed reads, and atomic propose/review/promote commands. Review is
+  USER/RULE-gated with self-review rejection; initial promotion binds fact content to the accepted
+  claim. Independent review found no P0/P1. Backend verification passed `320` tests with `3` known
+  Windows symlink-permission skips; Ruff and diff checks passed.
 
 # In Progress
 
-- Claim review and Fact promotion (`kimi/v14-fact-promotion`); contract `0.5.0`, migration 0010.
+- None active. Claim/Fact promotion is integrated; Resume Base/Patch/Revision (W2-RESUME) is the
+  next design target.
 
 # Blocked
 

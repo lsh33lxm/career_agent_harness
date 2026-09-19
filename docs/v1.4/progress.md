@@ -30,7 +30,7 @@
 | Match/Gap persistence | DONE | 2026-09-19 | `f3c646e`, `4ff1ac3` merged as `b04d08e`; additive 0009, immutable assessment/result/gap, atomic record service. |
 | Match/Gap resolver/replay | DONE | 2026-09-19 | `dd77bd8`, `38616c3` merged as `288ee30`; exact-read resolver, assess orchestration, stored-manifest replay; read-path gap capability check `e82d6cc`. |
 | Enhancement task Gap linkage | DONE | 2026-09-19 | `e779c81`, `2abdb2c` merged as `cadba69`; propose/transition commands with fail-loud gap validation. |
-| CareerFact domain | READY | 2026-09-19 | Resume patch contract needs resolvable qualified fact refs; no CareerFact code exists yet (doc-only concept). Blocks W2-RESUME. |
+| CareerFact domain | DONE | 2026-09-19 | `427ce1b`, `8a76ad2` merged as `d43ebe4`; additive 0010, claim review + revisioned fact promotion. |
 
 ## Integrated workstreams
 
@@ -118,6 +118,12 @@
   resolver validates exact refs but does not discover proximity inputs (resolver review note).
 - Replay surfaces missing refs as `MatchResolutionError` and stored-output drift as
   `MatchReplayError`; callers must catch both (review P3, unify only if a real caller needs it).
+- Claim review accepts a `SUPERSEDED` decision beyond the contract's ACCEPTED/REJECTED pair; it is
+  harmless and consistent, but either document the use or narrow it later (review P3).
+- `ClaimRecord.reviewed_at` is currently write-only; staged review revisions use the commit
+  timestamp instead (review P3).
+- Typed fact revision chains have no continuity check on the read path; unreachable via the
+  service and guarded by the generic expected-revision check (review P3, defense in depth).
 
 ## Baseline verification
 

@@ -19,6 +19,8 @@ class FrozenModel(BaseModel):
 
 class EntityKind(StrEnum):
     EVIDENCE = "evidence"
+    EXTRACTED_CLAIM = "extracted_claim"
+    FACT = "fact"
     CANDIDATE = "candidate"
     MARKET = "market"
     JOB = "job"

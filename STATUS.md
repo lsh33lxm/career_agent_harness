@@ -13,7 +13,7 @@ before Resume and Outcome integration.
 
 # Last Verified Commit
 
-`e82d6cc` - `fix: validate gap capability on match read path`
+`cadba69` - `merge: integrate enhancement task gap linkage`
 
 # Completed
 
@@ -138,10 +138,15 @@ before Resume and Outcome integration.
   provenance; replay re-runs the stored policy version against the stored manifest and never
   writes. Independent review found no P0/P1. Backend verification passed `292` tests with `3`
   known Windows symlink-permission skips; Ruff and diff checks passed.
+- Linked Project Enhancement Tasks to canonical Gaps (merge `cadba69`): propose/transition
+  commands validate that `target_gap_id` resolves and `target_capability_id` matches the Gap,
+  with whitelist status transitions, atomic rollback and idempotent replay. Independent review
+  APPROVE with no P0/P1; Lead fixed the transition generic-state shape and added transition
+  idempotency coverage before merge. Backend verification passed `302` tests with `3` known
+  Windows symlink-permission skips; Ruff and diff checks passed.
 
 # In Progress
 
-- Enhancement task write path linked to canonical Gaps (`kimi/v14-enhancement-link`).
 - Claim review and Fact promotion (`kimi/v14-fact-promotion`); contract `0.5.0`, migration 0010.
 
 # Blocked

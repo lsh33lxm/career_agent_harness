@@ -1,19 +1,17 @@
 # Current Phase
 
-PRD v1.4 Wave 1 is integrated. Opportunity, Capability, Project Evidence and Context persistence,
-typed Capability/Project reads, the scope-safe scanner and the first real desktop projection are
-complete. Canonical Evidence, Job/JobRequirement persistence and the pure evidence-aware Match/Gap
-policy are complete; Wave 2 now advances to durable Match/Gap persistence and an exact input
-resolver over frozen typed revisions.
+PRD v1.4 Wave 1 is integrated. Wave 2 now includes exact Match/Gap resolution, canonical Fact
+promotion and the Resume Base/Patch/Revision truth path. The desktop has a responsive Today
+composition over typed fallback data; a Core-owned Today read model remains future work.
 
 # Current Goal
 
-Build Match/Gap on exact JobRequirement, Capability, Opportunity, Evidence and Project revisions
-before Resume and Outcome integration.
+Freeze the W2-APP Application/Outcome contracts over the integrated Resume truth path without
+starting real ATS submission, production writes or P2 automation.
 
 # Last Verified Commit
 
-`d43ebe4` - `merge: integrate claim review and fact promotion`
+`989b47e` - `merge: Today UI`
 
 # Completed
 
@@ -149,10 +147,19 @@ before Resume and Outcome integration.
   USER/RULE-gated with self-review rejection; initial promotion binds fact content to the accepted
   claim. Independent review found no P0/P1. Backend verification passed `320` tests with `3` known
   Windows symlink-permission skips; Ruff and diff checks passed.
+- Added Resume Core (feature `c6bfe66`, merge `df5f4d2`): additive migration 0011, USER-owned base
+  revisions, exact provenance-qualified patch proposals, USER-only review, immutable content-hashed
+  revisions, atomic events/idempotency and fail-loud expected-value hashes. Focused tests passed
+  `7`; integration passed `327` tests with `3` known Windows symlink-permission skips.
+- Added Today UI (feature `7ebd4be`, merge `989b47e`): reused the existing AppShell/router, aligned
+  primary navigation, separated Suggested Priority/User Priority/Match, preserved confirmation
+  gates and isolated typed fallback data pending a Core Today read model. Frontend passed `16`
+  tests and production build; 1366/1920/2048 visual checks passed and forced 390 px metrics showed
+  no horizontal overflow.
 
 # In Progress
 
-- Resume Base/Patch/Revision core (`kimi/v14-resume-core`); contract `0.6.0`, migration 0011.
+- W2-APP contract freeze and smallest approval-free Application/Outcome preparation.
 
 # Blocked
 
@@ -167,12 +174,12 @@ before Resume and Outcome integration.
 
 # Next Safe Tasks
 
-1. Review and merge the enhancement-link and fact-promotion workstreams.
-2. Design Resume Base/Patch/Revision integration (W2-RESUME) once Facts are canonical.
-2. Add only the Project/Capability Local API projections required by the vertical loop.
-3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
+1. Freeze W2-APP Application/Outcome contracts and authority boundaries before persistence.
+2. Add only the Project/Capability/Resume read projections required by the vertical loop.
+3. Replace Today fallback data only after a Core-owned read model contract is frozen.
+4. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.
-4. Continue awaiting user adjudication for destructive legacy cutover decisions.
+5. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet
 

@@ -31,6 +31,8 @@
 | Match/Gap resolver/replay | DONE | 2026-09-19 | `dd77bd8`, `38616c3` merged as `288ee30`; exact-read resolver, assess orchestration, stored-manifest replay; read-path gap capability check `e82d6cc`. |
 | Enhancement task Gap linkage | DONE | 2026-09-19 | `e779c81`, `2abdb2c` merged as `cadba69`; propose/transition commands with fail-loud gap validation. |
 | CareerFact domain | DONE | 2026-09-19 | `427ce1b`, `8a76ad2` merged as `d43ebe4`; additive 0010, claim review + revisioned fact promotion. |
+| Resume truth core | DONE | 2026-09-20 | `c6bfe66` merged as `df5f4d2`; additive 0011, exact reviewed patches and immutable content-hashed revisions. |
+| Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
 
 ## Integrated workstreams
 
@@ -97,6 +99,15 @@
   found no P0/P1; replay drift-branch tests were added before merge, and the Lead added a
   read-path gap capability check (`e82d6cc`). Full integration passed `292 passed, 3 skipped`;
   Ruff and diff checks passed.
+- Resume Core: `c6bfe66` merged as `df5f4d2`; additive 0011 stores immutable Resume Base, Patch
+  and Revision aggregates. USER gates, exact Fact/Evidence/accepted Requirement refs, ordered
+  accepted patches, fail-loud hash drift, atomic idempotent writes and migration reversal are
+  covered. Integration passed `327 passed, 3 skipped`; changed-file Ruff/format and diff checks
+  passed (the existing full-file `db/models.py` formatter baseline remains unchanged).
+- Today UI: `7ebd4be` merged as `989b47e`; existing router/AppShell now presents the Today
+  workspace and eight primary destinations. Data remains a typed fallback adapter until Core owns
+  the read model. Frontend passed `16` tests and production build; desktop visual checks passed and
+  CDP-forced 390 px layout measured `scrollWidth == innerWidth`.
 
 ## Recorded follow-ups (non-blocking)
 

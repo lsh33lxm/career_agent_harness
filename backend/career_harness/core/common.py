@@ -21,6 +21,8 @@ class EntityKind(StrEnum):
     EVIDENCE = "evidence"
     CANDIDATE = "candidate"
     MARKET = "market"
+    JOB = "job"
+    JOB_REQUIREMENT = "job_requirement"
     OPPORTUNITY = "opportunity"
     RESUME = "resume"
     APPLICATION = "application"

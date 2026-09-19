@@ -1,13 +1,13 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.5.0`
-**Status:** FROZEN FOR WAVE 2 FACT PROMOTION
+**Version:** `v1.4-contract-0.6.0`
+**Status:** FROZEN FOR WAVE 2 RESUME SLICE
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.5.0` retains all `0.4.x` guarantees and adds the Fact promotion contract below. `0.4.1` added
-the Project Enhancement Task write-path contract; `0.4.0` added the durable Match/Gap persistence,
-resolver and replay contracts. Module-specific persisted contract versions remain readable; this
-document version does not rewrite historical Context Manifests.
+`0.6.0` retains all `0.5.0` guarantees and adds the Resume Base/Patch/Revision write-path contract
+below. `0.5.0` added claim review and Fact promotion; `0.4.x` added Match persistence/resolver/
+replay and the enhancement task write path. Module-specific persisted contract versions remain
+readable; this document version does not rewrite historical Context Manifests.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -244,6 +244,25 @@ ResumeBase revision + reviewed ResumePatch -> immutable ResumeRevision -> Resume
 Every patch operation records expected value hash, fact/evidence refs, job requirement refs, reason,
 generator run and review status. AI-inferred material is ineligible for an accepted formal patch
 until promoted to a qualified CareerFact.
+
+### Resume write path
+
+- A `ResumeBase` belongs to one candidate and holds revisioned structured content (bounded JSON
+  sections). Only USER commands create or revise a base resume; imports and agent drafts are
+  proposals the user must save explicitly.
+- A `ResumePatch` targets an exact `(resume_id, base_revision)`. Each operation carries
+  `operation`, `target_path`, `expected_value_hash`, `proposed_value`, exact `(fact_id, revision)`
+  refs, exact EvidenceRef ids, exact `(requirement_id, revision)` refs, a reason and an optional
+  generator run id. Patch proposals are immutable revisions; review (`resume_patch.reviewed`) is a
+  USER-only command appending a review revision (`ACCEPTED`/`REJECTED`). The proposing agent can
+  never review its own patch.
+- The write path resolves every fact ref to a canonical Fact with non-AI authority and every
+  evidence ref through `EvidenceRepository.get()`; dangling or unqualified refs fail loud.
+- A `ResumeRevision` is an immutable, content-hashed snapshot derived from one exact base revision
+  plus an ordered list of accepted patch revisions. Creation (`resume_revision.created`) is a
+  USER-gated command that re-verifies every referenced patch is accepted against the same base
+  revision. Rendering (`ResumeRender`) is a projection and never feeds back into truth.
+- Resume writes never mutate Facts, Evidence, Capability state, Match results or priorities.
 
 ## Domain events
 

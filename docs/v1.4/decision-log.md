@@ -303,3 +303,26 @@ parser internals.
 **Impact:** Migration 0010 must be additive with claim/fact tables, review guards and immutable
 history. Downstream workstreams (Resume patch, capability promotion) consume exact
 `(fact_id, revision)` refs.
+
+## D-016 - Resume truth as base revisions plus reviewed patches
+
+**Decision:** ACCEPTED in contract `0.6.0` (docs-only freeze; schema lands in migration 0011).
+
+**Context:** The vertical loop needs JD-specific resume material without maintaining drifting
+independent resume copies, and every claim on a resume must trace to qualified Facts or Evidence.
+
+**Alternatives:** Store one mutable resume document per opportunity; let patch review be an
+agent-approvable transition; store rendered resume content as canonical state.
+
+**Chosen:** A candidate-owned `ResumeBase` holds revisioned structured content. A `ResumePatch`
+pins an exact base revision and carries per-operation expected value hashes plus exact fact,
+evidence and requirement refs; only USER review can accept a patch. An immutable, content-hashed
+`ResumeRevision` derives from one base revision plus ordered accepted patch revisions. Rendering is
+a projection only.
+
+**Reason:** This keeps a single canonical base, makes every AI-proposed change auditable and
+user-gated, and lets any historical resume be reconstructed from immutable parts.
+
+**Impact:** Migration 0011 must be additive. The write path resolves fact refs to non-AI Facts and
+evidence refs through `EvidenceRepository.get()`, failing loud on dangling provenance. Renderer and
+desktop diff UI are later projections over these records.

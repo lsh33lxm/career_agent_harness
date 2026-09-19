@@ -161,6 +161,33 @@ def test_repository_reads_project_and_scope_exact_or_latest(tmp_path: Path) -> N
     assert repository.get_scan_scope("missing") is None
 
 
+def test_repository_loads_canonical_project_and_exact_scope_for_scan(tmp_path: Path) -> None:
+    engine, _ = _database(tmp_path)
+    repository = ProjectRepository(engine)
+
+    latest = repository.get_scan_inputs("project_001", "scope_001", 1)
+    exact = repository.get_scan_inputs(
+        "project_001",
+        "scope_001",
+        2,
+        project_revision=1,
+    )
+
+    assert latest is not None and exact is not None
+    latest_project, exact_scope_one = latest
+    exact_project, exact_scope_two = exact
+    assert latest_project.revision == 2
+    assert exact_scope_one.revision == 1
+    assert exact_scope_one.allowed_paths == ("src",)
+    assert exact_project.revision == 1
+    assert exact_scope_two.revision == 2
+    assert exact_scope_two.denied_paths == ("src/secrets",)
+    assert repository.get_scan_inputs("project_001", "scope_001", 99) is None
+    assert repository.get_scan_inputs(
+        "project_001", "scope_001", 1, project_revision=99
+    ) is None
+
+
 def test_repository_rebuilds_sorted_manifest_and_evidence(tmp_path: Path) -> None:
     engine, now = _database(tmp_path)
     repository = ProjectRepository(engine)

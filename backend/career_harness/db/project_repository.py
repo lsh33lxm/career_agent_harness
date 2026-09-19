@@ -55,6 +55,34 @@ class ProjectRepository:
             )
             return self._to_scan_scope(row) if row is not None else None
 
+    def get_scan_inputs(
+        self,
+        project_id: str,
+        scope_id: str,
+        scope_revision: int,
+        *,
+        project_revision: int | None = None,
+    ) -> tuple[Project, ProjectScanScope] | None:
+        """Load canonical project metadata and an exact scope revision atomically."""
+
+        with Session(self.engine) as session:
+            project_row = self._get_revisioned_row(
+                session,
+                ProjectRecordRow,
+                ProjectRecordRow.project_id,
+                project_id,
+                ProjectRecordRow.revision,
+                project_revision,
+            )
+            scope_row = session.get(ProjectScanScopeRow, (scope_id, scope_revision))
+            if project_row is None or scope_row is None:
+                return None
+            project = self._to_project(project_row)
+            scope = self._to_scan_scope(scope_row)
+            if scope.project_id != project.project_id:
+                return None
+            return project, scope
+
     def get_source_manifest(self, manifest_id: str) -> ProjectSourceManifest | None:
         with Session(self.engine) as session:
             row = session.get(ProjectSourceManifestRow, manifest_id)

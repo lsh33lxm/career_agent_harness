@@ -88,6 +88,19 @@
   binding) and P2 validation gaps, all fixed and tested before merge. Full integration passed
   `274 passed, 3 skipped`; Ruff and diff checks passed.
 
+## Recorded follow-ups (non-blocking)
+
+- `MatchAssessmentWrite.stage()` converges duplicate manifest requirement refs to the last entry
+  and raises `KeyError` (not `ValueError`) when a result references an unmanifested requirement;
+  both still fail loud and roll back, but error typing is inconsistent (review P3).
+- `OpportunityRepository.get_revision()` wraps malformed Opportunity state in `RuntimeError` but
+  lets malformed priority rows surface as raw `ValidationError`; harmless for Match replay, which
+  never reads priorities (review P3).
+- `match_assessment.manifest` has a 64 KB bound; very large inputs fail loud at commit time rather
+  than being truncated (capacity calibration note, review P3).
+- `get_revision()` relies on the invariant that an Opportunity JobRef never changes after
+  admission; any future re-link command must revisit this read (review note).
+
 ## Baseline verification
 
 - Python: `31 passed, 1 skipped` before Wave 0 edits.

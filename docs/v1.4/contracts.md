@@ -1,12 +1,13 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.4.0`
+**Version:** `v1.4-contract-0.4.1`
 **Status:** FROZEN FOR WAVE 2 MATCH PERSISTENCE
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.4.0` retains all `0.3.0` guarantees and adds the durable Match/Gap persistence, resolver and
-replay contracts below. Module-specific persisted contract versions remain readable; this document
-version does not rewrite historical Context Manifests.
+`0.4.1` retains all `0.4.0` guarantees and adds the Project Enhancement Task write-path contract
+below. `0.4.0` retains all `0.3.0` guarantees and adds the durable Match/Gap persistence, resolver
+and replay contracts below. Module-specific persisted contract versions remain readable; this
+document version does not rewrite historical Context Manifests.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -135,6 +136,12 @@ joined into one read model.
   states are not canonical records.
 - `ProjectEnhancementTask`: target gap, selected project, learning/files/change/experiment/
   validation plan, expected evidence and status.
+- Enhancement task creation is a command (`project_enhancement.proposed`); a task starts as
+  `PROPOSED`. The write path must validate that the canonical Project exists, that
+  `target_gap_id` resolves to a canonical Gap (fail loud on dangling), and that
+  `target_capability_id` equals that Gap's capability. Status transitions are separate commands
+  (`project_enhancement.status_changed`) that pin the expected revision. Creating or transitioning
+  a task never mutates Gaps, Match results, Capability state or Evidence.
 - P0 executor is `ManualExecutor`/L1 plan generation. Executor output is a candidate; tests and
   rescan create Evidence, followed by explicit promotion where required.
 

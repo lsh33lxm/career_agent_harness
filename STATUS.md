@@ -141,8 +141,8 @@ before Resume and Outcome integration.
 
 # In Progress
 
-- None active; the Match/Gap vertical (pure policy, durable persistence, resolver, replay) is
-  integrated. Next: Project Enhancement linkage to canonical Gaps.
+- Enhancement task write path linked to canonical Gaps (`kimi/v14-enhancement-link`).
+- Claim review and Fact promotion (`kimi/v14-fact-promotion`); contract `0.5.0`, migration 0010.
 
 # Blocked
 
@@ -157,8 +157,8 @@ before Resume and Outcome integration.
 
 # Next Safe Tasks
 
-1. Link `ProjectEnhancementTask.target_gap_id` to canonical Gaps with write-path fail-loud
-   validation, then wire the Gap → enhancement → evidence loop.
+1. Review and merge the enhancement-link and fact-promotion workstreams.
+2. Design Resume Base/Patch/Revision integration (W2-RESUME) once Facts are canonical.
 2. Add only the Project/Capability Local API projections required by the vertical loop.
 3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.

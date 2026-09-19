@@ -152,8 +152,7 @@ before Resume and Outcome integration.
 
 # In Progress
 
-- None active. Claim/Fact promotion is integrated; Resume Base/Patch/Revision (W2-RESUME) is the
-  next design target.
+- Resume Base/Patch/Revision core (`kimi/v14-resume-core`); contract `0.6.0`, migration 0011.
 
 # Blocked
 

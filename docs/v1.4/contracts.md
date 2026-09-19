@@ -1,13 +1,13 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.7.0`
-**Status:** FROZEN FOR WAVE 2 APPLICATION/OUTCOME SLICE
+**Version:** `v1.4-contract-0.8.0`
+**Status:** FROZEN FOR WAVE 2 TODAY READ MODEL
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.7.0` retains all `0.6.0` guarantees and adds the Application submission and Outcome contract
-below. `0.6.0` added the Resume Base/Patch/Revision write path; `0.5.0` added claim review and Fact
-promotion; `0.4.x` added Match persistence/resolver/replay and the enhancement task write path.
-Module-specific persisted contract versions remain readable; this document version does not
+`0.8.0` retains all `0.7.0` guarantees and adds the Today read-model contract below. `0.7.0` added
+Application submission and Outcome; `0.6.0` added the Resume write path; `0.5.0` added claim review
+and Fact promotion; `0.4.x` added Match persistence/resolver/replay and the enhancement task write
+path. Module-specific persisted contract versions remain readable; this document version does not
 rewrite historical records.
 
 No workstream may define a competing representation. Missing fields or behavior require a
@@ -313,6 +313,29 @@ revisions, decisions and other typed domain inputs are included.
 Minimum P0 events include proposal created/reviewed, opportunity admitted, priority suggested/user
 set, project scanned/evidence proposed, capability binding/state changed, context compiled, resume
 patch proposed/reviewed, application prepared/submitted and outcome recorded.
+
+## Today read model
+
+Today answers "what is most worth doing today" as a Core-owned, deterministic projection. It is a
+read model, not a new canonical entity: computing it never writes anything, never mutates source
+state and never changes UserPriority.
+
+- Item kinds are typed and closed for v1: `OPPORTUNITY_ACTION`, `APPLICATION_STEP`,
+  `INTERVIEW_PREP`, `ENHANCEMENT_TASK`, `REVIEW_REQUEST` (pending user reviews such as requirement,
+  claim or resume-patch proposals). New kinds require a contract change.
+- Each item carries a stable deterministic item ID derived from its kind and source entity ID, the
+  exact source refs (entity IDs plus revisions) used to compute it, typed reason codes with
+  human-readable explanations, and the priority inputs actually used.
+- Ordering is a documented total order: user priority rank first, then suggested priority rank,
+  then earliest deadline or interview time, then the stable item ID as the final tiebreaker. Equal
+  inputs always produce equal output regardless of storage order.
+- Missing inputs are explicit, not inferred: an absent UserPriority or SuggestedPriority ranks in
+  the lowest bucket with an explanatory reason code; a missing deadline/interview time sorts last
+  within its bucket.
+- The response includes the input revision set used, so clients can detect staleness; Today never
+  substitutes latest-at-read for a frozen reference and never fabricates business data. Empty
+  inputs yield an empty queue, not placeholder content.
+- Frontend renders the Core projection only; ranking logic must not live in React or any client.
 
 ## Persistence ownership
 

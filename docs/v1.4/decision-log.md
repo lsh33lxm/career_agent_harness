@@ -354,3 +354,26 @@ credentials or uncontrolled legal/identity answers.
 exact Opportunity/Resume/Evidence refs, preserve submission authority across later revisions and
 avoid hidden mutations of Resume, Facts, Match, Capability or priorities. Real ATS submission and
 sensitive form/credential persistence remain forbidden.
+
+## D-017 - Today as a deterministic Core projection, never a persisted queue
+
+**Decision:** ACCEPTED in contract `0.8.0` (docs-only freeze; no schema change).
+
+**Context:** The desktop Today page currently renders static typed fallback data, which can drift
+from canonical truth and create false confidence. A persisted queue table would duplicate business
+state and invite staleness; client-side ranking would move business truth into React.
+
+**Alternatives:** Persist a Today queue table refreshed by commands; compute ranking in the desktop
+client; reuse SuggestedPriority alone as the queue.
+
+**Chosen:** Today is a pure read model computed by Core from exact source revisions. Item kinds are
+a closed typed set; ordering is a documented total order (user priority, suggested priority,
+earliest deadline/interview, stable item ID); missing inputs rank explicitly low with reason codes;
+the response carries the input revision set for staleness detection.
+
+**Reason:** A deterministic projection is replayable and testable without new truth tables, keeps
+priority separation intact and lets the frontend stay a pure renderer.
+
+**Impact:** The Today service/API and the frontend adapter must consume this contract; replacing the
+static fallback happens only after the Core read model is implemented and reviewed. No migration is
+required.

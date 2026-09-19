@@ -257,6 +257,36 @@ def _seed_capability_data(connection: Connection) -> None:
                 "updated_by": "policy",
                 "updated_by_kind": "rule",
             },
+            {
+                "personal_state_id": "personal_state_002",
+                "candidate_id": "candidate_001",
+                "capability_id": "capability_a",
+                "understand": True,
+                "explain": False,
+                "apply": False,
+                "evidence": False,
+                "interview_ready": False,
+                "revision": 1,
+                "schema_version": 1,
+                "updated_at": earlier,
+                "updated_by": "user",
+                "updated_by_kind": "user",
+            },
+            {
+                "personal_state_id": "personal_state_002",
+                "candidate_id": "candidate_001",
+                "capability_id": "capability_a",
+                "understand": True,
+                "explain": True,
+                "apply": False,
+                "evidence": False,
+                "interview_ready": False,
+                "revision": 3,
+                "schema_version": 1,
+                "updated_at": now,
+                "updated_by": "user",
+                "updated_by_kind": "user",
+            },
         ],
     )
     _insert_project_evidence(connection, now)
@@ -358,22 +388,40 @@ def _seed_capability_data(connection: Connection) -> None:
     )
     connection.execute(
         CapabilityInvestmentStateRow.__table__.insert(),
-        {
-            "investment_state_id": investment.investment_state_id,
-            "candidate_id": investment.candidate_id,
-            "capability_id": investment.capability_id,
-            **investment.factors.model_dump(),
-            "recommendation": investment.recommendation.value,
-            "score": investment.score,
-            "reasons": list(investment.reasons),
-            "graph_version_id": investment.calculation_inputs.graph_version_id,
-            "personal_state_id": investment.calculation_inputs.personal_state_id,
-            "personal_state_revision": investment.calculation_inputs.personal_state_revision,
-            "market_binding_ids": list(investment.calculation_inputs.market_binding_ids),
-            "opportunity_ids": list(investment.calculation_inputs.opportunity_ids),
-            "rule_version": investment.rule_version,
-            "calculated_at": investment.calculated_at,
-        },
+        [
+            {
+                "investment_state_id": investment.investment_state_id,
+                "candidate_id": investment.candidate_id,
+                "capability_id": investment.capability_id,
+                **investment.factors.model_dump(),
+                "recommendation": investment.recommendation.value,
+                "score": investment.score,
+                "reasons": list(investment.reasons),
+                "graph_version_id": investment.calculation_inputs.graph_version_id,
+                "personal_state_id": investment.calculation_inputs.personal_state_id,
+                "personal_state_revision": investment.calculation_inputs.personal_state_revision,
+                "market_binding_ids": list(investment.calculation_inputs.market_binding_ids),
+                "opportunity_ids": list(investment.calculation_inputs.opportunity_ids),
+                "rule_version": investment.rule_version,
+                "calculated_at": now,
+            },
+            {
+                "investment_state_id": "investment_older",
+                "candidate_id": investment.candidate_id,
+                "capability_id": investment.capability_id,
+                **investment.factors.model_dump(),
+                "recommendation": investment.recommendation.value,
+                "score": investment.score,
+                "reasons": list(investment.reasons),
+                "graph_version_id": investment.calculation_inputs.graph_version_id,
+                "personal_state_id": "personal_state_001",
+                "personal_state_revision": 1,
+                "market_binding_ids": list(investment.calculation_inputs.market_binding_ids),
+                "opportunity_ids": list(investment.calculation_inputs.opportunity_ids),
+                "rule_version": investment.rule_version,
+                "calculated_at": earlier,
+            },
+        ],
     )
 
 
@@ -388,9 +436,10 @@ def test_empty_repository_returns_none_and_empty_tuples(tmp_path: Path) -> None:
     assert repository.list_nodes("graph_missing") == ()
     assert repository.list_relations("graph_missing") == ()
     assert repository.list_candidate_inbox() == ()
-    assert repository.get_latest_personal_state(
+    assert repository.get_latest_personal_state(personal_state_id="state_missing") is None
+    assert repository.list_personal_states(
         candidate_id="candidate_001", capability_id="capability_a"
-    ) is None
+    ) == ()
     assert repository.list_evidence_bindings(
         personal_state_id="state_missing", personal_state_revision=1
     ) == ()
@@ -447,9 +496,18 @@ def test_personal_state_exact_latest_and_evidence_revision(tmp_path: Path) -> No
     connection.close()
 
     exact = repository.get_personal_state(
-        candidate_id="candidate_001", capability_id="capability_a", revision=1
+        personal_state_id="personal_state_001", revision=1
     )
-    latest = repository.get_latest_personal_state(
+    exact_second_identity = repository.get_personal_state(
+        personal_state_id="personal_state_002", revision=1
+    )
+    latest_first_identity = repository.get_latest_personal_state(
+        personal_state_id="personal_state_001"
+    )
+    latest_second_identity = repository.get_latest_personal_state(
+        personal_state_id="personal_state_002"
+    )
+    discovered = repository.list_personal_states(
         candidate_id="candidate_001", capability_id="capability_a"
     )
     revision_one_bindings = repository.list_evidence_bindings(
@@ -460,11 +518,27 @@ def test_personal_state_exact_latest_and_evidence_revision(tmp_path: Path) -> No
     )
 
     assert exact is not None
+    assert exact.personal_state_id == "personal_state_001"
     assert exact.revision == 1
     assert exact.display_status is PersonalCapabilityDisplayStatus.PRACTICED
-    assert latest is not None
-    assert latest.revision == 2
-    assert latest.display_status is PersonalCapabilityDisplayStatus.VERIFIED
+    assert exact_second_identity is not None
+    assert exact_second_identity.personal_state_id == "personal_state_002"
+    assert exact_second_identity.revision == 1
+    assert exact_second_identity.display_status is PersonalCapabilityDisplayStatus.UNDERSTOOD
+    assert latest_first_identity is not None
+    assert latest_first_identity.personal_state_id == "personal_state_001"
+    assert latest_first_identity.revision == 2
+    assert latest_first_identity.display_status is PersonalCapabilityDisplayStatus.VERIFIED
+    assert latest_second_identity is not None
+    assert latest_second_identity.personal_state_id == "personal_state_002"
+    assert latest_second_identity.revision == 3
+    assert latest_second_identity.display_status is PersonalCapabilityDisplayStatus.PRACTICED
+    assert [(state.personal_state_id, state.revision) for state in discovered] == [
+        ("personal_state_001", 1),
+        ("personal_state_001", 2),
+        ("personal_state_002", 1),
+        ("personal_state_002", 3),
+    ]
     assert [item.binding.binding_id for item in revision_one_bindings] == [
         "binding_evidence_ref"
     ]
@@ -487,6 +561,10 @@ def test_market_layers_and_investment_inputs_remain_separate(tmp_path: Path) -> 
         capability_id="capability_a", market_scope=MarketBindingScope.BROAD
     )
     investment = repository.get_investment_state("investment_001")
+    investments = repository.list_investment_states(candidate_id="candidate_001")
+    capability_investments = repository.list_investment_states(
+        candidate_id="candidate_001", capability_id="capability_a"
+    )
 
     assert [binding.binding_id for binding in target] == ["market_target_a", "market_target_b"]
     assert [binding.binding_id for binding in broad] == ["market_broad"]
@@ -502,3 +580,9 @@ def test_market_layers_and_investment_inputs_remain_separate(tmp_path: Path) -> 
     )
     assert investment.calculation_inputs.opportunity_ids == ("opportunity_001",)
     assert not hasattr(investment, "user_priority")
+    assert [state.investment_state_id for state in investments] == [
+        "investment_001",
+        "investment_older",
+    ]
+    assert capability_investments == investments
+    assert repository.list_investment_states(candidate_id="candidate_missing") == ()

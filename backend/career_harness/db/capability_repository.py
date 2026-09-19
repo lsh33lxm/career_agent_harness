@@ -130,36 +130,43 @@ class CapabilityRepository:
         return self.list_candidates(CandidateCapabilityStatus.PENDING)
 
     def get_personal_state(
-        self, *, candidate_id: str, capability_id: str, revision: int
+        self, *, personal_state_id: str, revision: int
     ) -> PersonalCapabilityState | None:
         with Session(self.engine) as session:
-            row = session.scalar(
-                select(PersonalCapabilityStateRow).where(
-                    PersonalCapabilityStateRow.candidate_id == candidate_id,
-                    PersonalCapabilityStateRow.capability_id == capability_id,
-                    PersonalCapabilityStateRow.revision == revision,
-                )
+            row = session.get(
+                PersonalCapabilityStateRow,
+                (personal_state_id, revision),
             )
             return self._to_personal_state(row) if row is not None else None
 
     def get_latest_personal_state(
-        self, *, candidate_id: str, capability_id: str
+        self, *, personal_state_id: str
     ) -> PersonalCapabilityState | None:
         with Session(self.engine) as session:
             row = session.scalar(
+                select(PersonalCapabilityStateRow)
+                .where(PersonalCapabilityStateRow.personal_state_id == personal_state_id)
+                .order_by(PersonalCapabilityStateRow.revision.desc())
+                .limit(1)
+            )
+            return self._to_personal_state(row) if row is not None else None
+
+    def list_personal_states(
+        self, *, candidate_id: str, capability_id: str
+    ) -> tuple[PersonalCapabilityState, ...]:
+        with Session(self.engine) as session:
+            rows = session.scalars(
                 select(PersonalCapabilityStateRow)
                 .where(
                     PersonalCapabilityStateRow.candidate_id == candidate_id,
                     PersonalCapabilityStateRow.capability_id == capability_id,
                 )
                 .order_by(
-                    PersonalCapabilityStateRow.revision.desc(),
-                    PersonalCapabilityStateRow.updated_at.desc(),
                     PersonalCapabilityStateRow.personal_state_id,
+                    PersonalCapabilityStateRow.revision,
                 )
-                .limit(1)
-            )
-            return self._to_personal_state(row) if row is not None else None
+            ).all()
+            return tuple(self._to_personal_state(row) for row in rows)
 
     def list_evidence_bindings(
         self, *, personal_state_id: str, personal_state_revision: int

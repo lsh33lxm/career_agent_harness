@@ -97,6 +97,82 @@ class MigrationMismatchRow(Base):
     reason: Mapped[str | None] = mapped_column(Text)
 
 
+class EvidenceArtifactRow(Base):
+    __tablename__ = "evidence_artifact"
+    __table_args__ = (
+        CheckConstraint(
+            "length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_evidence_artifact_sha256",
+        ),
+        CheckConstraint("length(trim(media_type)) > 0", name="ck_evidence_artifact_media_type"),
+        CheckConstraint(
+            "artifact_class IN ('public_source', 'personal', 'sensitive')",
+            name="ck_evidence_artifact_class",
+        ),
+        CheckConstraint("byte_length >= 0", name="ck_evidence_artifact_byte_length"),
+    )
+
+    artifact_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    media_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    artifact_class: Mapped[str] = mapped_column(String(32), nullable=False)
+    byte_length: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class EvidenceSourceRow(Base):
+    __tablename__ = "evidence_source"
+    __table_args__ = (
+        CheckConstraint(
+            "length(trim(source_type)) > 0 AND length(source_type) <= 128",
+            name="ck_evidence_source_type",
+        ),
+        CheckConstraint(
+            "length(trim(locator)) > 0 AND length(locator) <= 2048",
+            name="ck_evidence_source_locator",
+        ),
+    )
+
+    source_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    source_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    locator: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class SourceSnapshotRow(Base):
+    __tablename__ = "source_snapshot"
+    __table_args__ = (UniqueConstraint("snapshot_id", "artifact_id"),)
+
+    snapshot_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_source.source_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    artifact_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_artifact.artifact_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+
+class EvidenceRefRow(Base):
+    __tablename__ = "evidence_ref"
+    __table_args__ = (
+        CheckConstraint(
+            "selector IS NULL OR length(selector) <= 2048",
+            name="ck_evidence_ref_selector",
+        ),
+        ForeignKeyConstraint(
+            ["snapshot_id", "artifact_id"],
+            ["source_snapshot.snapshot_id", "source_snapshot.artifact_id"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    evidence_ref_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    snapshot_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    artifact_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    selector: Mapped[str | None] = mapped_column(Text)
+
+
 class WatchlistItemRow(Base):
     __tablename__ = "watchlist_item"
     __table_args__ = (UniqueConstraint("job_id", "job_revision"),)

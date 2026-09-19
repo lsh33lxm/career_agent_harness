@@ -56,6 +56,9 @@ def test_fresh_database_bootstraps_to_head(tmp_path: Path) -> None:
         "context_manifest_asset_ref",
         "context_manifest_knowledge_ref",
         "domain_event",
+        "evidence_artifact",
+        "evidence_ref",
+        "evidence_source",
         "entity_revision",
         "entity_state",
         "idempotency_record",
@@ -75,6 +78,7 @@ def test_fresh_database_bootstraps_to_head(tmp_path: Path) -> None:
         "project_source_entry",
         "project_source_manifest",
         "suggested_priority",
+        "source_snapshot",
         "user_priority",
         "watchlist_item",
     } <= tables
@@ -85,6 +89,23 @@ def test_migration_is_repeatable(tmp_path: Path) -> None:
     database_url = sqlite_url(tmp_path / "repeatable.db")
     upgrade_to_head(database_url)
     upgrade_to_head(database_url)
+
+
+def test_evidence_migration_downgrades_on_disposable_database(tmp_path: Path) -> None:
+    database_url = sqlite_url(tmp_path / "evidence-downgrade.db")
+    config = alembic_config(database_url)
+    command.upgrade(config, "0007_evidence_provenance")
+
+    command.downgrade(config, "0006_capability_personal_state_identity")
+
+    tables = set(inspect(create_sqlite_engine(database_url)).get_table_names())
+    assert not {
+        "evidence_artifact",
+        "evidence_source",
+        "source_snapshot",
+        "evidence_ref",
+    } & tables
+    assert "capability_graph_version" in tables
 
 
 def test_migrated_schema_matches_declared_metadata_columns(tmp_path: Path) -> None:

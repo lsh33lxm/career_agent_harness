@@ -13,6 +13,20 @@ def test_idempotency_key_is_unique_contract() -> None:
     assert table.c.idempotency_key.primary_key
 
 
+def test_evidence_provenance_uses_typed_tables() -> None:
+    tables = set(inspect(Base.metadata).tables)
+    assert {
+        "evidence_artifact",
+        "evidence_source",
+        "source_snapshot",
+        "evidence_ref",
+    } <= tables
+    evidence_ref = Base.metadata.tables["evidence_ref"]
+    assert {"evidence_ref_id", "snapshot_id", "artifact_id", "selector"} <= set(
+        evidence_ref.c.keys()
+    )
+
+
 def test_capability_graph_and_personal_overlay_use_separate_tables() -> None:
     tables = set(inspect(Base.metadata).tables)
 

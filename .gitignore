@@ -72,3 +72,6 @@ raw-data/
 Thumbs.db
 .idea/
 .vscode/
+
+# Nested workspace lockfile; dependencies are locked at the repository root.
+apps/desktop/package-lock.json

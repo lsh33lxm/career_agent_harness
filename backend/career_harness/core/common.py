@@ -29,6 +29,8 @@ class EntityKind(StrEnum):
     OPPORTUNITY = "opportunity"
     PROJECT_ENHANCEMENT_TASK = "project_enhancement_task"
     RESUME = "resume"
+    RESUME_PATCH = "resume_patch"
+    RESUME_REVISION = "resume_revision"
     APPLICATION = "application"
     INTERVIEW = "interview"
     PREP = "prep"

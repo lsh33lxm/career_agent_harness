@@ -2,8 +2,9 @@
 
 PRD v1.4 Wave 1 is integrated. Opportunity, Capability, Project Evidence and Context persistence,
 typed Capability/Project reads, the scope-safe scanner and the first real desktop projection are
-complete. Canonical Evidence and Job/JobRequirement persistence are complete; Wave 2 now advances
-to an evidence-aware Match/Gap policy over exact typed revisions.
+complete. Canonical Evidence, Job/JobRequirement persistence and the pure evidence-aware Match/Gap
+policy are complete; Wave 2 now advances to durable Match/Gap persistence and an exact input
+resolver over frozen typed revisions.
 
 # Current Goal
 
@@ -12,7 +13,7 @@ before Resume and Outcome integration.
 
 # Last Verified Commit
 
-`0ee6388` - `feat: add atomic job requirement commands`
+`073d3d1` - `feat: add evidence-aware match gap policy`
 
 # Completed
 
@@ -118,10 +119,19 @@ before Resume and Outcome integration.
   official capability membership.
 - Independent review found no P0/P1. Backend verification passed `237` tests with `3` known Windows
   symlink-permission skips; Ruff, format and diff checks passed.
+- Added the pure evidence-aware Match/Gap policy over frozen exact inputs: COVERED requires both
+  personal scope dimensions and qualified non-AI evidence per scope; AI_INFERRED, stale and
+  unqualified evidence are excluded; Project Capability State contributes proximity only; dangling
+  provenance and unreferenced inputs fail closed; output is deterministic under input reordering.
+- Independent final review found no P0/P1; P2 test gaps (evidence-only coverage, rejected/superseded
+  evidence, unreferenced inputs, mismatched personal state, full-input reordering) were added.
+  Backend verification passed `252` tests with `3` known Windows symlink-permission skips; Ruff,
+  format and diff checks passed.
 
 # In Progress
 
-- Canonical evidence-aware Match/Gap policy and frozen-input result contract.
+- Durable Match/Gap persistence and exact input resolver design; contract freeze precedes any
+  migration 0009.
 
 # Blocked
 
@@ -136,7 +146,8 @@ before Resume and Outcome integration.
 
 # Next Safe Tasks
 
-1. Implement evidence-aware Match/Gap and explainable investment over exact typed reads.
+1. Freeze Match/Gap persistence and resolver contracts (exact refs, replay semantics), then design
+   additive migration 0009.
 2. Add only the Project/Capability Local API projections required by the vertical loop.
 3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.

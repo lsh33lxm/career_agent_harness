@@ -227,3 +227,27 @@ prevent audited corrections, while allowing cross-Job movement would corrupt ide
 
 **Impact:** Services must append a new Requirement revision for corrections and retain all prior
 exact references. Match/Gap consumers must freeze the exact Requirement and Job revisions they use.
+
+## D-013 - Treat any canonical Project Capability State as qualified proximity input
+
+**Decision:** ACCEPTED in `073d3d1`.
+
+**Context:** The Match contract says a "qualified Project Capability State" may yield
+`QUICK_TO_STRENGTHEN`, but the pure policy receives typed domain objects rather than raw rows, and
+the `ProjectCapabilityState` model already enforces a state-appropriate basis at construction.
+
+**Alternatives:** Re-validate basis sources inside the policy; require a minimum capability level
+before proximity counts; treat only `VALIDATED` or `RESUME_READY` states as proximity.
+
+**Chosen:** Any canonical `ProjectCapabilityState` instance is qualified by construction and may
+contribute proximity (`QUICK_TO_STRENGTHEN`) only. The policy never promotes project presence to
+personal coverage, and exact `(capability_state_id, revision)` plus ordered basis refs are recorded
+in the frozen input manifest for later replay.
+
+**Reason:** Basis legitimacy is enforced where the aggregate is written; duplicating that check in a
+pure policy would couple it to write-path rules without adding safety. Proximity stays cheap and
+explainable at this stage.
+
+**Impact:** Resolver/persistence work must load exact Project Capability State revisions and fail
+loud on dangling provenance. A future minimum-level threshold is a policy-version change, not a
+silent filter.

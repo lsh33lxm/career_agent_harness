@@ -26,7 +26,8 @@
 | Versioned Job/JobRequirement core | DONE | 2026-09-19 | `deadc25`, merge `7728282`; proposal/review authority and exact official mapping enforced. |
 | Evidence provenance persistence | DONE | 2026-09-19 | `d7b92e5`; immutable artifacts/sources/snapshots/refs, typed reads and fail-loud integrity. |
 | Job/JobRequirement persistence | DONE | 2026-09-19 | `3b33525`, `0ee6388`; additive 0008, typed reads and atomic USER-gated review path. |
-| Match/Gap service/persistence | READY | 2026-09-19 | All exact typed-read prerequisites complete; pure policy implementation is next. |
+| Match/Gap pure policy | DONE | 2026-09-19 | `073d3d1`; 15 focused tests, deterministic three-way classification over frozen exact inputs. |
+| Match/Gap persistence/resolver | READY | 2026-09-19 | Contract freeze (exact refs, replay semantics) precedes migration 0009. |
 
 ## Integrated workstreams
 
@@ -75,6 +76,11 @@
 - Job Persistence/Service: `3b33525`, `0ee6388`; additive 0008, typed repositories and atomic
   Job/Requirement commands preserve exact provenance and user-only review. Full integration passed
   `237 passed, 3 skipped`; Ruff, format and diff checks passed; review found no P0/P1.
+- Match/Gap Pure Policy: `073d3d1`; full pytest `252 passed, 3 skipped`; Ruff, format and diff
+  checks passed. Independent final review found no P0/P1; P2 test gaps (evidence-only coverage,
+  rejected/superseded evidence, unreferenced inputs, mismatched personal state and full-input
+  reordering equivalence) were added before commit. Durable persistence and the exact input
+  resolver are the next slice.
 
 ## Baseline verification
 

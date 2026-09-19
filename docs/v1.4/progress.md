@@ -27,7 +27,8 @@
 | Evidence provenance persistence | DONE | 2026-09-19 | `d7b92e5`; immutable artifacts/sources/snapshots/refs, typed reads and fail-loud integrity. |
 | Job/JobRequirement persistence | DONE | 2026-09-19 | `3b33525`, `0ee6388`; additive 0008, typed reads and atomic USER-gated review path. |
 | Match/Gap pure policy | DONE | 2026-09-19 | `073d3d1`; 15 focused tests, deterministic three-way classification over frozen exact inputs. |
-| Match/Gap persistence/resolver | IN_PROGRESS | 2026-09-19 | Contract `0.4.0` and D-014 frozen; migration 0009 implementation is next. |
+| Match/Gap persistence | DONE | 2026-09-19 | `f3c646e`, `4ff1ac3` merged as `b04d08e`; additive 0009, immutable assessment/result/gap, atomic record service. |
+| Match/Gap resolver/replay | READY | 2026-09-19 | Contract `0.4.0`; prompt `docs/v1.4/agents/match-resolver.md`; depends on merged persistence. |
 
 ## Integrated workstreams
 
@@ -81,6 +82,11 @@
   rejected/superseded evidence, unreferenced inputs, mismatched personal state and full-input
   reordering equivalence) were added before commit. Durable persistence and the exact input
   resolver are the next slice.
+- Match/Gap Persistence: `f3c646e`, `4ff1ac3` merged as `b04d08e`; additive migration 0009 with
+  immutable assessment/requirement-result/gap tables, typed reads, an atomic record service and an
+  exact Opportunity revision read. Independent review found one P1 (missing Opportunity JobRef
+  binding) and P2 validation gaps, all fixed and tested before merge. Full integration passed
+  `274 passed, 3 skipped`; Ruff and diff checks passed.
 
 ## Baseline verification
 

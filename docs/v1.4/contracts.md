@@ -173,8 +173,9 @@ joined into one read model.
   and `capability_id`; it is immutable, and a newer assessment mints new gaps instead of mutating
   old ones.
 - `ProjectEnhancementTask.target_gap_id` must resolve to a canonical Gap at task write time. The
-  column predates the Gap table, so 0009 enforces this at the write path (fail loud on dangling);
-  no retroactive FK is added to the existing task table.
+  column predates the Gap table, so no retroactive FK is added to the existing task table; the
+  enhancement-task write path must validate resolvability (fail loud on dangling) once that write
+  path exists.
 - Assessment, typed results, gaps, generic revision, the `match.assessed` event and the idempotency
   record commit in one transaction through a versioned `TransactionalWrite`. The event payload is
   metadata only: ids, exact revisions, policy version and per-classification counts.

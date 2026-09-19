@@ -13,7 +13,7 @@ before Resume and Outcome integration.
 
 # Last Verified Commit
 
-`073d3d1` - `feat: add evidence-aware match gap policy`
+`b04d08e` - `merge: integrate durable match gap persistence`
 
 # Completed
 
@@ -127,11 +127,16 @@ before Resume and Outcome integration.
   evidence, unreferenced inputs, mismatched personal state, full-input reordering) were added.
   Backend verification passed `252` tests with `3` known Windows symlink-permission skips; Ruff,
   format and diff checks passed.
+- Added durable Match/Gap persistence (merge `b04d08e`): additive migration 0009 with immutable
+  assessment/requirement-result/canonical-gap tables, typed reads, an atomic record service
+  (typed rows + generic revision + `match.assessed` + idempotency in one transaction) and an exact
+  Opportunity revision read. Independent review found one P1 (Opportunity JobRef binding) plus P2
+  validation gaps; all fixed before merge. Backend verification passed `274` tests with `3` known
+  Windows symlink-permission skips; Ruff and diff checks passed.
 
 # In Progress
 
-- Durable Match/Gap persistence and exact input resolver design; contract freeze precedes any
-  migration 0009.
+- Match resolver/replay workstream (exact reads, assess orchestration, stored-manifest replay).
 
 # Blocked
 
@@ -146,8 +151,8 @@ before Resume and Outcome integration.
 
 # Next Safe Tasks
 
-1. Freeze Match/Gap persistence and resolver contracts (exact refs, replay semantics), then design
-   additive migration 0009.
+1. Implement the Match input resolver and replay per contract `0.4.0`
+   (prompt: `docs/v1.4/agents/match-resolver.md`), then review and merge.
 2. Add only the Project/Capability Local API projections required by the vertical loop.
 3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.

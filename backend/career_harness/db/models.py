@@ -10,6 +10,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Integer,
     String,
     Text,
@@ -1231,4 +1232,130 @@ class ContextManifestKnowledgeRefRow(Base):
     ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
     knowledge_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     knowledge_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class MatchAssessmentRow(Base):
+    __tablename__ = "match_assessment"
+    __table_args__ = (
+        CheckConstraint(
+            "opportunity_revision >= 1", name="ck_match_assessment_opportunity_revision"
+        ),
+        CheckConstraint("job_revision >= 1", name="ck_match_assessment_job_revision"),
+        CheckConstraint(
+            "policy_version = 'match-policy-v1'", name="ck_match_assessment_policy_version"
+        ),
+        CheckConstraint(
+            "json_type(manifest) = 'object' AND length(manifest) <= 65536 AND "
+            "json_array_length(manifest, '$.requirements') BETWEEN 1 AND 256",
+            name="ck_match_assessment_manifest",
+        ),
+        ForeignKeyConstraint(
+            ["opportunity_id"], ["opportunity_record.opportunity_id"], ondelete="RESTRICT"
+        ),
+        ForeignKeyConstraint(
+            ["opportunity_id", "opportunity_revision"],
+            ["entity_revision.entity_id", "entity_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["job_id", "job_revision"],
+            ["job_revision.job_id", "job_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        Index(
+            "ix_match_assessment_opportunity",
+            "opportunity_id",
+            "created_at",
+            "assessment_id",
+        ),
+    )
+
+    assessment_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    opportunity_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    opportunity_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    job_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    job_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    candidate_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    policy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    manifest: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class MatchRequirementResultRow(Base):
+    __tablename__ = "match_requirement_result"
+    __table_args__ = (
+        CheckConstraint("requirement_revision >= 1", name="ck_match_requirement_result_revision"),
+        CheckConstraint(
+            "classification IN ('covered', 'quick_to_strengthen', 'clear_gap')",
+            name="ck_match_requirement_result_classification",
+        ),
+        CheckConstraint(
+            "json_type(covered_scopes) = 'array' AND json_array_length(covered_scopes) <= 5 AND "
+            "json_type(missing_scopes) = 'array' AND json_array_length(missing_scopes) <= 5",
+            name="ck_match_requirement_result_scopes",
+        ),
+        CheckConstraint(
+            "json_type(reasons) = 'array' AND json_array_length(reasons) BETWEEN 1 AND 64 AND "
+            "length(reasons) <= 16384",
+            name="ck_match_requirement_result_reasons",
+        ),
+        ForeignKeyConstraint(
+            ["assessment_id"], ["match_assessment.assessment_id"], ondelete="RESTRICT"
+        ),
+        ForeignKeyConstraint(
+            ["requirement_id", "requirement_revision"],
+            ["job_requirement_revision.requirement_id", "job_requirement_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["capability_id"], ["capability_identity.capability_id"], ondelete="RESTRICT"
+        ),
+        Index(
+            "ix_match_requirement_result_requirement",
+            "requirement_id",
+            "requirement_revision",
+        ),
+    )
+
+    assessment_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    requirement_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    capability_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    classification: Mapped[str] = mapped_column(String(32), nullable=False)
+    covered_scopes: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    missing_scopes: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    reasons: Mapped[list[dict]] = mapped_column(JSON, nullable=False)
+
+
+class MatchGapRow(Base):
+    __tablename__ = "match_gap"
+    __table_args__ = (
+        UniqueConstraint("assessment_id", "requirement_id", "requirement_revision"),
+        CheckConstraint("requirement_revision >= 1", name="ck_match_gap_revision"),
+        CheckConstraint(
+            "classification IN ('quick_to_strengthen', 'clear_gap')",
+            name="ck_match_gap_classification",
+        ),
+        ForeignKeyConstraint(
+            ["assessment_id", "requirement_id", "requirement_revision"],
+            [
+                "match_requirement_result.assessment_id",
+                "match_requirement_result.requirement_id",
+                "match_requirement_result.requirement_revision",
+            ],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["capability_id"], ["capability_identity.capability_id"], ondelete="RESTRICT"
+        ),
+        Index("ix_match_gap_assessment", "assessment_id"),
+    )
+
+    gap_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    assessment_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    requirement_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    requirement_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    capability_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    classification: Mapped[str] = mapped_column(String(32), nullable=False)
 

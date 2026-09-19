@@ -23,6 +23,7 @@ class EntityKind(StrEnum):
     MARKET = "market"
     JOB = "job"
     JOB_REQUIREMENT = "job_requirement"
+    MATCH_ASSESSMENT = "match_assessment"
     OPPORTUNITY = "opportunity"
     RESUME = "resume"
     APPLICATION = "application"

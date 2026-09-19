@@ -30,7 +30,8 @@ kimi/v14-match-resolver
 ## Base Commit
 
 ```text
-{由主 Agent 在派发时填入：match-persistence merge 后的 integration HEAD}
+13481e4 之后的 integration HEAD（即 match-persistence merge b04d08e + 文档 commit；worktree
+创建时以 `git log --oneline -1` 确认为准）
 ```
 
 ## Workstream

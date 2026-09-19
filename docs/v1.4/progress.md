@@ -29,6 +29,8 @@
 | Match/Gap pure policy | DONE | 2026-09-19 | `073d3d1`; 15 focused tests, deterministic three-way classification over frozen exact inputs. |
 | Match/Gap persistence | DONE | 2026-09-19 | `f3c646e`, `4ff1ac3` merged as `b04d08e`; additive 0009, immutable assessment/result/gap, atomic record service. |
 | Match/Gap resolver/replay | DONE | 2026-09-19 | `dd77bd8`, `38616c3` merged as `288ee30`; exact-read resolver, assess orchestration, stored-manifest replay; read-path gap capability check `e82d6cc`. |
+| Enhancement task Gap linkage | IN_PROGRESS | 2026-09-19 | Contract `0.4.1`; prompt `docs/v1.4/agents/enhancement-link.md`; worktree `kimi/v14-enhancement-link`. |
+| CareerFact domain | READY | 2026-09-19 | Resume patch contract needs resolvable qualified fact refs; no CareerFact code exists yet (doc-only concept). Blocks W2-RESUME. |
 
 ## Integrated workstreams
 

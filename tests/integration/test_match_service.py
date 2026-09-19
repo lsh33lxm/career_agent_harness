@@ -28,6 +28,7 @@ from career_harness.core.job import (
 )
 from career_harness.core.lifecycle import ActorKind, Opportunity, OpportunityState
 from career_harness.core.match_gap import (
+    ExactRevisionRef,
     MatchClassification,
     MatchPolicyInput,
     assess_match,
@@ -179,6 +180,7 @@ def _seed_accepted_requirement(
     job_id: str = "job_001",
     job_revision: int = 1,
     scopes: tuple[str, ...] = ("understand", "apply"),
+    status: str = "accepted",
 ) -> None:
     now = datetime.now(UTC)
     connection.execute(
@@ -204,6 +206,21 @@ def _seed_accepted_requirement(
             "evidence_ref_id": EVIDENCE_REF_ID,
         },
     )
+    review = (
+        {
+            "reviewed_by": "user",
+            "reviewed_by_kind": "user",
+            "review_reason": "Confirmed against the captured job description.",
+            "reviewed_at": now,
+        }
+        if status != "proposed"
+        else {
+            "reviewed_by": None,
+            "reviewed_by_kind": None,
+            "review_reason": None,
+            "reviewed_at": None,
+        }
+    )
     connection.execute(
         JobRequirementRevisionRow.__table__.insert(),
         {
@@ -218,14 +235,11 @@ def _seed_accepted_requirement(
             "graph_version_id": GRAPH_VERSION_ID,
             "required_scope_count": len(scopes),
             "source_evidence_count": 1,
-            "status": "accepted",
+            "status": status,
             "proposed_by": "agent:extractor",
             "proposed_by_kind": "agent",
             "proposed_at": now,
-            "reviewed_by": "user",
-            "reviewed_by_kind": "user",
-            "review_reason": "Confirmed against the captured job description.",
-            "reviewed_at": now,
+            **review,
         },
     )
 
@@ -721,3 +735,180 @@ def test_opportunity_get_revision_reads_exact_frozen_revision(tmp_path: Path) ->
     assert current is not None
     assert current.opportunity.revision == 2
     assert current.user_priority is not None
+
+
+def test_manifest_job_must_match_frozen_opportunity_job_ref(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    repository, service = _services(engine)
+    assessment = assess_match(_policy_input())
+    tampered = assessment.model_copy(
+        update={
+            "inputs": assessment.inputs.model_copy(
+                update={"job": ExactRevisionRef(entity_id="job_001", revision=2)}
+            )
+        }
+    )
+    before = _write_counts(engine)
+    with pytest.raises(ValueError, match="frozen Opportunity JobRef"):
+        service.record_assessment(
+            _command("assessment_job_mismatch", command_id="command_assessment_job_mismatch"),
+            assessment=tampered,
+            candidate_id="candidate_001",
+        )
+    assert _write_counts(engine) == before
+    assert repository.get_assessment("assessment_job_mismatch") is None
+
+
+def test_missing_official_capability_membership_fails_loud(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    repository, service = _services(engine)
+    assessment = assess_match(_policy_input())
+    tampered = assessment.model_copy(
+        update={
+            "inputs": assessment.inputs.model_copy(
+                update={
+                    "official_capabilities": (
+                        assessment.inputs.official_capabilities[0].model_copy(
+                            update={"graph_version_id": "graph_missing"}
+                        ),
+                    )
+                }
+            )
+        }
+    )
+    before = _write_counts(engine)
+    with pytest.raises(ValueError, match="official capability membership"):
+        service.record_assessment(
+            _command("assessment_node_missing", command_id="command_assessment_node_missing"),
+            assessment=tampered,
+            candidate_id="candidate_001",
+        )
+    assert _write_counts(engine) == before
+    assert repository.get_assessment("assessment_node_missing") is None
+
+
+def test_graph_version_drift_from_persisted_requirement_fails_loud(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    repository, service = _services(engine)
+    assessment = assess_match(
+        _policy_input(
+            requirements=(
+                _requirement(
+                    "requirement_001",
+                    (CapabilityEvidenceScope.UNDERSTAND, CapabilityEvidenceScope.APPLY),
+                ),
+            )
+        )
+    )
+    tampered = assessment.model_copy(
+        update={
+            "inputs": assessment.inputs.model_copy(
+                update={
+                    "requirements": (
+                        assessment.inputs.requirements[0].model_copy(
+                            update={"graph_version_id": "graph_other"}
+                        ),
+                    )
+                }
+            )
+        }
+    )
+    before = _write_counts(engine)
+    with pytest.raises(ValueError, match="graph version disagrees"):
+        service.record_assessment(
+            _command("assessment_graph_drift", command_id="command_assessment_graph_drift"),
+            assessment=tampered,
+            candidate_id="candidate_001",
+        )
+    assert _write_counts(engine) == before
+    assert repository.get_assessment("assessment_graph_drift") is None
+
+
+def test_non_accepted_requirement_revision_fails_loud(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as connection:
+        _seed_accepted_requirement(
+            connection,
+            "requirement_pending",
+            scopes=("understand", "apply"),
+            status="proposed",
+        )
+    repository, service = _services(engine)
+    assessment = assess_match(
+        _policy_input(
+            requirements=(
+                _requirement(
+                    "requirement_001",
+                    (CapabilityEvidenceScope.UNDERSTAND, CapabilityEvidenceScope.APPLY),
+                ),
+            )
+        )
+    )
+    tampered = assessment.model_copy(
+        update={
+            "inputs": assessment.inputs.model_copy(
+                update={
+                    "requirements": (
+                        assessment.inputs.requirements[0].model_copy(
+                            update={"requirement_id": "requirement_pending"}
+                        ),
+                    )
+                }
+            ),
+            "requirements": (
+                assessment.requirements[0].model_copy(
+                    update={
+                        "requirement": assessment.requirements[0].requirement.model_copy(
+                            update={"entity_id": "requirement_pending"}
+                        )
+                    }
+                ),
+            ),
+        }
+    )
+    before = _write_counts(engine)
+    with pytest.raises(ValueError, match="accepted JobRequirement revision"):
+        service.record_assessment(
+            _command("assessment_pending", command_id="command_assessment_pending"),
+            assessment=tampered,
+            candidate_id="candidate_001",
+        )
+    assert _write_counts(engine) == before
+    assert repository.get_assessment("assessment_pending") is None
+
+
+def test_manifest_scope_drift_from_persisted_requirement_fails_loud(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    repository, service = _services(engine)
+    assessment = assess_match(
+        _policy_input(
+            requirements=(
+                _requirement(
+                    "requirement_001",
+                    (CapabilityEvidenceScope.UNDERSTAND, CapabilityEvidenceScope.APPLY),
+                ),
+            )
+        )
+    )
+    tampered = assessment.model_copy(
+        update={
+            "inputs": assessment.inputs.model_copy(
+                update={
+                    "requirements": (
+                        assessment.inputs.requirements[0].model_copy(
+                            update={"required_scopes": (CapabilityEvidenceScope.UNDERSTAND,)}
+                        ),
+                    )
+                }
+            )
+        }
+    )
+    before = _write_counts(engine)
+    with pytest.raises(ValueError, match="scopes drifted"):
+        service.record_assessment(
+            _command("assessment_scope_drift", command_id="command_assessment_scope_drift"),
+            assessment=tampered,
+            candidate_id="candidate_001",
+        )
+    assert _write_counts(engine) == before
+    assert repository.get_assessment("assessment_scope_drift") is None

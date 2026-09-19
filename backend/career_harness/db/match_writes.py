@@ -16,6 +16,7 @@ from career_harness.core.match_gap import (
 )
 from career_harness.db.match_repository import MatchGapRecord
 from career_harness.db.models import (
+    CapabilityNodeRow,
     EntityRevisionRow,
     JobRequirementRevisionRow,
     JobRequirementScopeRow,
@@ -116,8 +117,14 @@ class MatchAssessmentWrite:
         self, session: Session, manifest: MatchInputManifest
     ) -> dict[tuple[str, int], RequirementInputRef]:
         opportunity_id = manifest.opportunity.entity_id
-        if session.get(OpportunityRecordRow, opportunity_id) is None:
+        opportunity_record = session.get(OpportunityRecordRow, opportunity_id)
+        if opportunity_record is None:
             raise ValueError("MatchAssessment requires a canonical Opportunity")
+        if (opportunity_record.job_id, opportunity_record.job_revision) != (
+            manifest.job.entity_id,
+            manifest.job.revision,
+        ):
+            raise ValueError("MatchAssessment job must match the frozen Opportunity JobRef")
         frozen_opportunity = session.scalars(
             select(EntityRevisionRow).where(
                 EntityRevisionRow.entity_id == opportunity_id,
@@ -128,6 +135,9 @@ class MatchAssessmentWrite:
             raise ValueError("MatchAssessment requires an exact frozen Opportunity revision")
         if session.get(JobRevisionRow, (manifest.job.entity_id, manifest.job.revision)) is None:
             raise ValueError("MatchAssessment requires an exact canonical Job revision")
+        for node in manifest.official_capabilities:
+            if session.get(CapabilityNodeRow, (node.capability_id, node.graph_version_id)) is None:
+                raise ValueError("MatchAssessment requires exact official capability membership")
         for personal_state in manifest.personal_states:
             if personal_state.candidate_id != self.candidate_id:
                 raise ValueError("manifest personal states belong to another candidate")
@@ -154,6 +164,10 @@ class MatchAssessmentWrite:
             if row.capability_id != requirement_ref.capability_id:
                 raise ValueError(
                     "Match result capability mapping disagrees with the persisted requirement"
+                )
+            if row.graph_version_id != requirement_ref.graph_version_id:
+                raise ValueError(
+                    "Match result graph version disagrees with the persisted requirement"
                 )
             persisted_scopes = set(
                 session.scalars(

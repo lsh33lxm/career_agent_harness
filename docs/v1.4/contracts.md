@@ -1,12 +1,12 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.3.0`
-**Status:** FROZEN FOR WAVE 2 PREREQUISITE IMPLEMENTATION
+**Version:** `v1.4-contract-0.4.0`
+**Status:** FROZEN FOR WAVE 2 MATCH PERSISTENCE
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.3.0` retains all `0.2.0` guarantees and adds versioned Job/JobRequirement evidence plus the
-frozen-input Match/Gap boundary. Module-specific persisted contract versions remain readable; this
-document version does not rewrite historical Context Manifests.
+`0.4.0` retains all `0.3.0` guarantees and adds the durable Match/Gap persistence, resolver and
+replay contracts below. Module-specific persisted contract versions remain readable; this document
+version does not rewrite historical Context Manifests.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -157,6 +157,46 @@ joined into one read model.
   and policy version must produce the same business output.
 - Match/Gap never writes Career Facts, Personal Capability State, SuggestedPriority, UserPriority,
   Official Capability Graph or accepted Resume material.
+
+### Match persistence
+
+- A persisted `MatchAssessment` has a Core-generated `assessment_id`, is immutable and carries a
+  single revision. Re-assessment creates a new assessment; supersession is expressed by a newer
+  assessment, never by mutation.
+- The exact `MatchInputManifest` (policy version plus every frozen input ref) is persisted with the
+  assessment as a bounded immutable canonical JSON snapshot. It is the only replay source.
+- Each requirement result is a typed row keyed by `(assessment_id, requirement_id,
+  requirement_revision)` with classification, covered/missing scopes and a bounded reasons payload.
+  Reason details are immutable payload, not queryable identity.
+- Every `QUICK_TO_STRENGTHEN` or `CLEAR_GAP` result receives a stable Core-generated `gap_id` in the
+  same transaction. A `Gap` row pins `assessment_id`, exact `(requirement_id, requirement_revision)`
+  and `capability_id`; it is immutable, and a newer assessment mints new gaps instead of mutating
+  old ones.
+- `ProjectEnhancementTask.target_gap_id` must resolve to a canonical Gap at task write time. The
+  column predates the Gap table, so 0009 enforces this at the write path (fail loud on dangling);
+  no retroactive FK is added to the existing task table.
+- Assessment, typed results, gaps, generic revision, the `match.assessed` event and the idempotency
+  record commit in one transaction through a versioned `TransactionalWrite`. The event payload is
+  metadata only: ids, exact revisions, policy version and per-classification counts.
+- Match persistence never mutates Career Facts, Personal Capability State, priorities, ontology or
+  Resume material.
+
+### Match resolver and replay
+
+- A resolver builds `MatchPolicyInput` from exact reads only: Opportunity by
+  `(opportunity_id, revision)`; Job by `JobRef`; Requirements by the caller-supplied ordered
+  `(requirement_id, revision)` refs; official nodes by `(capability_id, graph_version_id)`; Personal
+  Capability States by `(personal_state_id, revision)`; Evidence Bindings by exact personal state
+  revision; every generic EvidenceRef through `EvidenceRepository.get()`; Project Evidence by
+  `(evidence_id, revision)`; Project Capability States by `(capability_state_id, revision)`.
+- Any missing, stale-identity or dangling reference fails loud. The resolver never skips,
+  substitutes or downgrades provenance.
+- `OpportunityRepository.get()` reads the current projection only. Match persistence requires an
+  exact-revision Opportunity read; current-projection reads are not a frozen Match input.
+- Replay loads the stored manifest, re-resolves every ref by exact read, re-runs the stored
+  `policy_version` and compares the full business output. Drift, missing refs or an unknown policy
+  version fail loud. Replay never writes and never uses latest-at-read APIs, including
+  `JobRepository.list_requirements_for_job()` and `OpportunityRepository.get()`.
 
 ## Context compiler and manifest
 

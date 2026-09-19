@@ -33,7 +33,7 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-JOB | Versioned Job/accepted JobRequirement domain prerequisite | Evidence, Capability Graph | Subagent | job-requirement | DONE | High | AI proposals stay separate; accepted requirements pin evidence and official graph revision. |
 | W2-JOB-PERSIST | Additive Job/JobRequirement schema, typed repository and atomic promotion service | W2-JOB, 0006 | Lead | integration | DONE | High | Exact evidence/graph refs, authority checks, generic revision/event/idempotency and legacy Opportunity compatibility are tested. |
 | W2-MATCH | Evidence-aware Match/Gap pure policy | W2-JOB-PERSIST, W1-PROJ-STATE-READ | Lead | integration | DONE | Medium | Explainable three-way assessment with frozen exact inputs; independent final review passed. |
-| W2-MATCH-PERSIST | Durable Match/Gap persistence and exact input resolver | W2-MATCH | Lead | integration | READY | High | Exact frozen refs replay; additive migration only after contract freeze. |
+| W2-MATCH-PERSIST | Durable Match/Gap persistence and exact input resolver | W2-MATCH | Lead | integration | IN_PROGRESS | High | Contract `0.4.0` frozen; additive 0009, typed reads, atomic write and replay tested. |
 | W2-RESUME | Resume Base/Patch/Revision integration | W1-PROJ, W2-MATCH | TBD | TBD | NOT_STARTED | High | Unverified claims cannot enter accepted patch. |
 | W2-APP | Application/Outcome/history completion | W1-OPP, W2-RESUME | TBD | TBD | NOT_STARTED | High | Prepared/submitted and outcome authority tested. |
 | W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | TBD | TBD | NOT_STARTED | Medium | Real read models replace selected placeholders. |

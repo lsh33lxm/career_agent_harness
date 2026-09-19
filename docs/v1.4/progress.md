@@ -27,7 +27,7 @@
 | Evidence provenance persistence | DONE | 2026-09-19 | `d7b92e5`; immutable artifacts/sources/snapshots/refs, typed reads and fail-loud integrity. |
 | Job/JobRequirement persistence | DONE | 2026-09-19 | `3b33525`, `0ee6388`; additive 0008, typed reads and atomic USER-gated review path. |
 | Match/Gap pure policy | DONE | 2026-09-19 | `073d3d1`; 15 focused tests, deterministic three-way classification over frozen exact inputs. |
-| Match/Gap persistence/resolver | READY | 2026-09-19 | Contract freeze (exact refs, replay semantics) precedes migration 0009. |
+| Match/Gap persistence/resolver | IN_PROGRESS | 2026-09-19 | Contract `0.4.0` and D-014 frozen; migration 0009 implementation is next. |
 
 ## Integrated workstreams
 

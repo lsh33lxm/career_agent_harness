@@ -251,3 +251,30 @@ explainable at this stage.
 **Impact:** Resolver/persistence work must load exact Project Capability State revisions and fail
 loud on dangling provenance. A future minimum-level threshold is a policy-version change, not a
 silent filter.
+
+## D-014 - Persist Match as immutable assessment plus canonical Gap rows
+
+**Decision:** ACCEPTED in contract `0.4.0` (docs-only freeze; schema lands in migration 0009).
+
+**Context:** The pure Match/Gap policy is deterministic over frozen inputs, but
+`ProjectEnhancementTask.target_gap_id` needs a resolvable canonical Gap, and historical Match must
+be replayable without re-deriving inputs from latest-at-read APIs.
+
+**Alternatives:** Store only the assessment payload as JSON; recompute gaps on read; let
+`list_requirements_for_job()` or the Opportunity current projection stand in for historical inputs;
+add a retroactive FK from `target_gap_id` to a new Gap table.
+
+**Chosen:** Persist each assessment as an immutable single-revision record with its exact
+`MatchInputManifest` as a bounded canonical JSON snapshot, typed requirement-result rows for
+queryability, and stable `gap_id` rows minted in the same transaction for every non-COVERED result.
+Replay re-resolves the manifest through exact reads and fails loud on any drift. `target_gap_id` is
+validated at the task write path because the column predates the Gap table.
+
+**Reason:** The manifest snapshot is the only faithful replay source; typed result/gap rows keep Gap
+linkage and per-requirement queries relational; write-path validation closes the dangling-reference
+hole without rebuilding the existing task table.
+
+**Impact:** Migration 0009 must be additive with immutable triggers on assessment, result and gap
+tables. Resolver work adds an exact-revision Opportunity read and must resolve every generic
+EvidenceRef through `EvidenceRepository.get()`. Reassessment always mints a new assessment and new
+gaps.

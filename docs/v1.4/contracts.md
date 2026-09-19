@@ -1,14 +1,13 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.8.0`
-**Status:** FROZEN FOR WAVE 2 TODAY READ MODEL
+**Version:** `v1.4-contract-0.9.0`
+**Status:** FROZEN FOR CAPABILITY INBOX REVIEW
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.8.0` retains all `0.7.0` guarantees and adds the Today read-model contract below. `0.7.0` added
-Application submission and Outcome; `0.6.0` added the Resume write path; `0.5.0` added claim review
-and Fact promotion; `0.4.x` added Match persistence/resolver/replay and the enhancement task write
-path. Module-specific persisted contract versions remain readable; this document version does not
-rewrite historical records.
+`0.9.0` retains all `0.8.0` guarantees and adds the Capability Inbox review contract below.
+`0.8.0` added the Today read model; earlier versions added Application/Outcome (`0.7.0`), the
+Resume write path (`0.6.0`), claim review and Fact promotion (`0.5.0`) and the Match/enhancement
+contracts (`0.4.x`). This document version does not rewrite historical records.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -173,6 +172,19 @@ user interfaces must not infer user intent from it.
 
 Official graph, personal overlay and market bindings use separate tables/repositories even when
 joined into one read model.
+
+### Capability inbox review
+
+- A `CandidateCapabilityNode` starts as `PENDING`. Review (`capability_candidate.reviewed`) is a
+  separate command: acceptance requires a USER actor; rejection may be USER or an explicit RULE.
+  The discovering agent can never review its own candidate.
+- Acceptance never mutates a released graph version. A new node enters the official ontology only
+  through a new `CapabilityGraphVersion` release (parent = the current released version) assembled
+  in one transaction; a merge decision records `merge_target_capability_id` against an existing
+  canonical identity instead of creating a node.
+- Reviewed candidates stay immutable history; rejection is auditable and never silently deletes
+  the proposal or its source evidence refs.
+- Reviewing candidates never mutates personal overlays, bindings, Match results or priorities.
 
 ## Project evidence and enhancement
 

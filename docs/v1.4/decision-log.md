@@ -377,3 +377,24 @@ priority separation intact and lets the frontend stay a pure renderer.
 **Impact:** The Today service/API and the frontend adapter must consume this contract; replacing the
 static fallback happens only after the Core read model is implemented and reviewed. No migration is
 required.
+
+## D-019 - Capability inbox review promotes only through a new graph release
+
+**Decision:** ACCEPTED in contract `0.9.0` (docs-only freeze; implementation in a later workstream).
+
+**Context:** AI/rule discovery proposes `CandidateCapabilityNode` records, but released official
+graph versions are immutable (D-007). A review decision therefore cannot simply flip a flag on a
+released node.
+
+**Alternatives:** Mutate the released graph in place on acceptance; auto-accept high-confidence
+candidates; keep accepted candidates forever outside the official ontology.
+
+**Chosen:** Acceptance is USER-only and enters the ontology only via a new graph version release
+with the current release as parent, or via an explicit merge into an existing identity. Rejection
+may be USER or RULE. Reviewed candidates remain immutable history.
+
+**Reason:** Preserves immutable official history, keeps AI discovery from self-expanding the
+ontology and keeps every acceptance auditable.
+
+**Impact:** The review service must assemble the new graph version in one transaction (D-007
+ordering) and must never touch personal overlays, bindings, Match results or priorities.

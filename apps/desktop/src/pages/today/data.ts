@@ -1,6 +1,7 @@
 import type { TodayViewModel } from "./types";
 
-// Adapter boundary until Career Core exposes a dedicated Today read model.
+// Development sample only. The production Today page renders the Core
+// `GET /today` projection (contract 0.8.0) and never uses this fallback.
 export function getTodayFallback(): TodayViewModel {
   return {
     dateLabel: "2026年9月20日  星期日",

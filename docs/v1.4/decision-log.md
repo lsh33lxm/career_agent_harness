@@ -326,3 +326,30 @@ user-gated, and lets any historical resume be reconstructed from immutable parts
 **Impact:** Migration 0011 must be additive. The write path resolves fact refs to non-AI Facts and
 evidence refs through `EvidenceRepository.get()`, failing loud on dangling provenance. Renderer and
 desktop diff UI are later projections over these records.
+
+## D-017 - Application submission and Outcome are separate user-authorized truth
+
+**Decision:** ACCEPTED in contract `0.7.0` (docs-only freeze; no migration assigned yet).
+
+**Context:** ResumeRevision now provides an immutable artifact for a real opportunity, but the
+existing lifecycle skeleton alone cannot prove which opportunity/resume was submitted, distinguish
+preparation from submission, or preserve employer results as auditable Career History.
+
+**Alternatives:** Treat Opportunity state as the application funnel; let an adapter mark submission
+from its own success response; store raw ATS form payloads and credentials for replay; infer Outcome
+from the latest Application state.
+
+**Chosen:** Create revisioned Applications from exact Opportunity revisions only by USER intent.
+Submission pins the exact ResumeRevision and requires explicit USER confirmation or an exact
+validated portal-receipt EvidenceRef. Store Outcomes separately as immutable, authority-qualified
+results pinned to exact Application revisions. Keep sensitive form answers user-controlled and out
+of generic state/events; P0 performs no real ATS submission.
+
+**Reason:** This enforces Opportunity != Application, Prepared != Submitted and Outcome != Signal,
+keeps adapters from owning truth, and preserves reconstructable history without retaining browser
+credentials or uncontrolled legal/identity answers.
+
+**Impact:** The next implementation slice defines typed Application/Outcome models and transition
+tests before any additive migration. Persistence must be atomic and idempotent, resolve exact
+Opportunity/Resume/Evidence refs, preserve submission authority across later revisions and have no
+hidden mutations of Resume, Facts, Match, Capability or priorities.

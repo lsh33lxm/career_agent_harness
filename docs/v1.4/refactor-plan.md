@@ -38,7 +38,8 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-ENHANCE-LINK | Enhancement task write path linked to canonical Gaps | W2-MATCH-RESOLVER | Subagent | enhancement-link | DONE | Medium | Contract `0.4.1`; dangling gap and capability mismatch fail loud. |
 | W2-FACT | CareerFact/FactProposal domain and promotion path | Evidence, Capability bindings | Subagent | fact-promotion | DONE | High | AI-inferred material cannot become a Fact; patch consumers can resolve qualified fact refs. |
 | W2-RESUME | Resume Base/Patch/Revision integration | W1-PROJ, W2-MATCH, W2-FACT | Subagent | resume-core | DONE | High | Exact qualified provenance, USER review and immutable content-hashed revisions tested. |
-| W2-APP | Application/Outcome/history completion | W1-OPP, W2-RESUME | Lead | integration | READY | High | Prepared/submitted and outcome authority tested. |
+| W2-APP-CONTRACT | Freeze Application submission and Outcome authority contract | W1-OPP, W2-RESUME | Lead | integration | DONE | High | Contract `0.7.0`; exact refs, user authority, sensitive-data and no-ATS boundaries explicit. |
+| W2-APP | Application/Outcome/history completion | W2-APP-CONTRACT | Lead | integration | IN_PROGRESS | High | Prepared/submitted and outcome authority tested. |
 | W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | Lead | integration | IN_PROGRESS | Medium | Today composition is integrated over typed fallback; real read models replace selected placeholders. |
 | W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | DONE | Medium | Authenticated UI uses Core-owned IDs, preserves priority separation and passes responsive validation. |
 

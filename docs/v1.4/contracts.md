@@ -1,13 +1,14 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.6.0`
-**Status:** FROZEN FOR WAVE 2 RESUME SLICE
+**Version:** `v1.4-contract-0.7.0`
+**Status:** FROZEN FOR WAVE 2 APPLICATION/OUTCOME SLICE
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.6.0` retains all `0.5.0` guarantees and adds the Resume Base/Patch/Revision write-path contract
-below. `0.5.0` added claim review and Fact promotion; `0.4.x` added Match persistence/resolver/
-replay and the enhancement task write path. Module-specific persisted contract versions remain
-readable; this document version does not rewrite historical Context Manifests.
+`0.7.0` retains all `0.6.0` guarantees and adds the Application submission and Outcome contract
+below. `0.6.0` added the Resume Base/Patch/Revision write path; `0.5.0` added claim review and Fact
+promotion; `0.4.x` added Match persistence/resolver/replay and the enhancement task write path.
+Module-specific persisted contract versions remain readable; this document version does not
+rewrite historical records.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -89,6 +90,41 @@ Job/Capture -> DiscoverRecord -> WatchlistItem -> Opportunity -> Application
 - Opportunity and Application remain separate entities.
 - Prepared is not Submitted. Submitted-or-later requires user confirmation or portal receipt.
 - Existing `OpportunityState.WATCHING` is compatibility-only until migration to WatchlistItem.
+
+### Application and submission truth
+
+- An `Application` is a revisioned business record distinct from its exact Opportunity revision.
+  A USER command creates it when the user chooses to begin serious preparation; recommendation,
+  priority or Match score never creates one implicitly.
+- `PREPARING` and `READY_FOR_REVIEW` are pre-submission states. They carry no submission authority
+  and must never be projected as submitted. Agents may prepare bounded drafts, but only Core may
+  append Application revisions.
+- A transition to `SUBMITTED_BY_USER` pins the exact `ResumeRevision` used and carries one typed
+  `SubmissionAuthority`: `USER_CONFIRMED` from an explicit USER command, or `PORTAL_RECEIPT` backed
+  by an exact canonical EvidenceRef whose source is validated as a submission receipt. Missing,
+  dangling or mismatched authority fails loud.
+- Submitted-or-later states preserve the original submission authority and exact submission
+  references. Later adapter observations may propose state changes or receipt evidence; they do
+  not overwrite the user's answers or become truth by themselves.
+- Identity, legal name, work authorization, demographic disclosures and final form answers remain
+  user-controlled. Credentials, cookies, browser profiles and raw portal payloads are never stored
+  in Application state, DomainEvents or audit logs. P0 does not execute real ATS submission.
+- Application transitions are explicit, expected-revision commands with idempotent replay. A
+  transition never mutates the Opportunity, ResumeRevision, Facts, Match assessment or priorities.
+
+### Outcome and career history truth
+
+- An `Outcome` is a separate immutable result record pinned to an exact Application revision. It
+  records a typed result, occurrence time, actor/authority and exact supporting EvidenceRefs when
+  present; an Application state, Signal or Decision is not itself an Outcome.
+- Models and adapters may propose an observed result. USER confirmation or validated deterministic
+  receipt evidence is required before it becomes canonical; dangling evidence and agent
+  self-confirmation fail loud.
+- Recording an Outcome may atomically append the corresponding Application revision, but it never
+  rewrites earlier Application history. Recommendation, priority, capability and context changes
+  consume Outcome as an input through separate commands; they are not hidden side effects.
+- Required events are past-tense and metadata-only: `application.created`,
+  `application.state_changed`, `application.submission_recorded` and `outcome.recorded`.
 
 ### Priority
 

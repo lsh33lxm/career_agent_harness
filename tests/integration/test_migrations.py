@@ -1254,6 +1254,36 @@ def test_project_capability_resume_ready_requires_validation_and_approval(
     assert persisted_state.state == "resume_ready"
     assert basis_ids == {"basis_validation_001", "basis_approval_001"}
 
+    with engine.begin() as connection:
+        connection.execute(
+            CapabilityIdentityRow.__table__.insert(),
+            {"capability_id": "capability_different"},
+        )
+
+    with pytest.raises(
+        IntegrityError, match="cannot change identity"
+    ), engine.begin() as connection:
+        connection.execute(
+            ProjectCapabilityBasisRow.__table__.insert(),
+            {
+                "basis_id": "basis_identity_drift_001",
+                "capability_state_id": "project_capability_001",
+                "state_revision": 2,
+                "basis_kind": "document_evidence",
+                "project_evidence_id": "evidence_validation",
+                "project_evidence_revision": 1,
+            },
+        )
+        connection.execute(
+            ProjectCapabilityStateRow.__table__.insert(),
+            {
+                **state,
+                "revision": 2,
+                "capability_id": "capability_different",
+                "state": "existing",
+            },
+        )
+
     with pytest.raises(IntegrityError), engine.begin() as connection:
         connection.execute(
             ProjectCapabilityStateRow.__table__.update()
@@ -1429,6 +1459,14 @@ def test_l1_enhancement_task_rejects_empty_plan_and_allows_new_revision(
             ("enhancement_001",),
         ).all()
     assert revisions == [(1, "proposed"), (2, "ready")]
+
+    with pytest.raises(
+        IntegrityError, match="cannot change identity"
+    ), engine.begin() as connection:
+        connection.execute(
+            ProjectEnhancementTaskRow.__table__.insert(),
+            {**task, "revision": 3, "target_gap_id": "gap_different"},
+        )
 
 
 def _context_manifest_row(now: datetime) -> dict[str, object]:

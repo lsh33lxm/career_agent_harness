@@ -190,6 +190,143 @@ def test_capability_migration_downgrades_to_opportunity_schema(tmp_path: Path) -
     } & tables
 
 
+def test_personal_capability_identity_guard_upgrades_downgrades_and_reupgrades(
+    tmp_path: Path,
+) -> None:
+    database_url = sqlite_url(tmp_path / "personal-capability-identity.db")
+    config = alembic_config(database_url)
+    command.upgrade(config, "0005_context_manifest")
+    engine = create_sqlite_engine(database_url)
+    now = datetime.now(UTC)
+    base_state = {
+        "personal_state_id": "personal_state_001",
+        "candidate_id": "candidate_001",
+        "capability_id": "capability_a",
+        "understand": True,
+        "explain": False,
+        "apply": False,
+        "evidence": False,
+        "interview_ready": False,
+        "schema_version": 1,
+        "updated_at": now,
+        "updated_by": "user",
+        "updated_by_kind": "user",
+    }
+    with engine.begin() as connection:
+        connection.execute(
+            CapabilityIdentityRow.__table__.insert(),
+            [{"capability_id": "capability_a"}, {"capability_id": "capability_b"}],
+        )
+        connection.execute(
+            PersonalCapabilityStateRow.__table__.insert(),
+            {**base_state, "revision": 1},
+        )
+
+    command.upgrade(config, "head")
+    with engine.begin() as connection:
+        connection.execute(
+            PersonalCapabilityStateRow.__table__.insert(),
+            {**base_state, "revision": 2, "explain": True},
+        )
+
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            PersonalCapabilityStateRow.__table__.insert(),
+            {**base_state, "revision": 3, "candidate_id": "candidate_002"},
+        )
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(
+            PersonalCapabilityStateRow.__table__.update()
+            .where(
+                PersonalCapabilityStateRow.personal_state_id == "personal_state_001",
+                PersonalCapabilityStateRow.revision == 2,
+            )
+            .values(capability_id="capability_b"),
+        )
+
+    command.downgrade(config, "0005_context_manifest")
+    with engine.connect() as connection:
+        triggers = set(
+            connection.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type = 'trigger' "
+                "AND name LIKE 'trg_personal_capability_state_stable_identity_%'"
+            ).scalars()
+        )
+    assert triggers == set()
+
+    command.upgrade(config, "head")
+    with engine.connect() as connection:
+        triggers = set(
+            connection.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type = 'trigger' "
+                "AND name LIKE 'trg_personal_capability_state_stable_identity_%'"
+            ).scalars()
+        )
+        revisions = connection.exec_driver_sql(
+            "SELECT revision FROM personal_capability_state "
+            "WHERE personal_state_id = ? ORDER BY revision",
+            ("personal_state_001",),
+        ).scalars()
+        assert list(revisions) == [1, 2]
+    assert triggers == {
+        "trg_personal_capability_state_stable_identity_insert",
+        "trg_personal_capability_state_stable_identity_update",
+    }
+
+
+def test_personal_capability_identity_guard_rejects_preexisting_drift(
+    tmp_path: Path,
+) -> None:
+    database_url = sqlite_url(tmp_path / "personal-capability-preexisting-drift.db")
+    config = alembic_config(database_url)
+    command.upgrade(config, "0005_context_manifest")
+    engine = create_sqlite_engine(database_url)
+    now = datetime.now(UTC)
+    with engine.begin() as connection:
+        connection.execute(
+            CapabilityIdentityRow.__table__.insert(),
+            [{"capability_id": "capability_a"}, {"capability_id": "capability_b"}],
+        )
+        connection.execute(
+            PersonalCapabilityStateRow.__table__.insert(),
+            [
+                {
+                    "personal_state_id": "personal_state_001",
+                    "candidate_id": "candidate_001",
+                    "capability_id": "capability_a",
+                    "understand": True,
+                    "explain": False,
+                    "apply": False,
+                    "evidence": False,
+                    "interview_ready": False,
+                    "revision": 1,
+                    "schema_version": 1,
+                    "updated_at": now,
+                    "updated_by": "user",
+                    "updated_by_kind": "user",
+                },
+                {
+                    "personal_state_id": "personal_state_001",
+                    "candidate_id": "candidate_002",
+                    "capability_id": "capability_b",
+                    "understand": True,
+                    "explain": True,
+                    "apply": False,
+                    "evidence": False,
+                    "interview_ready": False,
+                    "revision": 2,
+                    "schema_version": 1,
+                    "updated_at": now,
+                    "updated_by": "user",
+                    "updated_by_kind": "user",
+                },
+            ],
+        )
+
+    with pytest.raises(RuntimeError, match="identity drift must be reconciled"):
+        command.upgrade(config, "head")
+
+
 @pytest.mark.parametrize("actor_kind", ["agent", "model"])
 def test_unsupported_actor_cannot_release_official_capability_graph(
     tmp_path: Path, actor_kind: str

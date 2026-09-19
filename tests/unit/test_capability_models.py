@@ -249,13 +249,24 @@ def test_evidence_binding_requires_exactly_one_source() -> None:
             **binding_fields,
             evidence_ref_id="evidence_001",
             project_evidence_id="project_evidence_001",
+            project_evidence_revision=1,
+        )
+    with pytest.raises(ValidationError, match="exact revision"):
+        EvidenceBinding(**binding_fields, project_evidence_id="project_evidence_001")
+    with pytest.raises(ValidationError, match="exact revision"):
+        EvidenceBinding(
+            **binding_fields,
+            evidence_ref_id="evidence_001",
+            project_evidence_revision=1,
         )
 
     binding = EvidenceBinding(
         **binding_fields,
         project_evidence_id="project_evidence_001",
+        project_evidence_revision=1,
     )
     assert binding.project_evidence_id == "project_evidence_001"
+    assert binding.project_evidence_revision == 1
 
 
 def test_market_binding_distinguishes_target_and_broad_sources() -> None:

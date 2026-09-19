@@ -226,6 +226,7 @@ class EvidenceBinding(FrozenModel):
     capability_id: OpaqueId
     evidence_ref_id: OpaqueId | None = None
     project_evidence_id: OpaqueId | None = None
+    project_evidence_revision: int | None = Field(default=None, ge=1)
     authority: CapabilityEvidenceAuthority
     scopes: tuple[CapabilityEvidenceScope, ...] = Field(min_length=1)
     bound_at: datetime = Field(default_factory=utc_now)
@@ -238,6 +239,9 @@ class EvidenceBinding(FrozenModel):
         )
         if source_count != 1:
             raise ValueError("binding requires exactly one Evidence or Project Evidence source")
+        has_project_evidence = self.project_evidence_id is not None
+        if has_project_evidence != (self.project_evidence_revision is not None):
+            raise ValueError("Project Evidence binding must preserve its exact revision")
         if len(set(self.scopes)) != len(self.scopes):
             raise ValueError("evidence binding scopes must be unique")
         return self

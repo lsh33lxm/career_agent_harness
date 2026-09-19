@@ -94,8 +94,11 @@ user interfaces must not infer user intent from it.
 - `CandidateCapabilityNode`: AI/rule discovery proposal with source evidence and inbox status;
   it is not part of the official ontology until accepted/merged by policy/user.
 - `PersonalCapabilityState`: user-scoped multidimensional state (`understand`, `explain`, `apply`,
-  `evidence`, `interview_ready`) plus derived display status. Official upgrades cannot overwrite it.
+  `evidence`, `interview_ready`) plus derived display status. One `personal_state_id` keeps the same
+  candidate and capability identity across every revision. Official upgrades cannot overwrite it.
 - `EvidenceBinding`: links capability state to Evidence/Project Evidence with authority and scope.
+  A Project Evidence source always pins both `project_evidence_id` and its exact revision; neither
+  field may exist without the other.
 - `MarketBinding`: links a capability to a target opportunity/job requirement; target and broad
   market sources are explicitly distinguished.
 - `InvestmentState`: explainable factors, recommendation, reasons and calculation inputs. It is a

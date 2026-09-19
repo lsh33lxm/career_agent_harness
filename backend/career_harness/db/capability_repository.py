@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from typing import Self
-
-from pydantic import Field, model_validator
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
@@ -44,18 +41,6 @@ class OfficialCapabilityGraphRead(FrozenModel):
     graph_version: CapabilityGraphVersion
     nodes: tuple[CapabilityNode, ...]
     relations: tuple[CapabilityRelation, ...]
-
-
-class EvidenceBindingRead(FrozenModel):
-    binding: EvidenceBinding
-    project_evidence_revision: int | None = Field(default=None, ge=1)
-
-    @model_validator(mode="after")
-    def project_evidence_is_revision_pinned(self) -> Self:
-        has_project_evidence = self.binding.project_evidence_id is not None
-        if has_project_evidence != (self.project_evidence_revision is not None):
-            raise ValueError("Project Evidence binding must preserve its exact revision")
-        return self
 
 
 class CapabilityRepository:
@@ -170,7 +155,7 @@ class CapabilityRepository:
 
     def list_evidence_bindings(
         self, *, personal_state_id: str, personal_state_revision: int
-    ) -> tuple[EvidenceBindingRead, ...]:
+    ) -> tuple[EvidenceBinding, ...]:
         with Session(self.engine) as session:
             rows = session.scalars(
                 select(CapabilityEvidenceBindingRow)
@@ -322,21 +307,19 @@ class CapabilityRepository:
         )
 
     @staticmethod
-    def _to_evidence_binding(row: CapabilityEvidenceBindingRow) -> EvidenceBindingRead:
-        return EvidenceBindingRead(
-            binding=EvidenceBinding(
-                binding_id=row.binding_id,
-                personal_state_id=row.personal_state_id,
-                personal_state_revision=row.personal_state_revision,
-                capability_id=row.capability_id,
-                evidence_ref_id=row.evidence_ref_id,
-                project_evidence_id=row.project_evidence_id,
-                authority=CapabilityEvidenceAuthority(row.authority),
-                scopes=tuple(CapabilityEvidenceScope(scope) for scope in row.scopes),
-                bound_at=row.bound_at,
-                bound_by=row.bound_by,
-            ),
+    def _to_evidence_binding(row: CapabilityEvidenceBindingRow) -> EvidenceBinding:
+        return EvidenceBinding(
+            binding_id=row.binding_id,
+            personal_state_id=row.personal_state_id,
+            personal_state_revision=row.personal_state_revision,
+            capability_id=row.capability_id,
+            evidence_ref_id=row.evidence_ref_id,
+            project_evidence_id=row.project_evidence_id,
             project_evidence_revision=row.project_evidence_revision,
+            authority=CapabilityEvidenceAuthority(row.authority),
+            scopes=tuple(CapabilityEvidenceScope(scope) for scope in row.scopes),
+            bound_at=row.bound_at,
+            bound_by=row.bound_by,
         )
 
     @staticmethod

@@ -539,13 +539,11 @@ def test_personal_state_exact_latest_and_evidence_revision(tmp_path: Path) -> No
         ("personal_state_002", 1),
         ("personal_state_002", 3),
     ]
-    assert [item.binding.binding_id for item in revision_one_bindings] == [
-        "binding_evidence_ref"
-    ]
+    assert [item.binding_id for item in revision_one_bindings] == ["binding_evidence_ref"]
     assert revision_one_bindings[0].project_evidence_revision is None
-    assert [item.binding.binding_id for item in revision_two_bindings] == ["binding_project"]
+    assert [item.binding_id for item in revision_two_bindings] == ["binding_project"]
     assert revision_two_bindings[0].project_evidence_revision == 1
-    assert revision_two_bindings[0].binding.personal_state_revision == 2
+    assert revision_two_bindings[0].personal_state_revision == 2
 
 
 def test_market_layers_and_investment_inputs_remain_separate(tmp_path: Path) -> None:

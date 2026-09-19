@@ -207,3 +207,23 @@ filesystem objects, closing both forged-scope and check/open races without a new
 
 **Impact:** Unsupported platforms and non-fixed Windows drives fail closed. Exact Project revision
 on `ProjectSourceManifest` remains a future shared-schema review, not an implicit scanner claim.
+
+## D-012 - Keep JobRequirement identity stable at the Job boundary
+
+**Decision:** ACCEPTED in migration `0008_job_requirement_persistence`.
+
+**Context:** A Requirement must remain part of one Job, while later reviewed revisions may correct
+which immutable Job revision or official capability mapping supports it.
+
+**Alternatives:** Bind the identity permanently to its first exact Job revision; allow a Requirement
+identity to move between Jobs; keep only a mutable latest Job reference.
+
+**Chosen:** Store stable `(requirement_id, job_id)` identity. Every Requirement revision separately
+pins an existing exact `JobRef`, source EvidenceRefs and, when accepted, an exact official
+CapabilityNode plus graph version. A Requirement identity cannot move to another Job.
+
+**Reason:** Job identity is the durable semantic boundary. Freezing the first Job revision would
+prevent audited corrections, while allowing cross-Job movement would corrupt identity history.
+
+**Impact:** Services must append a new Requirement revision for corrections and retain all prior
+exact references. Match/Gap consumers must freeze the exact Requirement and Job revisions they use.

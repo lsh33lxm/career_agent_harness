@@ -2,16 +2,17 @@
 
 PRD v1.4 Wave 1 is integrated. Opportunity, Capability, Project Evidence and Context persistence,
 typed Capability/Project reads, the scope-safe scanner and the first real desktop projection are
-complete. Wave 2 prerequisite work is now focused on canonical Job/JobRequirement persistence.
+complete. Canonical Evidence and Job/JobRequirement persistence are complete; Wave 2 now advances
+to an evidence-aware Match/Gap policy over exact typed revisions.
 
 # Current Goal
 
-Persist evidence-backed Job revisions and reviewed JobRequirements, then build Match/Gap on exact
-Capability, Opportunity and Project inputs before Resume and Outcome integration.
+Build Match/Gap on exact JobRequirement, Capability, Opportunity, Evidence and Project revisions
+before Resume and Outcome integration.
 
 # Last Verified Commit
 
-`08218e2` - `test: cover project revision identity guards`
+`0ee6388` - `feat: add atomic job requirement commands`
 
 # Completed
 
@@ -108,10 +109,19 @@ Capability, Opportunity and Project inputs before Resume and Outcome integration
   malformed aggregates fail loud and existing stable-identity triggers now have direct tests.
 - Independent reviews found no P0/P1/P2 in either workstream. Combined integration verification
   passed `221` tests with `3` known Windows symlink-permission skips; full Ruff passed.
+- Added immutable Evidence artifact/source/snapshot/reference persistence with exact provenance,
+  credential/session rejection, typed reads and fail-loud malformed-data handling.
+- Added additive migration `0008` and typed repositories for immutable Job revisions and versioned
+  JobRequirements, preserving legacy Opportunity orphans while guarding future canonical refs.
+- Added atomic Job/Requirement commands: typed rows, generic revision, DomainEvent and idempotency
+  commit together; only USER commands can review proposals, and accepted mappings require exact
+  official capability membership.
+- Independent review found no P0/P1. Backend verification passed `237` tests with `3` known Windows
+  symlink-permission skips; Ruff, format and diff checks passed.
 
 # In Progress
 
-- Canonical Job/JobRequirement relational persistence and atomic promotion service.
+- Canonical evidence-aware Match/Gap policy and frozen-input result contract.
 
 # Blocked
 
@@ -126,13 +136,11 @@ Capability, Opportunity and Project inputs before Resume and Outcome integration
 
 # Next Safe Tasks
 
-1. Implement additive Job/JobRequirement persistence with exact evidence/graph validation and
-   backward-compatible Opportunity references.
-2. Implement evidence-aware Match/Gap and explainable investment over exact typed reads.
-3. Add only the Project/Capability Local API projections required by the vertical loop.
-4. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
+1. Implement evidence-aware Match/Gap and explainable investment over exact typed reads.
+2. Add only the Project/Capability Local API projections required by the vertical loop.
+3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.
-5. Continue awaiting user adjudication for destructive legacy cutover decisions.
+4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet
 

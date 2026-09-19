@@ -24,8 +24,9 @@
 | Capability typed read repository | DONE | 2026-09-19 | `1615581`, `3c2d18c`, merge `7e7dfa5`; Lead guard/contract fix `61b5a4f`. |
 | Project capability/task typed reads | DONE | 2026-09-19 | `3cb8d5f`, merge `e1182ab`; exact/latest aggregate reads and fail-loud reconstruction. |
 | Versioned Job/JobRequirement core | DONE | 2026-09-19 | `deadc25`, merge `7728282`; proposal/review authority and exact official mapping enforced. |
-| Job/JobRequirement persistence | READY | 2026-09-19 | Next Lead-owned prerequisite; additive schema and atomic promotion path. |
-| Match/Gap service/persistence | BLOCKED | 2026-09-19 | Domain/read prerequisites complete; awaiting canonical Job/Requirement persistence. |
+| Evidence provenance persistence | DONE | 2026-09-19 | `d7b92e5`; immutable artifacts/sources/snapshots/refs, typed reads and fail-loud integrity. |
+| Job/JobRequirement persistence | DONE | 2026-09-19 | `3b33525`, `0ee6388`; additive 0008, typed reads and atomic USER-gated review path. |
+| Match/Gap service/persistence | READY | 2026-09-19 | All exact typed-read prerequisites complete; pure policy implementation is next. |
 
 ## Integrated workstreams
 
@@ -68,6 +69,12 @@
 - Project State Read: `3cb8d5f` merged as `e1182ab`; exact/latest capability state, ordered basis
   and enhancement task reads fail loud on malformed aggregates. Combined integration passed
   `221 passed, 3 skipped`; stable identity trigger coverage was added in `08218e2`.
+- Evidence Provenance: `d7b92e5`; additive 0007 stores immutable source snapshots and exact
+  artifact-backed EvidenceRefs. Full integration passed `227 passed, 3 skipped`; independent review
+  found no P0/P1/P2.
+- Job Persistence/Service: `3b33525`, `0ee6388`; additive 0008, typed repositories and atomic
+  Job/Requirement commands preserve exact provenance and user-only review. Full integration passed
+  `237 passed, 3 skipped`; Ruff, format and diff checks passed; review found no P0/P1.
 
 ## Baseline verification
 

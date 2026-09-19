@@ -1,8 +1,8 @@
 :root {
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #17211c;
-  background: #f5f6f2;
+  color: #16353a;
+  background: #f5f0e5;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -51,39 +51,34 @@ textarea:focus-visible {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
+  grid-template-columns: 210px minmax(0, 1fr);
   height: 100%;
-  background: #f5f6f2;
+  background: #f5f0e5;
 }
 
 .sidebar {
   display: flex;
   min-height: 0;
   flex-direction: column;
-  padding: 20px 14px 16px;
-  color: #edf2ee;
-  background: #17211c;
-  border-right: 1px solid #29362f;
+  padding: 26px 16px 18px;
+  color: #f5f0df;
+  background: #0a514d;
+  border-right: 1px solid #093f3d;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  min-height: 44px;
+  min-height: 56px;
   gap: 11px;
-  padding: 0 8px 18px;
+  padding: 0 5px 12px;
 }
 
 .brand-mark {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  color: #17211c;
-  background: #f0c75e;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 800;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .brand-copy {
@@ -94,14 +89,23 @@ textarea:focus-visible {
 
 .brand-copy strong {
   overflow: hidden;
-  font-size: 14px;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 25px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .brand-copy small {
-  color: #9eb0a5;
-  font-size: 11px;
+  color: #aac5bc;
+  font-size: 8px;
+}
+
+.brand-motto {
+  margin: 10px 12px 22px;
+  color: #a7c0b8;
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 14px;
+  line-height: 1.9;
 }
 
 .primary-nav {
@@ -116,7 +120,7 @@ textarea:focus-visible {
   min-height: 40px;
   gap: 11px;
   padding: 0 11px;
-  color: #b9c6be;
+  color: #d4e2dc;
   border-radius: 6px;
   text-decoration: none;
   font-size: 13px;
@@ -125,13 +129,13 @@ textarea:focus-visible {
 
 .primary-nav a:hover {
   color: #ffffff;
-  background: #223027;
+  background: rgb(255 255 255 / 7%);
 }
 
 .primary-nav a.active {
   color: #ffffff;
-  background: #2d3e33;
-  box-shadow: inset 3px 0 #f0c75e;
+  background: rgb(255 255 255 / 9%);
+  box-shadow: inset 3px 0 #dea536;
 }
 
 .sidebar-footer {
@@ -140,8 +144,8 @@ textarea:focus-visible {
   gap: 8px;
   margin-top: auto;
   padding: 16px 10px 0;
-  color: #9eb0a5;
-  border-top: 1px solid #2c3932;
+  color: #b8cec7;
+  border-top: 1px solid rgb(255 255 255 / 18%);
   font-size: 11px;
 }
 
@@ -155,7 +159,7 @@ textarea:focus-visible {
 
 .workspace {
   display: grid;
-  grid-template-rows: 64px minmax(0, 1fr);
+  grid-template-rows: 58px minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
 }
@@ -166,8 +170,8 @@ textarea:focus-visible {
   justify-content: space-between;
   gap: 16px;
   padding: 0 28px;
-  background: #ffffff;
-  border-bottom: 1px solid #dde2dd;
+  background: #fbf8f1;
+  border-bottom: 1px solid #ded8ca;
 }
 
 .search-field {
@@ -916,4 +920,141 @@ h3 {
   .priority-form .secondary-command {
     width: 100%;
   }
+}
+
+/* Today is a read-only composition over existing projections until Core exposes a queue API. */
+.today-page {
+  width: min(1540px, 100%);
+  margin: 0 auto;
+  padding: 0 28px 40px;
+  color: #16353a;
+}
+
+.today-hero {
+  position: relative;
+  display: grid;
+  min-height: 140px;
+  grid-template-columns: minmax(350px, 1fr) minmax(280px, 420px) 210px;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid #ded8ca;
+}
+
+.today-title-row { display: flex; align-items: baseline; gap: 20px; }
+.today-title-row h1 { font-family: "Songti SC", "STSong", serif; font-size: 54px; }
+.today-title-row time { color: #526a69; font-family: "Songti SC", "STSong", serif; font-size: 14px; }
+.today-hero > div > p { margin: 10px 0 0; color: #718080; font-family: "Songti SC", "STSong", serif; }
+.today-motto { margin: 0; font-family: "STKaiti", "KaiTi", serif; font-size: 17px; line-height: 1.9; transform: rotate(-3deg); }
+.today-hero .service-status { position: absolute; top: 12px; right: 0; background: #fbf8f1; }
+.today-sunrise { position: relative; height: 94px; overflow: hidden; }
+.sunrise-sun { position: absolute; top: 8px; left: 44%; width: 58px; height: 58px; border-radius: 50%; background: #dea536; opacity: .82; }
+.sunrise-hill { position: absolute; bottom: 12px; height: 42px; border-radius: 50% 50% 0 0; background: #bfd0c5; opacity: .65; }
+.sunrise-hill--near { left: 12%; width: 55%; }
+.sunrise-hill--far { right: 2%; width: 58%; background: #cfdbd1; }
+
+.today-layout { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; margin-top: 14px; }
+.today-main-column, .today-side-column { display: grid; min-width: 0; align-content: start; gap: 14px; }
+.today-panel { min-width: 0; overflow: hidden; background: #fffdf7; border: 1px solid #e2ddcf; border-radius: 8px; box-shadow: 0 8px 22px rgb(62 74 61 / 7%); }
+.today-section-title { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 9px; margin: 0; font-family: "Songti SC", "STSong", serif; font-size: 22px; }
+.today-section-title > span { width: 5px; height: 24px; border-radius: 3px; background: #dea536; }
+.today-section-title small { color: #858b82; font-family: inherit; font-size: 13px; font-weight: 400; }
+.today-section-heading { display: flex; align-items: center; justify-content: space-between; }
+.today-section-heading a { display: inline-flex; align-items: center; gap: 5px; color: #0a514d; text-decoration: none; font-size: 12px; }
+
+.focus-panel, .opportunity-stream, .weekly-panel, .confirmation-panel, .capture-panel { padding: 18px 20px; }
+.focus-content { display: grid; grid-template-columns: 78px minmax(0, 1fr) 140px; gap: 20px; align-items: center; margin-top: 14px; padding: 22px 16px 8px; border-top: 1px solid #ded8ca; }
+.focus-icon, .confirmation-icon { display: grid; place-items: center; color: #0a514d; background: #f0eee6; border: 1px solid #e2ddcf; border-radius: 7px; }
+.focus-icon { width: 68px; height: 68px; }
+.focus-content > div { min-width: 0; }
+.focus-content h3 { font-family: "Songti SC", "STSong", serif; font-size: 22px; }
+.focus-content h3, .focus-content p { overflow-wrap: anywhere; }
+.focus-content p { color: #60706f; line-height: 1.65; }
+.focus-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.today-primary, .today-secondary, .today-quiet, .today-link, .capture-input, .capture-tools button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; border-radius: 6px; cursor: pointer; }
+.today-primary { padding: 0 16px; color: #17363a; background: #dea536; border: 1px solid #d29a2d; font-weight: 700; }
+.today-secondary { padding: 0 13px; color: #fff; background: #0a625c; border: 1px solid #0a625c; }
+.today-quiet { padding: 0 13px; color: #68736f; background: #f0eee8; border: 1px solid #ebe7dc; }
+.today-link { padding: 0 4px; color: #0a625c; background: transparent; border: 0; }
+.focus-note, .capture-note { font-family: "STKaiti", "KaiTi", serif; font-size: 17px; line-height: 1.7; transform: rotate(-5deg); }
+
+.opportunity-stream { padding-bottom: 4px; }
+.today-opportunities { margin-top: 12px; border-top: 1px solid #ded8ca; }
+.today-opportunity { display: grid; min-height: 86px; grid-template-columns: 44px minmax(210px, .9fr) 78px minmax(230px, 1fr) 18px; align-items: center; gap: 14px; border-bottom: 1px solid #ded8ca; }
+.company-glyph { display: grid; width: 40px; height: 40px; place-items: center; color: #fff; background: #0a514d; border-radius: 50%; font-weight: 750; }
+.today-opportunity-name h3 { display: inline; font-family: "Songti SC", "STSong", serif; font-size: 17px; }
+.today-opportunity-name > span { margin-left: 9px; color: #526a69; font-size: 12px; }
+.today-opportunity-name small { display: block; margin-top: 6px; color: #858b82; }
+mark { padding: 2px 5px; color: #0a514d; background: #e5efea; border-radius: 3px; }
+.today-match { padding-left: 14px; border-left: 1px solid #ded8ca; }
+.today-match strong { display: block; font-family: Georgia, serif; font-size: 22px; }
+.today-match span { color: #858b82; font-size: 11px; }
+.today-opportunity-reason p { margin: 0 0 7px; color: #60706f; font-size: 12px; line-height: 1.5; }
+.priority-pair { display: flex; flex-wrap: wrap; gap: 6px; }
+.priority-pair span { padding: 3px 6px; color: #5f675f; background: #f0eee6; border-radius: 4px; font-size: 10px; }
+
+.week-track { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 24px; }
+.week-step { position: relative; display: grid; gap: 4px; padding-top: 28px; }
+.week-marker { position: absolute; top: 0; left: 7px; z-index: 2; display: grid; width: 25px; height: 25px; place-items: center; color: #fff; background: #fffdf7; border: 2px solid #aaa99f; border-radius: 50%; }
+.week-step--done .week-marker { background: #0a625c; border-color: #0a625c; }
+.week-step--current .week-marker { border-color: #dea536; box-shadow: inset 0 0 0 5px #f7e0a7; }
+.week-line { position: absolute; top: 12px; left: 32px; right: -7px; height: 1px; background: #c5c0b4; }
+.week-step small { color: #858b82; }
+.weekly-panel blockquote { margin: 16px 0 0; padding: 11px 16px; color: #718080; background: #f4f1e9; font-family: "Songti SC", "STSong", serif; }
+
+.confirmation-list { margin-top: 13px; border-top: 1px solid #ded8ca; }
+.confirmation-item { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 16px 0; border-bottom: 1px solid #ded8ca; }
+.confirmation-icon { width: 42px; height: 42px; }
+.confirmation-item h3 { font-family: "Songti SC", "STSong", serif; font-size: 15px; }
+.confirmation-item strong { display: block; margin-top: 4px; font-size: 12px; }
+.confirmation-item small { display: block; margin-top: 7px; color: #858b82; font-size: 10px; }
+.confirmation-item p { color: #60706f; font-size: 12px; line-height: 1.55; }
+.confirmation-item > div > div { display: flex; gap: 7px; }
+.capture-input { width: 100%; justify-content: flex-start; margin-top: 14px; padding: 0 11px; color: #68736f; background: #fbfaf6; border: 1px solid #ded8ca; }
+.capture-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.capture-tools button { min-width: 0; padding: 5px; color: #526a69; background: #f8f6f0; border: 1px solid #ded8ca; font-size: 11px; }
+.capture-panel > p { color: #858b82; font-size: 11px; }
+.week-progress { display: grid; width: 104px; height: 104px; place-items: center; margin-top: 20px; border: 10px solid #0a625c; border-right-color: #d7d6c9; border-radius: 50%; }
+.week-progress div { display: grid; text-align: center; }
+.week-progress strong { font-family: Georgia, serif; font-size: 24px; }
+.capture-panel { position: relative; min-height: 320px; }
+.capture-note { position: absolute; right: 22px; bottom: 34px; }
+
+@media (max-width: 1180px) {
+  .today-layout { grid-template-columns: 1fr; }
+  .today-side-column { grid-template-columns: 1fr 1fr; }
+  .today-hero { grid-template-columns: 1fr 320px; }
+  .today-motto { display: none; }
+}
+
+@media (max-width: 860px) {
+  .brand-motto { display: none; }
+  .today-page { padding-inline: 18px; }
+  .today-hero { grid-template-columns: 1fr; }
+  .today-sunrise { display: none; }
+  .today-title-row { flex-wrap: wrap; }
+  .today-title-row h1 { font-size: 44px; }
+  .today-opportunity { grid-template-columns: 40px minmax(0, 1fr) 70px 16px; padding-block: 10px; }
+  .today-opportunity-reason { grid-column: 2 / -1; }
+  .today-side-column { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  .today-page { padding: 0 10px 28px; }
+  .today-hero { min-height: 120px; align-content: center; gap: 10px; }
+  .today-hero .service-status { position: static; justify-self: start; }
+  .today-title-row { display: grid; gap: 4px; }
+  .today-title-row h1 { font-size: 40px; }
+  .focus-content { grid-template-columns: 1fr; }
+  .focus-icon, .focus-note { display: none; }
+  .today-opportunity { grid-template-columns: 40px minmax(0, 1fr) 18px; }
+  .today-opportunity-name { min-width: 0; }
+  .today-opportunity-name h3 { display: block; overflow-wrap: anywhere; }
+  .today-opportunity-name > span { display: block; margin: 4px 0 0; overflow-wrap: anywhere; }
+  .today-match { grid-column: 2; padding-left: 0; border-left: 0; }
+  .today-opportunity-reason { grid-column: 2 / -1; }
+  .week-track { grid-template-columns: 1fr 1fr; row-gap: 20px; }
+  .week-line { display: none; }
+  .weekly-panel blockquote { overflow-wrap: anywhere; }
+  .capture-tools { grid-template-columns: 1fr; }
+  .capture-note { position: static; }
 }

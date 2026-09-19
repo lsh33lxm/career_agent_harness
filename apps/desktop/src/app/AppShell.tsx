@@ -8,12 +8,13 @@ export function AppShell() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand" aria-label="Agent Career Harness">
-          <span className="brand-mark">ACH</span>
+          <img className="brand-mark" src="/brand-icon.png" alt="" />
           <span className="brand-copy">
-            <strong>Career Harness</strong>
-            <small>Local workspace</small>
+            <strong>观复</strong>
+            <small>CAREER HARNESS</small>
           </span>
         </div>
+        <p className="brand-motto">看见经历<br />也看见自己</p>
         <nav className="primary-nav" aria-label="Primary navigation">
           {navigation.map(({ path, label, icon: Icon }) => (
             <NavLink key={path} to={path} end={path === "/"}>
@@ -24,7 +25,7 @@ export function AppShell() {
         </nav>
         <div className="sidebar-footer">
           <span className="privacy-dot" aria-hidden="true" />
-          Local-first
+          职业是一段长途
         </div>
       </aside>
 

@@ -6,12 +6,12 @@ composition over typed fallback data; a Core-owned Today read model remains futu
 
 # Current Goal
 
-Add the smallest authenticated Resume/Application/Outcome read projections required by the
-vertical loop, without starting real ATS submission, production writes or P2 automation.
+Keep the integrated Resume/Today/Application vertical slice stable; the next optional slice is a
+Core-owned Today read model replacing typed fallback data.
 
 # Last Verified Commit
 
-`4b0bb68` - `feat(core): persist Application and Outcome truth`
+`83b7b91` - `feat(api): expose career history reads`
 
 # Completed
 
@@ -168,10 +168,15 @@ vertical loop, without starting real ATS submission, production writes or P2 aut
   in service and write layers; submission identity cannot drift across later revisions. Focused
   tests passed `11`; full backend verification passed `332` tests with `3` known Windows
   symlink-permission skips. No ATS execution, credentials or raw form answers were added.
+- Added authenticated read-only Resume/Application/Outcome projections (`83b7b91`): exact/latest
+  Resume and Application reads plus Outcome history use the localhost bearer boundary; missing
+  records fail with 404 and no Application write route/service is exposed. API regression passed
+  `11`; full backend verification passed `334` tests with `3` known Windows symlink-permission
+  skips.
 
 # In Progress
 
-- W2-UI authenticated read projections for Resume/Application/Outcome.
+- None in the completed Resume Core + Today UI goal scope.
 
 # Blocked
 
@@ -186,12 +191,11 @@ vertical loop, without starting real ATS submission, production writes or P2 aut
 
 # Next Safe Tasks
 
-1. Add authenticated Resume/Application/Outcome read projections required by the vertical loop.
+1. Freeze a Core-owned Today read model before replacing the typed fallback adapter.
 2. Add only the Project/Capability read projections required by an actual UI consumer.
-3. Replace Today fallback data only after a Core-owned read model contract is frozen.
-4. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
+3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.
-5. Continue awaiting user adjudication for destructive legacy cutover decisions.
+4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet
 

@@ -36,6 +36,7 @@
 | Application/Outcome contract | DONE | 2026-09-20 | `d61af6c`; contract `0.7.0`, exact submission refs, user authority and no-ATS boundary. |
 | Application/Outcome typed invariants | DONE | 2026-09-20 | `5727af6`; exact Opportunity/Application refs, submission authority and receipt evidence gates; 329 passed, 3 skipped. |
 | Application/Outcome persistence | DONE | 2026-09-20 | `4b0bb68`; additive 0012, immutable revisions/outcomes, atomic USER-gated services; 332 passed, 3 skipped. |
+| Resume/Application/Outcome read API | DONE | 2026-09-20 | `83b7b91`; authenticated read-only exact/latest projections; 334 passed, 3 skipped. |
 
 ## Integrated workstreams
 
@@ -121,6 +122,10 @@
   ordered/sealed, receipt source type is checked in service and write layers, and typed rows,
   generic revision, event and idempotency commit atomically. Focused tests passed `11`; full
   integration passed `332 passed, 3 skipped`; changed-file Ruff/format and diff checks passed.
+- Career History Read API: `83b7b91`; localhost bearer-authenticated GET projections expose
+  ResumeBase, ResumeRevision, latest/exact Application and per-Application Outcome history. No
+  Application mutation route or write service is wired into the API. API regression passed `11`;
+  full integration passed `334 passed, 3 skipped`; changed-file Ruff/format and diff checks passed.
 
 ## Recorded follow-ups (non-blocking)
 

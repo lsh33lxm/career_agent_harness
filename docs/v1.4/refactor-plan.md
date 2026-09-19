@@ -41,6 +41,7 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-APP-CONTRACT | Freeze Application submission and Outcome authority contract | W1-OPP, W2-RESUME | Lead | integration | DONE | High | Contract `0.7.0`; exact refs, user authority, sensitive-data and no-ATS boundaries explicit. |
 | W2-APP | Application/Outcome/history completion | W2-APP-CONTRACT | Lead | integration | DONE | High | Prepared/submitted separation, exact refs, receipt/user authority, immutable Outcome and atomic persistence tested. |
 | W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | Lead | integration | IN_PROGRESS | Medium | Today composition is integrated over typed fallback; real read models replace selected placeholders. |
+| W2-CAREER-READ | Authenticated Resume/Application/Outcome reads | W2-RESUME, W2-APP | Lead | integration | DONE | Medium | Exact/latest read-only projections pass auth, 404 and no-write-route tests. |
 | W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | DONE | Medium | Authenticated UI uses Core-owned IDs, preserves priority separation and passes responsive validation. |
 
 ## Wave 3+ deferred

@@ -1673,3 +1673,118 @@ class ResumeRevisionPatchRefRow(Base):
     patch_id: Mapped[str] = mapped_column(String(128), nullable=False)
     patch_revision: Mapped[int] = mapped_column(Integer, nullable=False)
 
+
+class ApplicationIdentityRow(Base):
+    __tablename__ = "application_identity"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["opportunity_id", "opportunity_revision"],
+            ["entity_revision.entity_id", "entity_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    application_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    opportunity_id: Mapped[str] = mapped_column(
+        ForeignKey("opportunity_record.opportunity_id", ondelete="RESTRICT"), nullable=False
+    )
+    opportunity_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ApplicationRevisionRow(Base):
+    __tablename__ = "application_revision_record"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_application_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_application_schema_version"),
+        CheckConstraint(
+            "state IN ('preparing', 'ready_for_review', 'submitted_by_user', 'screen', 'oa', "
+            "'interview', 'offer', 'rejected', 'withdrawn', 'closed')",
+            name="ck_application_state",
+        ),
+        CheckConstraint(
+            "(state IN ('preparing', 'ready_for_review') AND resume_revision_id IS NULL "
+            "AND submission_authority IS NULL AND submission_evidence_ref_id IS NULL "
+            "AND submitted_at IS NULL) OR (state NOT IN ('preparing', 'ready_for_review') "
+            "AND resume_revision_id IS NOT NULL "
+            "AND submission_authority IN ('user_confirmed', 'portal_receipt') "
+            "AND submitted_at IS NOT NULL)",
+            name="ck_application_submission",
+        ),
+        CheckConstraint(
+            "submission_authority != 'portal_receipt' OR submission_evidence_ref_id IS NOT NULL",
+            name="ck_application_portal_receipt",
+        ),
+    )
+
+    application_id: Mapped[str] = mapped_column(
+        ForeignKey("application_identity.application_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    resume_revision_id: Mapped[str | None] = mapped_column(
+        ForeignKey("resume_revision_record.revision_id", ondelete="RESTRICT")
+    )
+    submission_authority: Mapped[str | None] = mapped_column(String(32))
+    submission_evidence_ref_id: Mapped[str | None] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT")
+    )
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class OutcomeRecordRow(Base):
+    __tablename__ = "outcome_record"
+    __table_args__ = (
+        CheckConstraint("application_revision >= 1", name="ck_outcome_application_revision"),
+        CheckConstraint(
+            "result IN ('offer', 'rejection', 'withdrawal', 'closed')", name="ck_outcome_result"
+        ),
+        CheckConstraint(
+            "authority IN ('user_confirmed', 'portal_receipt')", name="ck_outcome_authority"
+        ),
+        CheckConstraint("evidence_count >= 0", name="ck_outcome_evidence_count"),
+        CheckConstraint(
+            "authority != 'portal_receipt' OR evidence_count > 0",
+            name="ck_outcome_portal_receipt",
+        ),
+        ForeignKeyConstraint(
+            ["application_id", "application_revision"],
+            ["application_revision_record.application_id", "application_revision_record.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    outcome_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    application_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    application_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    result: Mapped[str] = mapped_column(String(32), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    authority: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    recorded_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class OutcomeEvidenceRefRow(Base):
+    __tablename__ = "outcome_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint(
+            "outcome_id", "evidence_ref_id", name="uq_outcome_evidence_ref"
+        ),
+        CheckConstraint("ordinal >= 0", name="ck_outcome_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["outcome_id"],
+            ["outcome_record.outcome_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    outcome_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"), nullable=False
+    )
+

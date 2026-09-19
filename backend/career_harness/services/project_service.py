@@ -72,13 +72,24 @@ class ProjectService:
             raise ValueError("command requires a project_enhancement_task target")
         if command.target.entity_id != task_id:
             raise ValueError("command target must be the transitioned task")
+        current = self.repository.get_enhancement_task(task_id)
+        if current is None:
+            raise ValueError("ProjectEnhancementTask transition requires an existing task")
         metadata = {
             "task_id": task_id,
             "status": to_status.value,
         }
+        # Keep the generic projection shape stable: copy the current state and update status.
+        next_state = {
+            "task_id": current.task_id,
+            "project_id": current.project_id,
+            "target_gap_id": current.target_gap_id,
+            "target_capability_id": current.target_capability_id,
+            "status": to_status.value,
+        }
         commit = self.commands.commit(
             command,
-            metadata,
+            next_state,
             event_type="project_enhancement.status_changed",
             event_payload=dict(metadata),
             transactional_write=ProjectEnhancementTaskStatusWrite(

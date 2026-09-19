@@ -635,3 +635,32 @@ def test_transition_revision_conflict_and_unknown_task_fail_loud(tmp_path: Path)
             to_status=ProjectEnhancementTaskStatus.READY,
         )
     assert _write_counts(engine) == before
+
+
+def test_transition_is_idempotent(tmp_path: Path) -> None:
+    engine, gap_id = _engine(tmp_path)
+    _, service = _services(engine)
+    service.propose_enhancement_task(
+        _command("task_001", command_id="command_task_001"),
+        task=_task("task_001", gap_id),
+    )
+    command = _command(
+        "task_001",
+        command_id="command_task_001_ready",
+        command_type="project_enhancement.transition",
+        expected_revision=1,
+    )
+
+    first = service.transition_enhancement_task(
+        command, task_id="task_001", to_status=ProjectEnhancementTaskStatus.READY
+    )
+    replay = service.transition_enhancement_task(
+        command, task_id="task_001", to_status=ProjectEnhancementTaskStatus.READY
+    )
+
+    assert replay == first
+    with Session(engine) as session:
+        # One propose row plus one transition row; the replay added nothing.
+        assert session.scalar(select(func.count()).select_from(ProjectEnhancementTaskRow)) == 2
+        # Gap seed + propose + transition each committed once; the replay added nothing.
+        assert session.scalar(select(func.count()).select_from(IdempotencyRecordRow)) == 3

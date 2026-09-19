@@ -31,6 +31,8 @@
 | Match/Gap resolver/replay | DONE | 2026-09-19 | `dd77bd8`, `38616c3` merged as `288ee30`; exact-read resolver, assess orchestration, stored-manifest replay; read-path gap capability check `e82d6cc`. |
 | Enhancement task Gap linkage | DONE | 2026-09-19 | `e779c81`, `2abdb2c` merged as `cadba69`; propose/transition commands with fail-loud gap validation. |
 | CareerFact domain | DONE | 2026-09-19 | `427ce1b`, `8a76ad2` merged as `d43ebe4`; additive 0010, claim review + revisioned fact promotion. |
+| P0 vertical slice proof | DONE | 2026-09-20 | `615bd4d` merged as `f132709`; one fixture walks Job→Opportunity→Match→Fact→Resume→Application→Outcome→replay; full 336 passed. |
+| Today read model | IN_PROGRESS | 2026-09-20 | Contract `0.8.0` frozen; `kimi/v14-today-read-core` in flight. |
 | Resume truth core | DONE | 2026-09-20 | `c6bfe66` merged as `df5f4d2`; additive 0011, exact reviewed patches and immutable content-hashed revisions. |
 | Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
 | Application/Outcome contract | DONE | 2026-09-20 | `d61af6c`; contract `0.7.0`, exact submission refs, user authority and no-ATS boundary. |

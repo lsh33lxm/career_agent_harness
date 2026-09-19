@@ -13,7 +13,8 @@ new feature; transfer the verified integration state to Kimi.
 
 # Last Verified Commit
 
-`1fe3982` - `docs: record career read projections` (pre-handoff implementation baseline)
+`f132709` - `merge: integrate p0 vertical slice proof` (post-handoff: Today contract `0.8.0`
+frozen at `16baf32`; P0 end-to-end proof integrated; `kimi/v14-today-read-core` in flight)
 
 # Completed
 
@@ -178,7 +179,9 @@ new feature; transfer the verified integration state to Kimi.
 
 # In Progress
 
-- Codex-to-Kimi engineering handoff only; no feature implementation is active.
+- Codex-to-Kimi engineering handoff complete; Today read model contract `0.8.0` is frozen and the
+  P0 vertical slice proof is integrated (`f132709`, 336 passed, 3 skipped).
+- `kimi/v14-today-read-core` implements the Core Today projection in flight.
 - `W2-UI` remains incomplete because Today uses typed fallback and other primary views remain
   placeholders or lack product read projections.
 

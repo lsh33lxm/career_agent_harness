@@ -113,7 +113,7 @@ function runtimeConfig(): RuntimeConfig {
   return { apiBaseUrl: parsedBaseUrl.origin, launchToken };
 }
 
-async function apiRequest<T>(
+export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
   idempotencyKey?: string,

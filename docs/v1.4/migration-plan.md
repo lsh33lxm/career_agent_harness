@@ -20,6 +20,7 @@
 | M2b | Add Capability records | Completed in `2b7901d`; no automatic seed/import | Tested downgrade to 0002 on disposable DB. |
 | M3a | Add Project Evidence records | Completed in `158547b`; no filesystem scan or legacy import | Tested downgrade to 0003 on disposable DB. |
 | M3b | Add Context Manifest records | Completed in `95d3df6`; bounded selection/provenance metadata only | Tested downgrade to 0004 on disposable DB. |
+| M3c | Guard Personal Capability identity across revisions | Completed in `61b5a4f`; no data rewrite, upgrade fails loud on historical drift | Tested `0005 -> 0006 -> 0005 -> 0006` on disposable DB. |
 | M4 | Compatibility transform for `OpportunityState.WATCHING` | Explicit rehearsal report; user approval if real records exist | Preserve original revisions; reverse mapping. |
 | M5 | Resume/Application/Outcome vertical slice | Additive records with evidence refs | Tombstone new records; retain audit. |
 | M6 | Legacy import (future gate) | Approved manifest only | Restore verified pre-import backup. |
@@ -31,6 +32,8 @@
 - Existing `0001_foundation` data survives every additive migration.
 - Foreign keys prevent deleting referenced evidence/official graph versions.
 - Official graph upgrade does not overwrite personal capability state.
+- One `personal_state_id` cannot change candidate/capability identity across revisions; existing
+  drift blocks upgrade for explicit reconciliation rather than being silently rewritten.
 - Released official graph rows are append/update/delete protected; new releases are assembled in
   one deferred-FK transaction and sealed by inserting the graph version last.
 - Suggested priority updates do not modify user priority.

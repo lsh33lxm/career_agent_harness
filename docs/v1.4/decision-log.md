@@ -166,3 +166,44 @@ sensitive source content stays in its canonical domain stores and transient comp
 **Impact:** A future write service must stage children then seal the parent in the same command
 transaction and emit metadata-only `context.compiled`. Retention remains append-only until the user
 approves a retention policy.
+
+## D-010 - Keep Personal Capability identity stable across revisions
+
+**Decision:** ACCEPTED in migration `0006_capability_personal_state_identity`.
+
+**Context:** Revision-exact reads are ambiguous if one `personal_state_id` can silently change its
+candidate or capability identity in a later revision.
+
+**Alternatives:** Infer identity from the latest row; split every changed identity at read time;
+introduce a new identity table immediately.
+
+**Chosen:** Preserve the existing relational representation and add insert/update guards. Upgrade
+fails without rewriting data when historical drift already exists. Project Evidence bindings carry
+their exact evidence revision in the shared domain contract.
+
+**Reason:** This closes identity drift with a small additive migration while preserving every
+canonical record and keeping official ontology, personal overlay and evidence provenance separate.
+
+**Impact:** Any discovered historical drift requires explicit reconciliation before upgrade. Read
+repositories return the canonical `EvidenceBinding` without an infrastructure-only envelope.
+
+## D-011 - Scan Project Evidence through canonical, handle-anchored inputs
+
+**Decision:** ACCEPTED in `f3cfd9e` and merge `44a3e00`.
+
+**Context:** Caller-provided scope objects can widen authorization, and path checks followed by a
+separate open leave a symlink/junction replacement window.
+
+**Alternatives:** Trust validated Pydantic scope objects; resolve paths before ordinary open;
+disable local scanning.
+
+**Chosen:** Load Project and exact scope revision from Career Core by canonical IDs. On POSIX,
+traverse from directory descriptors with `O_NOFOLLOW`; on Windows, require a fixed local drive,
+hold no-delete/no-write-shared handles, reject reparse points, verify final-path containment and
+read from the verified file handle. Reject UNC and device namespaces before filesystem access.
+
+**Reason:** Authorization and bytes read now derive from the same canonical scope and anchored
+filesystem objects, closing both forged-scope and check/open races without a new dependency.
+
+**Impact:** Unsupported platforms and non-fixed Windows drives fail closed. Exact Project revision
+on `ProjectSourceManifest` remains a future shared-schema review, not an implicit scanner claim.

@@ -21,15 +21,15 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W1-OPP | Watchlist/Opportunity/Priority core | W0-02 | Subagent | opportunity | DONE | High | User-gated admission and priority independence tested. |
 | W1-PROJ | Project scope/evidence/enhancement L1 core | W0-02 | Subagent | project-evidence | DONE | High | Deny-wins scope and evidence candidates tested. |
 | W1-CTX | Five-asset Context Compiler basic | W0-02, domain read ports | Subagent | context | DONE | Medium | Relevance selection and ContextManifest tests pass. |
-| W1-INT | Lead-owned shared schema/API integration | W1-* contracts | Lead | integration | IN_PROGRESS | High | All Wave 1 schemas and Context service done; Project/Capability read paths pending. |
-| W1-PROJ-READ | Project typed reads and scope-safe local scanner | W1-PROJ, 0004 | Subagent | project-read | READY | High | Exact reads; scanner rejects scope, symlink/reparse and secret/session escapes. |
-| W1-CAP-READ | Capability graph and personal overlay typed reads | W1-CAP, 0003 | Subagent | capability-read | READY | Medium | Version-exact official/personal/market/investment queries preserve separation. |
+| W1-INT | Lead-owned shared schema/API integration | W1-* contracts | Lead | integration | IN_PROGRESS | High | Schemas, Context service, typed reads and scanner done; vertical Match/Gap integration remains. |
+| W1-PROJ-READ | Project typed reads and scope-safe local scanner | W1-PROJ, 0004 | Subagent | project-read | DONE | High | Exact reads; scanner rejects scope, symlink/reparse and secret/session escapes. |
+| W1-CAP-READ | Capability graph and personal overlay typed reads | W1-CAP, 0003 | Subagent | capability-read | DONE | Medium | Version-exact official/personal/market/investment queries preserve separation. |
 
 ## Wave 2 - Vertical career loop
 
 | ID | Description | Dependencies | Owner | Worktree | Status | Risk | Definition of Done |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| W2-MATCH | Evidence-aware Match/Gap and investment heuristic | W1-CAP/OPP/PROJ | TBD | TBD | NOT_STARTED | Medium | Explainable factors and frozen inputs. |
+| W2-MATCH | Evidence-aware Match/Gap and investment heuristic | W1-CAP/OPP/PROJ | Lead | integration | READY | Medium | Explainable factors and frozen inputs. |
 | W2-RESUME | Resume Base/Patch/Revision integration | W1-PROJ, W2-MATCH | TBD | TBD | NOT_STARTED | High | Unverified claims cannot enter accepted patch. |
 | W2-APP | Application/Outcome/history completion | W1-OPP, W2-RESUME | TBD | TBD | NOT_STARTED | High | Prepared/submitted and outcome authority tested. |
 | W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | TBD | TBD | NOT_STARTED | Medium | Real read models replace selected placeholders. |

@@ -1,16 +1,17 @@
 # Current Phase
 
 PRD v1.4 Wave 1 integration is in progress: Opportunity, Capability, Project Evidence and
-Context persistence are integrated, and the first real desktop projection is complete.
+Context persistence are integrated; typed Capability/Project reads and the scope-safe scanner are
+complete, and the first real desktop projection is complete.
 
 # Current Goal
 
-Add Project Evidence scanner/repository and Capability read paths before Match/Gap, Resume and
-Outcome integration.
+Build the evidence-aware Match/Gap slice on exact Capability, Opportunity and Project Evidence
+reads before Resume and Outcome integration.
 
 # Last Verified Commit
 
-`6ca47cc` - `feat: atomically record context compilations`
+`44a3e00` - `merge: integrate scope-safe project scanner`
 
 # Completed
 
@@ -90,10 +91,21 @@ Outcome integration.
 - Replay returns the first canonical manifest timestamp; compiler output is rebound to the exact
   request before persistence, and payload content cannot use generic audit rows as a storage path.
 - Verified backend `159 passed, 1 skipped`, full Ruff lint, focused format and diff checks.
+- Added typed Capability reads for exact/latest official graphs, candidate inbox, identity-scoped
+  personal overlays, exact evidence bindings, target/broad market bindings and investment states.
+- Added additive migration `0006` to reject candidate/capability identity drift across one
+  `personal_state_id`; historical drift fails upgrade without rewriting data.
+- Promoted exact `project_evidence_id` plus revision into the shared `EvidenceBinding` contract and
+  removed the temporary repository-only read envelope.
+- Added canonical Project/scope reads and a scope-safe local scanner: POSIX uses `openat`/`dir_fd`
+  with no-follow handles; Windows rejects UNC/device/non-fixed drives and verifies reparse/final
+  path containment while reading from the same handle.
+- Independent reviews found no remaining P0/P1. Integration verification passed `192` tests with
+  `3` known Windows symlink-permission skips; full Ruff passed.
 
 # In Progress
 
-- Project Evidence scanner/repository and Capability read paths.
+- Evidence-aware Match/Gap contract and service scoping.
 
 # Blocked
 
@@ -108,9 +120,11 @@ Outcome integration.
 
 # Next Safe Tasks
 
-1. Add Project Evidence repository/scanner with resolved-path and reparse-point containment.
-2. Add Capability and Project Evidence read repositories/APIs needed by Match/Gap.
-3. Continue awaiting user adjudication for destructive legacy cutover decisions.
+1. Implement evidence-aware Match/Gap and explainable investment over exact typed reads.
+2. Add only the Project/Capability Local API projections required by the vertical loop.
+3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
+   expansion; current manifests already pin exact scope revision and immutable source entries.
+4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet
 

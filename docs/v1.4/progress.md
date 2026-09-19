@@ -10,7 +10,7 @@
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
 | Wave 1 domain contracts | DONE | 2026-09-18 | Capability, Opportunity, Project Evidence and Context integrated. |
-| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-19 | All Wave 1 schemas and Context atomic service done; Project/Capability read paths pending. |
+| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-19 | Schemas, Context service, Capability/Project reads and safe scanner done; Match/Gap-facing integration next. |
 | Opportunity typed persistence | DONE | 2026-09-18 | `3f102f0`; 0002 migration, ORM parity, upgrade/downgrade tests. |
 | Atomic Opportunity command path | DONE | 2026-09-18 | `01e2bbe`; typed/generic truth, event and idempotency share one transaction. |
 | Opportunity Priority/read repository | DONE | 2026-09-18 | `878d222`; independent priorities and aggregate revisions tested. |
@@ -20,8 +20,8 @@
 | Project Evidence typed persistence | DONE | 2026-09-19 | `158547b`; additive 0004, atomic relational basis, authority/scope and upgrade/downgrade tests. |
 | Context Manifest typed persistence | DONE | 2026-09-19 | `95d3df6`; additive 0005, ordered immutable refs and metadata-only privacy boundary. |
 | Context Manifest atomic service/read | DONE | 2026-09-19 | `6ca47cc`; one transaction, canonical replay, exact ordered readback and compiler-output binding. |
-| Project typed reads / safe scanner | IN_PROGRESS | 2026-09-19 | `codex/v14-project-read-scanner`; scoped worktree active. |
-| Capability typed read repository | IN_PROGRESS | 2026-09-19 | `codex/v14-capability-read`; scoped worktree active. |
+| Project typed reads / safe scanner | DONE | 2026-09-19 | `116fd50`, security fix `f3cfd9e`, merge `44a3e00`; handle-anchored scope enforcement. |
+| Capability typed read repository | DONE | 2026-09-19 | `1615581`, `3c2d18c`, merge `7e7dfa5`; Lead guard/contract fix `61b5a4f`. |
 
 ## Integrated workstreams
 
@@ -51,6 +51,13 @@
   Ruff and format checks passed, and `0004 -> 0005 -> 0004 -> 0005` rehearsal passed. Ordered refs
   and bounded audit metadata are immutable; typed rows, generic revision, event and idempotency are
   atomic; replay returns the first canonical timestamp; compiled content is not stored.
+- Capability Read/Identity Guard: `1615581`, `3c2d18c` merged as `7e7dfa5`, Lead fix `61b5a4f`;
+  exact/latest official and personal reads preserve identity, Project Evidence bindings pin exact
+  revisions, and migration `0006` fails loud on historical identity drift.
+- Project Read/Safe Scanner: `116fd50`, `f3cfd9e` merged as `44a3e00`; canonical exact scope is
+  loaded by ID, POSIX/Windows scanning is handle-anchored, and unsafe namespaces, drive types,
+  reparse points and containment races fail closed. Combined integration: `192 passed, 3 skipped`;
+  Ruff passed. Exact Project revision on manifests remains a schema-review follow-up.
 
 ## Baseline verification
 

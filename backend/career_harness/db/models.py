@@ -1538,3 +1538,138 @@ class FactEvidenceRefRow(Base):
         index=True,
     )
 
+
+class ResumeIdentityRow(Base):
+    __tablename__ = "resume_identity"
+
+    resume_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+
+
+class ResumeBaseRevisionRow(Base):
+    __tablename__ = "resume_base_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_resume_base_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_resume_base_schema_version"),
+        CheckConstraint(
+            "json_type(sections) = 'object' AND length(sections) <= 65536",
+            name="ck_resume_base_sections",
+        ),
+        ForeignKeyConstraint(["resume_id"], ["resume_identity.resume_id"], ondelete="RESTRICT"),
+    )
+
+    resume_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    sections: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ResumePatchIdentityRow(Base):
+    __tablename__ = "resume_patch_identity"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["resume_id", "base_revision"],
+            ["resume_base_revision.resume_id", "resume_base_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    patch_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    resume_id: Mapped[str] = mapped_column(
+        ForeignKey("resume_identity.resume_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    base_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ResumePatchRevisionRow(Base):
+    __tablename__ = "resume_patch_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_resume_patch_revision"),
+        CheckConstraint(
+            "status IN ('proposed', 'accepted', 'rejected')", name="ck_resume_patch_status"
+        ),
+        CheckConstraint(
+            "json_type(operations) = 'array' AND json_array_length(operations) BETWEEN 1 AND 128 "
+            "AND length(operations) <= 65536",
+            name="ck_resume_patch_operations",
+        ),
+        CheckConstraint(
+            "(status = 'proposed' AND reviewed_by IS NULL AND reviewed_by_kind IS NULL "
+            "AND review_reason IS NULL AND reviewed_at IS NULL) OR "
+            "(status != 'proposed' AND length(trim(reviewed_by)) > 0 "
+            "AND reviewed_by_kind = 'user' AND length(trim(review_reason)) > 0 "
+            "AND reviewed_at IS NOT NULL)",
+            name="ck_resume_patch_review",
+        ),
+        ForeignKeyConstraint(["patch_id"], ["resume_patch_identity.patch_id"], ondelete="RESTRICT"),
+    )
+
+    patch_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    operations: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    generator_run_id: Mapped[str | None] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    proposed_by_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by_kind: Mapped[str | None] = mapped_column(String(32))
+    review_reason: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ResumeRevisionRow(Base):
+    __tablename__ = "resume_revision_record"
+    __table_args__ = (
+        CheckConstraint("base_revision >= 1", name="ck_resume_revision_base"),
+        CheckConstraint("patch_count >= 0", name="ck_resume_revision_patch_count"),
+        CheckConstraint(
+            "json_type(content) = 'object' AND length(content) <= 65536",
+            name="ck_resume_revision_content",
+        ),
+        CheckConstraint(
+            "length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_resume_revision_hash",
+        ),
+        ForeignKeyConstraint(
+            ["resume_id", "base_revision"],
+            ["resume_base_revision.resume_id", "resume_base_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    revision_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    resume_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    base_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    content: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    patch_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ResumeRevisionPatchRefRow(Base):
+    __tablename__ = "resume_revision_patch_ref"
+    __table_args__ = (
+        CheckConstraint("ordinal >= 0", name="ck_resume_revision_patch_ordinal"),
+        ForeignKeyConstraint(
+            ["revision_id"],
+            ["resume_revision_record.revision_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        ForeignKeyConstraint(
+            ["patch_id", "patch_revision"],
+            ["resume_patch_revision.patch_id", "resume_patch_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    revision_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    patch_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    patch_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+

@@ -9,7 +9,7 @@
 - Repository: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness`
 - Integration Worktree: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness-worktrees\integration`
 - Integration Branch: `refactor/v1.4-integration`
-- Verified Integration HEAD at handoff: `f0cf91d` (`docs: add today ui adapter subagent prompt`)
+- Verified Integration HEAD at handoff: `bc1f07e` (`docs: record today ui adapter integration`)
 - Main HEAD: `63ca32f` (unchanged; do not merge or push without explicit approval)
 - Handoff ID: `ACH-V14-KIMI-CODEX-2026-09-20`
 - Prior handoff: `docs/v1.4/HANDOFF_CODEX_TO_KIMI_2026-09-20.md` (superseded by this file)
@@ -31,7 +31,7 @@ New worktrees/branches added during this Kimi session (all merged unless noted):
 | fact-promotion | `kimi/v14-fact-promotion` | MERGED (`d43ebe4`) |
 | p0-vertical-slice | `kimi/v14-p0-vertical-slice` | MERGED (`f132709`) |
 | today-read-core | `kimi/v14-today-read-core` | MERGED (`1d86b65`) |
-| today-ui-adapter | `kimi/v14-today-ui-adapter` | IN FLIGHT — coder running at handoff |
+| today-ui-adapter | `kimi/v14-today-ui-adapter` | MERGED (`c986936`) |
 
 Root `main` worktree holds the intentionally untracked `docs/Agent_Career_Harness_Codex_Goal_Pack/`;
 never clean it incidentally.
@@ -93,15 +93,10 @@ Do not define competing representations. Missing fields require a CONTRACT CHANG
 
 ## F. In Flight At Handoff
 
-`kimi/v14-today-ui-adapter` (worktree `today-ui-adapter`, base `d114df4`): replace the desktop
-Today static fallback with the authenticated `GET /today` API. Prompt:
-`docs/v1.4/agents/today-ui-adapter.md`. The coder may still be running; check
-`git -C <worktree> log --oneline` for a `feat(desktop): wire today page to core read api` commit.
-
-On completion: review the diff (frontend only; ranking must stay in Core; fallback must not ship in
-the production path; Vitest + `npm --prefix apps/desktop run build` must pass), merge with
-`--no-ff` into `refactor/v1.4-integration`, run backend pytest + frontend tests/build, then update
-`STATUS.md`, `docs/v1.4/progress.md`, `docs/v1.4/integration-log.md`.
+None. `kimi/v14-today-ui-adapter` completed after the first version of this handoff: reviewed
+(APPROVE WITH FIXES; stray nested lockfile excluded via `.gitignore` in `52c0f15`), merged as
+`c986936`, and verified (Vitest 22 passed, build passed, backend 355 passed). Integration HEAD is
+now `bc1f07e`.
 
 ## G. Recorded Follow-ups (non-blocking)
 

@@ -278,3 +278,28 @@ hole without rebuilding the existing task table.
 tables. Resolver work adds an exact-revision Opportunity read and must resolve every generic
 EvidenceRef through `EvidenceRepository.get()`. Reassessment always mints a new assessment and new
 gaps.
+
+## D-015 - Promote accepted Claims to revisioned Facts through explicit commands
+
+**Decision:** ACCEPTED in contract `0.5.0` (docs-only freeze; schema lands in migration 0010).
+
+**Context:** The Resume patch contract requires resolvable qualified fact refs, but `Fact` and
+`ExtractedClaim` existed only as in-code skeletons with no persistence, and the core stub
+`promote_claim_to_fact` deliberately raises. Without canonical Facts, no downstream Resume or
+Capability promotion can reference verified personal claims.
+
+**Alternatives:** Let Resume patches reference EvidenceRefs directly without a Fact layer; store
+claims and facts as JSON payloads on the generic entity tables; allow rule promotion without user
+review for all claim types.
+
+**Chosen:** Persist claims as immutable proposal revisions reviewed by a separate USER or explicit
+RULE command, and promote accepted claims into revisioned Facts whose every evidence ref resolves
+through `EvidenceRepository.get()`. The proposing agent can never review or promote its own claim.
+
+**Reason:** This preserves Evidence != Fact, keeps AI output from self-promoting, and gives Resume
+and Capability consumers a resolvable, auditable canonical Fact identity without coupling them to
+parser internals.
+
+**Impact:** Migration 0010 must be additive with claim/fact tables, review guards and immutable
+history. Downstream workstreams (Resume patch, capability promotion) consume exact
+`(fact_id, revision)` refs.

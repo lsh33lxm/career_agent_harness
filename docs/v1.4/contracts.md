@@ -1,12 +1,12 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.4.1`
-**Status:** FROZEN FOR WAVE 2 MATCH PERSISTENCE
+**Version:** `v1.4-contract-0.5.0`
+**Status:** FROZEN FOR WAVE 2 FACT PROMOTION
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.4.1` retains all `0.4.0` guarantees and adds the Project Enhancement Task write-path contract
-below. `0.4.0` retains all `0.3.0` guarantees and adds the durable Match/Gap persistence, resolver
-and replay contracts below. Module-specific persisted contract versions remain readable; this
+`0.5.0` retains all `0.4.x` guarantees and adds the Fact promotion contract below. `0.4.1` added
+the Project Enhancement Task write-path contract; `0.4.0` added the durable Match/Gap persistence,
+resolver and replay contracts. Module-specific persisted contract versions remain readable; this
 document version does not rewrite historical Context Manifests.
 
 No workstream may define a competing representation. Missing fields or behavior require a
@@ -60,6 +60,22 @@ Artifact -> SourceSnapshot -> EvidenceRef -> ExtractedClaim
 - Business metrics, personal contribution, ownership and performance claims require user
   confirmation or direct supporting evidence; source code alone is insufficient.
 - `Signal`, `Decision` and `Outcome` remain separate typed records.
+
+### Claim review and Fact promotion
+
+- An `ExtractedClaim` is an immutable proposal revision. Review is a separate command
+  (`claim.reviewed`) that appends a new claim revision with status `ACCEPTED` or `REJECTED` and a
+  reason. Only a USER actor or an explicit deterministic RULE may review; the proposing agent can
+  never review its own claim.
+- A `Fact` is created only by a promotion command (`fact.promoted`) from an `ACCEPTED` claim, with
+  a non-AI `FactAuthority` and exact evidence refs that each resolve through
+  `EvidenceRepository.get()`; any dangling ref fails loud. Claims and parser/model output never
+  become Facts implicitly.
+- Facts are revisioned: corrections append a new revision under the same `fact_id`; prior
+  revisions stay immutable and readable.
+- Claim review and Fact promotion never mutate Evidence, Capability state, Match results, Gaps or
+  Resume material.
+- Events `claim.proposed`, `claim.reviewed` and `fact.promoted` carry metadata-only payloads.
 
 ## Opportunity and application
 

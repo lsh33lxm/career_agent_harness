@@ -22,7 +22,8 @@
 | M3b | Add Context Manifest records | Completed in `95d3df6`; bounded selection/provenance metadata only | Tested downgrade to 0004 on disposable DB. |
 | M3c | Guard Personal Capability identity across revisions | Completed in `61b5a4f`; no data rewrite, upgrade fails loud on historical drift | Tested `0005 -> 0006 -> 0005 -> 0006` on disposable DB. |
 | M3d | Add canonical Job and accepted JobRequirement records | Completed in `3b33525` and `0ee6388`; additive identities/revisions/relational refs, no legacy backfill | Tested `0007 -> 0008 -> 0007 -> 0008`; legacy Opportunity orphans remain readable and future refs fail closed. |
-| M3e | Add durable Match/Gap assessment, requirement result and canonical Gap records | Planned additive 0009 per contract `0.4.0`; no backfill | Tested downgrade to 0008 on disposable DB before commit. |
+| M3e | Add durable Match/Gap assessment, requirement result and canonical Gap records | Completed in `f3c646e`/`4ff1ac3` (merge `b04d08e`); additive 0009, no backfill | Tested `0008 -> 0009 -> 0008 -> 0009` on disposable DB. |
+| M3f | Add ExtractedClaim review and revisioned Fact records | Planned additive 0010 per contract `0.5.0`; no backfill | Tested downgrade to 0009 on disposable DB before commit. |
 | M4 | Compatibility transform for `OpportunityState.WATCHING` | Explicit rehearsal report; user approval if real records exist | Preserve original revisions; reverse mapping. |
 | M5 | Resume/Application/Outcome vertical slice | Additive records with evidence refs | Tombstone new records; retain audit. |
 | M6 | Legacy import (future gate) | Approved manifest only | Restore verified pre-import backup. |

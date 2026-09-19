@@ -6,12 +6,12 @@ composition over typed fallback data; a Core-owned Today read model remains futu
 
 # Current Goal
 
-Freeze the W2-APP Application/Outcome contracts over the integrated Resume truth path without
+Design the smallest additive W2-APP persistence/service slice over frozen contract `0.7.0`, without
 starting real ATS submission, production writes or P2 automation.
 
 # Last Verified Commit
 
-`989b47e` - `merge: Today UI`
+`5727af6` - `feat(core): strengthen Application and Outcome invariants`
 
 # Completed
 
@@ -156,10 +156,16 @@ starting real ATS submission, production writes or P2 automation.
   gates and isolated typed fallback data pending a Core Today read model. Frontend passed `16`
   tests and production build; 1366/1920/2048 visual checks passed and forced 390 px metrics showed
   no horizontal overflow.
+- Froze W2-APP contract `0.7.0` (`d61af6c`) and strengthened the existing Application/Outcome
+  models (`5727af6`): Applications pin exact Opportunity revisions; submitted-or-later states
+  require exact ResumeRevision/time/authority; portal receipts require Evidence refs; Outcomes are
+  separate single-revision truth pinned to exact Application revisions. Full backend verification
+  passed `329` tests with `3` known Windows symlink-permission skips. No migration or ATS action was
+  added.
 
 # In Progress
 
-- W2-APP contract freeze and smallest approval-free Application/Outcome preparation.
+- W2-APP additive persistence/service design; migration 0012 is not created yet.
 
 # Blocked
 
@@ -174,7 +180,7 @@ starting real ATS submission, production writes or P2 automation.
 
 # Next Safe Tasks
 
-1. Freeze W2-APP Application/Outcome contracts and authority boundaries before persistence.
+1. Design and review additive Application/Outcome persistence before assigning migration 0012.
 2. Add only the Project/Capability/Resume read projections required by the vertical loop.
 3. Replace Today fallback data only after a Core-owned read model contract is frozen.
 4. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema

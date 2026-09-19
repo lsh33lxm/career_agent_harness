@@ -131,6 +131,15 @@ class FactService:
         claim = self.repository.get_claim(source_claim_id, source_claim_revision)
         if claim is None or claim.claim.status is not ClaimStatus.ACCEPTED:
             raise ValueError("Fact promotion requires an exact accepted claim revision")
+        if command.expected_revision == 0:
+            if fact_type is not None or value is not _UNSET or evidence_refs is not None:
+                raise ValueError(
+                    "the initial Fact promotion carries the accepted claim's "
+                    "fact_type, value and evidence refs; only corrections may override them"
+                )
+            fact_type = claim.claim.claim_type
+            value = claim.claim.proposed_value
+            evidence_refs = claim.claim.evidence_refs
         record = FactRecord(
             fact=Fact(
                 fact_id=command.target.entity_id,

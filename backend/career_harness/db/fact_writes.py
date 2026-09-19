@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from career_harness.core.evidence.models import ClaimStatus, FactAuthority
@@ -172,6 +173,24 @@ class FactPromotionWrite:
         )
         if claim is None or claim.status != ClaimStatus.ACCEPTED.value:
             raise ValueError("Fact promotion requires an exact accepted claim revision")
+        if fact.revision == 1:
+            claim_refs = session.scalars(
+                select(ExtractedClaimEvidenceRefRow)
+                .where(
+                    ExtractedClaimEvidenceRefRow.claim_id == claim.claim_id,
+                    ExtractedClaimEvidenceRefRow.claim_revision == claim.revision,
+                )
+                .order_by(ExtractedClaimEvidenceRefRow.ordinal)
+            ).all()
+            if (
+                claim.claim_type != fact.fact_type
+                or claim.proposed_value != fact.value
+                or tuple(item.evidence_ref_id for item in claim_refs) != fact.evidence_refs
+            ):
+                raise ValueError(
+                    "the initial Fact promotion must carry the accepted claim's "
+                    "fact_type, value and evidence refs"
+                )
         _require_evidence_refs(session, fact.evidence_refs)
 
         identity = session.get(FactIdentityRow, fact.fact_id)

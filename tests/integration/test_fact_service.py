@@ -9,9 +9,11 @@ from sqlalchemy.orm import Session
 
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef
+from career_harness.core.evidence import Fact
 from career_harness.core.evidence.models import ClaimStatus, FactAuthority
 from career_harness.core.lifecycle import ActorKind
-from career_harness.db.fact_repository import FactRepository
+from career_harness.db.fact_repository import FactRecord, FactRepository
+from career_harness.db.fact_writes import FactPromotionWrite
 from career_harness.db.migrations import upgrade_to_head
 from career_harness.db.models import (
     CapabilityEvidenceBindingRow,
@@ -381,17 +383,30 @@ def test_dangling_evidence_ref_fails_loud_and_rolls_back_atomically(tmp_path: Pa
 
     _propose(service, "claim_001")
     _review(service, "claim_001")
+    service.promote_fact(
+        _command("fact_001", EntityKind.FACT, command_id="command_promote_001", actor="user"),
+        source_claim_id="claim_001",
+        source_claim_revision=2,
+        authority=FactAuthority.USER_ASSERTED,
+    )
     before = _write_counts(engine)
     with pytest.raises(ValueError, match="EvidenceRef"):
         service.promote_fact(
-            _command("fact_001", EntityKind.FACT, command_id="command_promote_001", actor="user"),
+            _command(
+                "fact_001",
+                EntityKind.FACT,
+                command_id="command_promote_002",
+                actor="user",
+                expected_revision=1,
+            ),
             source_claim_id="claim_001",
             source_claim_revision=2,
             authority=FactAuthority.USER_ASSERTED,
             evidence_refs=("evidence_missing",),
         )
     assert _write_counts(engine) == before
-    assert repository.get_fact("fact_001") is None
+    assert repository.get_fact("fact_001", 1) is not None
+    assert repository.get_fact("fact_001").fact.revision == 1
 
 
 def test_proposal_and_promotion_are_idempotent(tmp_path: Path) -> None:
@@ -554,3 +569,68 @@ def test_malformed_persisted_aggregate_fails_loud(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="incomplete"):
         repository.get_claim("claim_001")
+
+
+def test_initial_promotion_cannot_override_the_accepted_claim(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    repository, service = _services(engine)
+    _propose(service, "claim_001")
+    _review(service, "claim_001")
+
+    overrides = (
+        {"value": {"name": "something else"}},
+        {"fact_type": "other_type"},
+        {"evidence_refs": (OTHER_EVIDENCE_REF_ID,)},
+    )
+    for index, override in enumerate(overrides):
+        before = _write_counts(engine)
+        with pytest.raises(ValueError, match="accepted claim"):
+            service.promote_fact(
+                _command(
+                    "fact_001",
+                    EntityKind.FACT,
+                    command_id=f"command_promote_override_{index}",
+                    actor="user",
+                ),
+                source_claim_id="claim_001",
+                source_claim_revision=2,
+                authority=FactAuthority.USER_ASSERTED,
+                **override,
+            )
+        assert _write_counts(engine) == before
+        assert repository.get_fact("fact_001") is None
+
+
+def test_promotion_write_rejects_content_drift_from_the_accepted_claim(
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    _repository, service = _services(engine)
+    _propose(service, "claim_001")
+    _review(service, "claim_001")
+
+    claim = FactRepository(engine).get_claim("claim_001", 2)
+    assert claim is not None
+    record = FactRecord(
+        fact=Fact(
+            fact_id="fact_drift",
+            subject=claim.claim.subject,
+            fact_type=claim.claim.claim_type,
+            value={"name": "not the reviewed value"},
+            authority=FactAuthority.USER_ASSERTED,
+            evidence_refs=claim.claim.evidence_refs,
+            revision=1,
+            verified_by="user",
+        ),
+        source_claim_id="claim_001",
+        source_claim_revision=2,
+    )
+    before = _write_counts(engine)
+    with pytest.raises(ValueError, match="accepted claim"):
+        service.commands.commit(
+            _command("fact_drift", EntityKind.FACT, command_id="command_drift", actor="user"),
+            record.model_dump(mode="json"),
+            event_type="fact.promoted",
+            transactional_write=FactPromotionWrite(record),
+        )
+    assert _write_counts(engine) == before

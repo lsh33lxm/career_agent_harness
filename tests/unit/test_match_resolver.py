@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import Engine, func, select
 from sqlalchemy.engine import Connection
+from sqlalchemy.exc import IntegrityError
 
 from career_harness.core.capability import (
     CapabilityEvidenceAuthority,
@@ -1001,3 +1002,75 @@ def test_replay_fails_loud_on_unknown_assessment(tmp_path: Path) -> None:
     _, service = _service(_engine(tmp_path))
     with pytest.raises(MatchReplayError, match="unknown match assessment"):
         service.replay("assessment_missing")
+
+
+def test_replay_fails_loud_when_bindings_drift_from_manifest(tmp_path: Path) -> None:
+    # capability_evidence_binding carries no immutability trigger (0003/0004 only validate
+    # project evidence exactness), so a post-hoc binding on the frozen personal state
+    # revision is exactly the drift replay must catch.
+    engine, service = _assessed_engine(tmp_path)
+    with engine.begin() as connection:
+        _seed_binding(
+            connection,
+            "binding_added",
+            personal_state_revision=2,
+            evidence_ref_id=JOB_EVIDENCE_REF_ID,
+            scopes=["evidence"],
+            bound_at=NOW + timedelta(seconds=3),
+        )
+    bindings = CapabilityRepository(engine).list_evidence_bindings(
+        personal_state_id="personal_agents", personal_state_revision=2
+    )
+    assert [item.binding_id for item in bindings] == [
+        "binding_001",
+        "binding_002",
+        "binding_added",
+    ]
+
+    with pytest.raises(MatchResolutionError, match="Evidence Bindings drifted"):
+        service.replay("assessment_001")
+
+
+def test_replay_fails_loud_when_requirement_scopes_drift(tmp_path: Path) -> None:
+    engine, service = _assessed_engine(tmp_path)
+    # migration 0008 seals job_requirement_scope against UPDATE/DELETE and seals the
+    # revision against appended scope rows, so scope drift cannot be staged through the
+    # DB; the drifted exact read is injected through a repository wrapper instead.
+    with pytest.raises(IntegrityError, match="immutable"), engine.begin() as connection:
+        connection.exec_driver_sql(
+            "UPDATE job_requirement_scope SET scope = 'explain' "
+            "WHERE requirement_id = 'requirement_001' AND requirement_revision = 1 "
+            "AND scope = 'apply'"
+        )
+    record = MatchRepository(engine).get_assessment("assessment_001")
+    assert record is not None
+    stored = next(
+        item for item in record.manifest.requirements if item.requirement_id == "requirement_001"
+    )
+    assert set(stored.required_scopes) == {
+        CapabilityEvidenceScope.UNDERSTAND,
+        CapabilityEvidenceScope.APPLY,
+    }
+
+    class _ScopeDriftedJobs(JobRepository):
+        def get_requirement(
+            self, requirement_id: str, revision: int | None = None
+        ) -> JobRequirement | None:
+            requirement = super().get_requirement(requirement_id, revision)
+            if requirement is not None and requirement_id == "requirement_001":
+                return requirement.model_copy(
+                    update={"required_scopes": (CapabilityEvidenceScope.UNDERSTAND,)}
+                )
+            return requirement
+
+    resolver = MatchInputResolver(
+        opportunities=OpportunityRepository(engine),
+        jobs=_ScopeDriftedJobs(engine),
+        capabilities=CapabilityRepository(engine),
+        evidence=EvidenceRepository(engine),
+        projects=ProjectRepository(engine),
+    )
+    drifting = MatchService(CommandService(engine), MatchRepository(engine), resolver)
+
+    with pytest.raises(MatchReplayError, match="drift from the stored manifest"):
+        drifting.replay("assessment_001")

@@ -10,7 +10,7 @@
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
 | Wave 1 domain contracts | DONE | 2026-09-18 | Capability, Opportunity, Project Evidence and Context integrated. |
-| Wave 1 persistence/integration | IN_PROGRESS | 2026-09-19 | Schemas, Context service, Capability/Project reads and safe scanner done; Match/Gap-facing integration next. |
+| Wave 1 persistence/integration | DONE | 2026-09-19 | Schemas, Context service, Capability/Project reads and safe scanner are integrated. |
 | Opportunity typed persistence | DONE | 2026-09-18 | `3f102f0`; 0002 migration, ORM parity, upgrade/downgrade tests. |
 | Atomic Opportunity command path | DONE | 2026-09-18 | `01e2bbe`; typed/generic truth, event and idempotency share one transaction. |
 | Opportunity Priority/read repository | DONE | 2026-09-18 | `878d222`; independent priorities and aggregate revisions tested. |
@@ -22,9 +22,10 @@
 | Context Manifest atomic service/read | DONE | 2026-09-19 | `6ca47cc`; one transaction, canonical replay, exact ordered readback and compiler-output binding. |
 | Project typed reads / safe scanner | DONE | 2026-09-19 | `116fd50`, security fix `f3cfd9e`, merge `44a3e00`; handle-anchored scope enforcement. |
 | Capability typed read repository | DONE | 2026-09-19 | `1615581`, `3c2d18c`, merge `7e7dfa5`; Lead guard/contract fix `61b5a4f`. |
-| Project capability/task typed reads | READY | 2026-09-19 | Independent repository workstream after `finalized_at` contract alignment. |
-| Versioned Job/JobRequirement core | READY | 2026-09-19 | Required before canonical Match; parser/model output cannot self-promote. |
-| Match/Gap service/persistence | BLOCKED | 2026-09-19 | Awaiting canonical JobRequirement plus Project capability reads. |
+| Project capability/task typed reads | DONE | 2026-09-19 | `3cb8d5f`, merge `e1182ab`; exact/latest aggregate reads and fail-loud reconstruction. |
+| Versioned Job/JobRequirement core | DONE | 2026-09-19 | `deadc25`, merge `7728282`; proposal/review authority and exact official mapping enforced. |
+| Job/JobRequirement persistence | READY | 2026-09-19 | Next Lead-owned prerequisite; additive schema and atomic promotion path. |
+| Match/Gap service/persistence | BLOCKED | 2026-09-19 | Domain/read prerequisites complete; awaiting canonical Job/Requirement persistence. |
 
 ## Integrated workstreams
 
@@ -61,6 +62,12 @@
   loaded by ID, POSIX/Windows scanning is handle-anchored, and unsafe namespaces, drive types,
   reparse points and containment races fail closed. Combined integration: `192 passed, 3 skipped`;
   Ruff passed. Exact Project revision on manifests remains a schema-review follow-up.
+- Job Requirement Core: `deadc25` merged as `7728282`; immutable Job revisions and versioned
+  requirements keep proposals separate from USER/RULE-reviewed decisions and pin accepted mappings
+  to an official graph version. Independent review found no P0/P1; full pytest passed 217 tests.
+- Project State Read: `3cb8d5f` merged as `e1182ab`; exact/latest capability state, ordered basis
+  and enhancement task reads fail loud on malformed aggregates. Combined integration passed
+  `221 passed, 3 skipped`; stable identity trigger coverage was added in `08218e2`.
 
 ## Baseline verification
 

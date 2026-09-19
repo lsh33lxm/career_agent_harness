@@ -24,14 +24,15 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W1-INT | Lead-owned shared schema/API integration | W1-* contracts | Lead | integration | IN_PROGRESS | High | Schemas, Context service, typed reads and scanner done; vertical Match/Gap integration remains. |
 | W1-PROJ-READ | Project typed reads and scope-safe local scanner | W1-PROJ, 0004 | Subagent | project-read | DONE | High | Exact reads; scanner rejects scope, symlink/reparse and secret/session escapes. |
 | W1-CAP-READ | Capability graph and personal overlay typed reads | W1-CAP, 0003 | Subagent | capability-read | DONE | Medium | Version-exact official/personal/market/investment queries preserve separation. |
-| W1-PROJ-STATE-READ | Project capability state/basis and enhancement task reads | W1-PROJ, 0004 | Subagent | project-state-read | READY | Medium | Exact/latest aggregates retain basis revisions, finalization time and stable ordering. |
+| W1-PROJ-STATE-READ | Project capability state/basis and enhancement task reads | W1-PROJ, 0004 | Subagent | project-state-read | DONE | Medium | Exact/latest aggregates retain basis revisions, finalization time and stable ordering. |
 
 ## Wave 2 - Vertical career loop
 
 | ID | Description | Dependencies | Owner | Worktree | Status | Risk | Definition of Done |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| W2-JOB | Versioned Job/accepted JobRequirement prerequisite | Evidence, Capability Graph | Lead + Subagent | job-requirement | READY | High | AI proposals stay separate; accepted requirements pin evidence and official graph revision. |
-| W2-MATCH | Evidence-aware Match/Gap and investment heuristic | W2-JOB, W1-PROJ-STATE-READ | Lead | integration | BLOCKED | Medium | Explainable three-way assessment with frozen exact inputs. |
+| W2-JOB | Versioned Job/accepted JobRequirement domain prerequisite | Evidence, Capability Graph | Subagent | job-requirement | DONE | High | AI proposals stay separate; accepted requirements pin evidence and official graph revision. |
+| W2-JOB-PERSIST | Additive Job/JobRequirement schema, typed repository and atomic promotion service | W2-JOB, 0006 | Lead | integration | READY | High | Exact evidence/graph refs, authority checks, generic revision/event/idempotency and legacy Opportunity compatibility are tested. |
+| W2-MATCH | Evidence-aware Match/Gap and investment heuristic | W2-JOB-PERSIST, W1-PROJ-STATE-READ | Lead | integration | BLOCKED | Medium | Explainable three-way assessment with frozen exact inputs. |
 | W2-RESUME | Resume Base/Patch/Revision integration | W1-PROJ, W2-MATCH | TBD | TBD | NOT_STARTED | High | Unverified claims cannot enter accepted patch. |
 | W2-APP | Application/Outcome/history completion | W1-OPP, W2-RESUME | TBD | TBD | NOT_STARTED | High | Prepared/submitted and outcome authority tested. |
 | W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | TBD | TBD | NOT_STARTED | Medium | Real read models replace selected placeholders. |

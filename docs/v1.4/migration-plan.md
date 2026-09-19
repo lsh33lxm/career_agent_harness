@@ -21,6 +21,7 @@
 | M3a | Add Project Evidence records | Completed in `158547b`; no filesystem scan or legacy import | Tested downgrade to 0003 on disposable DB. |
 | M3b | Add Context Manifest records | Completed in `95d3df6`; bounded selection/provenance metadata only | Tested downgrade to 0004 on disposable DB. |
 | M3c | Guard Personal Capability identity across revisions | Completed in `61b5a4f`; no data rewrite, upgrade fails loud on historical drift | Tested `0005 -> 0006 -> 0005 -> 0006` on disposable DB. |
+| M3d | Add canonical Job and accepted JobRequirement records | READY; additive identities/revisions/relational refs, no legacy backfill | Downgrade on disposable DB; preserve legacy Opportunity rows without fabricated Job revisions. |
 | M4 | Compatibility transform for `OpportunityState.WATCHING` | Explicit rehearsal report; user approval if real records exist | Preserve original revisions; reverse mapping. |
 | M5 | Resume/Application/Outcome vertical slice | Additive records with evidence refs | Tombstone new records; retain audit. |
 | M6 | Legacy import (future gate) | Approved manifest only | Restore verified pre-import backup. |
@@ -42,6 +43,10 @@
 - Project scan manifests pin the exact scope revision; evidence pins a non-empty immutable manifest.
 - Project Capability state and relational basis commit atomically through a deferred FK; evidence
   and user Approval references are exact, scoped and immutable.
+- Project Capability and Enhancement Task revisions cannot change their stable identity fields;
+  both existing `0004` guards have direct migration tests.
+- JobRequirement promotion must validate exact source Evidence and accepted official Capability
+  membership; legacy Opportunity rows remain readable until approved reconciliation.
 - Context Manifest refs are ordered, counted, immutable and sealed parent-last; Project Evidence
   refs use exact revisions and no compiled/task/asset payload content is stored.
 - Downgrade is tested only on disposable databases; production rollback uses backup/restore.

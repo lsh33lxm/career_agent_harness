@@ -25,6 +25,7 @@ class EntityKind(StrEnum):
     JOB_REQUIREMENT = "job_requirement"
     MATCH_ASSESSMENT = "match_assessment"
     OPPORTUNITY = "opportunity"
+    PROJECT_ENHANCEMENT_TASK = "project_enhancement_task"
     RESUME = "resume"
     APPLICATION = "application"
     INTERVIEW = "interview"

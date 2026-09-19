@@ -5,6 +5,12 @@ from sqlalchemy.orm import Session
 
 from career_harness.core.project import (
     Project,
+    ProjectCapabilityBasis,
+    ProjectCapabilityBasisKind,
+    ProjectCapabilityLevel,
+    ProjectCapabilityState,
+    ProjectEnhancementTask,
+    ProjectEnhancementTaskStatus,
     ProjectEvidence,
     ProjectEvidenceAuthority,
     ProjectEvidenceClaimKind,
@@ -15,6 +21,9 @@ from career_harness.core.project import (
     ProjectSourceManifest,
 )
 from career_harness.db.models import (
+    ProjectCapabilityBasisRow,
+    ProjectCapabilityStateRow,
+    ProjectEnhancementTaskRow,
     ProjectEvidenceRow,
     ProjectRecordRow,
     ProjectScanScopeRow,
@@ -41,9 +50,7 @@ class ProjectRepository:
             )
             return self._to_project(row) if row is not None else None
 
-    def get_scan_scope(
-        self, scope_id: str, revision: int | None = None
-    ) -> ProjectScanScope | None:
+    def get_scan_scope(self, scope_id: str, revision: int | None = None) -> ProjectScanScope | None:
         with Session(self.engine) as session:
             row = self._get_revisioned_row(
                 session,
@@ -88,9 +95,7 @@ class ProjectRepository:
             row = session.get(ProjectSourceManifestRow, manifest_id)
             return self._to_source_manifest(session, row) if row is not None else None
 
-    def get_evidence(
-        self, evidence_id: str, revision: int | None = None
-    ) -> ProjectEvidence | None:
+    def get_evidence(self, evidence_id: str, revision: int | None = None) -> ProjectEvidence | None:
         with Session(self.engine) as session:
             row = self._get_revisioned_row(
                 session,
@@ -118,15 +123,110 @@ class ProjectRepository:
                 rows = list(latest_rows.values())
             return tuple(self._to_evidence(session, row) for row in rows)
 
+    def get_project_capability_state(
+        self, capability_state_id: str, revision: int | None = None
+    ) -> ProjectCapabilityState | None:
+        with Session(self.engine) as session:
+            row = self._get_revisioned_row(
+                session,
+                ProjectCapabilityStateRow,
+                ProjectCapabilityStateRow.capability_state_id,
+                capability_state_id,
+                ProjectCapabilityStateRow.revision,
+                revision,
+            )
+            return self._to_project_capability_state(session, row) if row is not None else None
+
+    def list_project_capability_states(
+        self,
+        project_id: str,
+        capability_id: str | None = None,
+        latest_only: bool = True,
+    ) -> tuple[ProjectCapabilityState, ...]:
+        with Session(self.engine) as session:
+            statement = select(ProjectCapabilityStateRow).where(
+                ProjectCapabilityStateRow.project_id == project_id
+            )
+            if capability_id is not None:
+                statement = statement.where(
+                    ProjectCapabilityStateRow.capability_id == capability_id
+                )
+            rows = session.scalars(
+                statement.order_by(
+                    ProjectCapabilityStateRow.capability_state_id,
+                    ProjectCapabilityStateRow.revision.desc(),
+                )
+            ).all()
+            if latest_only:
+                latest_rows: dict[str, ProjectCapabilityStateRow] = {}
+                for row in rows:
+                    latest_rows.setdefault(row.capability_state_id, row)
+                rows = list(latest_rows.values())
+            return tuple(self._to_project_capability_state(session, row) for row in rows)
+
+    def get_enhancement_task(
+        self, task_id: str, revision: int | None = None
+    ) -> ProjectEnhancementTask | None:
+        with Session(self.engine) as session:
+            row = self._get_revisioned_row(
+                session,
+                ProjectEnhancementTaskRow,
+                ProjectEnhancementTaskRow.task_id,
+                task_id,
+                ProjectEnhancementTaskRow.revision,
+                revision,
+            )
+            return self._to_enhancement_task(row) if row is not None else None
+
+    def list_enhancement_tasks(
+        self,
+        project_id: str,
+        target_gap_id: str | None = None,
+        latest_only: bool = True,
+    ) -> tuple[ProjectEnhancementTask, ...]:
+        with Session(self.engine) as session:
+            statement = select(ProjectEnhancementTaskRow).where(
+                ProjectEnhancementTaskRow.project_id == project_id
+            )
+            if target_gap_id is not None:
+                statement = statement.where(
+                    ProjectEnhancementTaskRow.target_gap_id == target_gap_id
+                )
+            rows = session.scalars(
+                statement.order_by(
+                    ProjectEnhancementTaskRow.task_id,
+                    ProjectEnhancementTaskRow.revision.desc(),
+                )
+            ).all()
+            if latest_only:
+                latest_rows: dict[str, ProjectEnhancementTaskRow] = {}
+                for row in rows:
+                    latest_rows.setdefault(row.task_id, row)
+                rows = list(latest_rows.values())
+            return tuple(self._to_enhancement_task(row) for row in rows)
+
     @staticmethod
     def _get_revisioned_row(
         session: Session,
-        row_type: type[ProjectRecordRow] | type[ProjectScanScopeRow] | type[ProjectEvidenceRow],
+        row_type: (
+            type[ProjectRecordRow]
+            | type[ProjectScanScopeRow]
+            | type[ProjectEvidenceRow]
+            | type[ProjectCapabilityStateRow]
+            | type[ProjectEnhancementTaskRow]
+        ),
         identity_column: object,
         identity: str,
         revision_column: object,
         revision: int | None,
-    ) -> ProjectRecordRow | ProjectScanScopeRow | ProjectEvidenceRow | None:
+    ) -> (
+        ProjectRecordRow
+        | ProjectScanScopeRow
+        | ProjectEvidenceRow
+        | ProjectCapabilityStateRow
+        | ProjectEnhancementTaskRow
+        | None
+    ):
         if revision is not None:
             return session.get(row_type, (identity, revision))
         return session.scalars(
@@ -209,6 +309,72 @@ class ProjectRepository:
             reviewed_by_kind=row.reviewed_by_kind,
             review_reason=row.review_reason,
             observed_at=row.observed_at,
+            revision=row.revision,
+            schema_version=row.schema_version,
+            created_at=row.created_at,
+            created_by=row.created_by,
+        )
+
+    @staticmethod
+    def _to_project_capability_state(
+        session: Session, row: ProjectCapabilityStateRow
+    ) -> ProjectCapabilityState:
+        basis_rows = session.scalars(
+            select(ProjectCapabilityBasisRow)
+            .where(
+                ProjectCapabilityBasisRow.capability_state_id == row.capability_state_id,
+                ProjectCapabilityBasisRow.state_revision == row.revision,
+            )
+            .order_by(
+                ProjectCapabilityBasisRow.basis_kind,
+                ProjectCapabilityBasisRow.basis_id,
+            )
+        ).all()
+        basis: list[ProjectCapabilityBasis] = []
+        for basis_row in basis_rows:
+            kind = ProjectCapabilityBasisKind(basis_row.basis_kind)
+            if kind is ProjectCapabilityBasisKind.RESUME_APPROVAL:
+                reference_id = basis_row.approval_id
+                reference_revision = basis_row.approval_revision
+            else:
+                reference_id = basis_row.project_evidence_id
+                reference_revision = basis_row.project_evidence_revision
+            if reference_id is None or reference_revision is None:
+                raise RuntimeError("persisted project capability basis reference is incomplete")
+            basis.append(
+                ProjectCapabilityBasis(
+                    kind=kind,
+                    reference_id=reference_id,
+                    reference_revision=reference_revision,
+                )
+            )
+        return ProjectCapabilityState(
+            capability_state_id=row.capability_state_id,
+            project_id=row.project_id,
+            capability_id=row.capability_id,
+            state=ProjectCapabilityLevel(row.state),
+            basis=tuple(basis),
+            finalized_at=row.finalized_at,
+            revision=row.revision,
+            schema_version=row.schema_version,
+            created_at=row.created_at,
+            created_by=row.created_by,
+        )
+
+    @staticmethod
+    def _to_enhancement_task(row: ProjectEnhancementTaskRow) -> ProjectEnhancementTask:
+        return ProjectEnhancementTask(
+            task_id=row.task_id,
+            project_id=row.project_id,
+            target_gap_id=row.target_gap_id,
+            target_capability_id=row.target_capability_id,
+            learning_plan=tuple(row.learning_plan),
+            files_to_review=tuple(row.files_to_review),
+            change_plan=tuple(row.change_plan),
+            experiment_plan=tuple(row.experiment_plan),
+            validation_plan=tuple(row.validation_plan),
+            expected_evidence=tuple(row.expected_evidence),
+            status=ProjectEnhancementTaskStatus(row.status),
             revision=row.revision,
             schema_version=row.schema_version,
             created_at=row.created_at,

@@ -108,6 +108,14 @@
   than being truncated (capacity calibration note, review P3).
 - `get_revision()` relies on the invariant that an Opportunity JobRef never changes after
   admission; any future re-link command must revisit this read (review note).
+- `CapabilityRepository` has no point read `get_node(capability_id, graph_version_id)`; the Match
+  resolver uses `list_nodes(graph_version_id)` (exact because released graph versions are sealed),
+  which is semantically correct but scans the whole version (review P3; add a point read only if a
+  real consumer needs it).
+- Fresh `assess` callers must enumerate the relevant Project Capability State refs themselves; the
+  resolver validates exact refs but does not discover proximity inputs (resolver review note).
+- Replay surfaces missing refs as `MatchResolutionError` and stored-output drift as
+  `MatchReplayError`; callers must catch both (review P3, unify only if a real caller needs it).
 
 ## Baseline verification
 

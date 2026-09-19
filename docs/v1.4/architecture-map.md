@@ -1,9 +1,9 @@
 # Agent Career Harness v1.4 Architecture Map
 
-**Observed repository:** commit `63ca32f` on 2026-09-18  
+**Observed repository:** integration commit `68a4046` on 2026-09-19
 **Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
 **Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
-**Contract version:** `v1.4-contract-0.2.0`
+**Contract version:** `v1.4-contract-0.3.0`
 
 ## Current architecture
 
@@ -78,32 +78,32 @@ Local Artifact Store and isolated session/extension/reference directories
 | --- | --- | --- |
 | Personal Context | MISSING | Candidate skeleton has no context facts/preferences/goals. |
 | Career State | PARTIAL | Opportunity/Application/Outcome skeletons only. |
-| Project Evidence | PARTIAL | Core and additive 0004 schema exist; real scanner/repository/API remain. |
-| Target Market Evidence | MISSING | Market skeleton cannot distinguish target evidence. |
+| Project Evidence | PARTIAL | Core/schema, exact reads and scope-safe scanner exist; write service/API remain. |
+| Target Market Evidence | PARTIAL | Target MarketBinding exists; canonical versioned JobRequirement is the next prerequisite. |
 | Broad Market Trend | MISSING | Deferred beyond initial vertical slice. |
 | Career History / Outcomes | PARTIAL | Outcome skeleton only; no history/query/provenance. |
-| Context Compiler | PARTIAL | Deterministic five-asset selector/compiler exists; advanced compression remains. |
-| Context Manifest | PARTIAL | Immutable metadata-only 0005 schema exists; atomic write/read service remains. |
+| Context Compiler | EXISTS | Deterministic five-asset compiler and atomic audit write/read exist; advanced compression remains deferred. |
+| Context Manifest | EXISTS | Immutable metadata-only 0005 schema and atomic service are integrated. |
 | Discover | STUB | UI route and legacy enum value only. |
-| Watchlist | LEGACY_CONFLICT | `WATCHING` is an Opportunity state; v1.4 requires a separate funnel stage. |
-| Opportunity | PARTIAL | Typed state only; no admission confirmation, JD or repository. |
+| Watchlist | PARTIAL | Separate typed/persisted record exists; compatibility `WATCHING` enum remains. |
+| Opportunity | PARTIAL | User-gated admission, persistence/API and priority exist; canonical Job content is missing. |
 | Application | PARTIAL | Separation/submission authority enforced; no repository/API. |
-| Suggested Priority | MISSING | Must be recomputable and explained. |
-| User Priority | MISSING | Must be user-owned and never silently overwritten. |
+| Suggested Priority | EXISTS | Typed independent persisted projection with frozen input refs. |
+| User Priority | EXISTS | User-only typed persistence is independent from Suggested Priority. |
 | Today Action Queue | STUB | Static zero-count UI; no compiler/read model. |
-| Official Capability Graph | MISSING | No node/relation/version storage. |
-| Personal Capability Overlay | MISSING | No user-specific capability state. |
-| Capability Ontology | MISSING | Requires versioned official graph and inbox gate. |
-| Personal Capability State | MISSING | No multidimensional or derived state. |
-| Evidence Binding | MISSING | Generic evidence references are not capability bindings. |
-| Market Binding | MISSING | No target-opportunity requirement binding. |
-| Investment State | MISSING | No explainable heuristic or user interest/cost inputs. |
-| Capability Inbox | MISSING | Candidate nodes and accept/merge/ignore flow absent. |
-| Capability Investment Planning | MISSING | P0 simple, explainable rule set required. |
-| Match / Gap | MISSING | No frozen-input assessment or actionable gap groups. |
-| Project Capability State | MISSING | Existing/understood/modified/extended/validated/resume-ready absent. |
-| Project Enhancement Loop | MISSING | No gap-to-project-to-evidence chain. |
-| Project Enhancement Task | MISSING | P0 L1 contract required. |
+| Official Capability Graph | EXISTS | Versioned immutable relational graph and exact/latest reads exist. |
+| Personal Capability Overlay | EXISTS | Revisioned personal state is separate and identity-stable. |
+| Capability Ontology | PARTIAL | Official graph/candidate inbox exist; publishing service remains. |
+| Personal Capability State | EXISTS | Multidimensional state, evidence binding and derived status exist. |
+| Evidence Binding | EXISTS | Capability bindings pin exact personal and Project Evidence revisions. |
+| Market Binding | PARTIAL | Target/broad separation exists; target requirement revisions are not yet canonical. |
+| Investment State | PARTIAL | Explainable stored factors exist, but canonical factor derivation is not implemented. |
+| Capability Inbox | PARTIAL | Candidate/status contract and reads exist; review write service remains. |
+| Capability Investment Planning | PARTIAL | Deterministic scoring exists; trustworthy target-input derivation remains. |
+| Match / Gap | MISSING | Contract 0.3.0 frozen; canonical JobRequirement/persistence is the blocking prerequisite. |
+| Project Capability State | PARTIAL | Typed relational state/basis exist; exact read repository is next. |
+| Project Enhancement Loop | PARTIAL | L1 task contract/schema exist; canonical Gap and orchestration remain. |
+| Project Enhancement Task | PARTIAL | P0 L1 contract/schema exist; repository/service remain. |
 | Project Enhancement Executor | STUB | LocalStepRunner is not the executor abstraction. |
 | Resume Base | MISSING | Existing `Resume` is an empty skeleton. |
 | Resume Patch | MISSING | No evidence-linked proposal/review contract. |

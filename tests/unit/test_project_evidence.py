@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import pytest
 from pydantic import ValidationError
 
@@ -97,6 +99,7 @@ def test_code_presence_cannot_make_a_capability_resume_ready() -> None:
                     reference_revision=1,
                 ),
             ),
+            finalized_at=datetime(2026, 9, 19, tzinfo=UTC),
             created_by="agent",
         )
 
@@ -119,7 +122,9 @@ def test_resume_ready_requires_validation_and_explicit_resume_approval() -> None
                 reference_revision=1,
             ),
         ),
+        finalized_at=datetime(2026, 9, 19, tzinfo=UTC),
         created_by="user",
     )
 
     assert state.state is ProjectCapabilityLevel.RESUME_READY
+    assert state.finalized_at == datetime(2026, 9, 19, tzinfo=UTC)

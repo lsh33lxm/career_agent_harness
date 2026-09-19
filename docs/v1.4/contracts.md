@@ -1,13 +1,12 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.2.0`
-**Status:** FROZEN FOR WAVE 1 IMPLEMENTATION  
+**Version:** `v1.4-contract-0.3.0`
+**Status:** FROZEN FOR WAVE 2 PREREQUISITE IMPLEMENTATION
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.2.0` pins source manifests to scan-scope revisions, pins project capability bases to exact
-evidence/approval revisions, scopes approvals to a subject revision and purpose, and requires
-explicit user/rule review metadata for non-proposed Project Evidence. Existing Opportunity and
-Capability Graph contracts are unchanged.
+`0.3.0` retains all `0.2.0` guarantees and adds versioned Job/JobRequirement evidence plus the
+frozen-input Match/Gap boundary. Module-specific persisted contract versions remain readable; this
+document version does not rewrite historical Context Manifests.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -85,6 +84,21 @@ it. Recomputing SuggestedPriority must never mutate UserPriority.
 Priority levels use `LOW`, `MEDIUM`, `HIGH`, `URGENT`. `URGENT` is valid for suggested urgency;
 user interfaces must not infer user intent from it.
 
+## Job and requirement evidence
+
+- `JobRef` always pins `job_id + revision`; latest-at-read is not a frozen Match input.
+- `JobRevision` is an immutable, evidence-backed snapshot with stable Job ID, revision,
+  `schema_version`, content hash, source Evidence refs and observation time. It does not make
+  parser/model claims true by itself.
+- `JobRequirement` is revisioned and belongs to one exact `JobRef`. It records requirement text,
+  required/preferred importance, official capability ID plus graph version, required evidence
+  scopes, source Evidence refs, proposal/review status and actor metadata.
+- Parser/model output begins as `ExtractedClaim` or a proposed requirement. Only an accepted
+  requirement reviewed by a user or an explicit deterministic rule may enter canonical Match.
+- Accepted requirements must map to an Official Capability Graph node at the recorded graph
+  version. Unknown concepts remain proposals and may enter `CandidateCapabilityNode`; they do not
+  silently expand the ontology.
+
 ## Capability graph
 
 - `CapabilityNode`: stable capability identity, canonical name, description, layer
@@ -117,11 +131,32 @@ joined into one read model.
 - `ProjectCapabilityState`: one of `EXISTING`, `UNDERSTOOD`, `MODIFIED`, `EXTENDED`, `VALIDATED`,
   `RESUME_READY`; each basis pins an exact evidence/approval revision, transitions require
   appropriate evidence, and code presence never implies user mastery. A state and all of its typed
-  basis rows are one atomic write; incomplete draft states are not canonical records.
+  basis rows are one atomic write; `finalized_at` is part of the Core contract and incomplete draft
+  states are not canonical records.
 - `ProjectEnhancementTask`: target gap, selected project, learning/files/change/experiment/
   validation plan, expected evidence and status.
 - P0 executor is `ManualExecutor`/L1 plan generation. Executor output is a candidate; tests and
   rescan create Evidence, followed by explicit promotion where required.
+
+## Match and capability gap
+
+- `MatchAssessment` is an immutable, explainable proposal based on frozen canonical inputs. It is
+  not a Candidate Fact, Personal Capability State, Priority or ontology update.
+- P0 classifies every accepted Job Requirement as exactly one of `COVERED`,
+  `QUICK_TO_STRENGTHEN`, or `CLEAR_GAP`; it does not require a synthetic overall percentage.
+- `COVERED` requires the exact Personal Capability State to satisfy required dimensions and
+  qualified non-AI Evidence Bindings to cover those scopes.
+- Partial personal progress, missing provenance, or a qualified Project Capability State may yield
+  `QUICK_TO_STRENGTHEN`. Project presence alone can never yield `COVERED` or personal mastery.
+- `CLEAR_GAP` means only that the frozen Core input set has no qualified coverage or proximity; it
+  must not claim the user objectively lacks the capability outside recorded evidence.
+- Inputs pin Opportunity, Job, Requirement, Official Graph, Personal Capability State,
+  Evidence/Project Evidence and Project Capability State identities/revisions plus policy version.
+  Ambiguous personal-state identities or missing/stale revisions fail closed.
+- Output reasons use typed reason codes and reference only frozen inputs. The same ordered inputs
+  and policy version must produce the same business output.
+- Match/Gap never writes Career Facts, Personal Capability State, SuggestedPriority, UserPriority,
+  Official Capability Graph or accepted Resume material.
 
 ## Context compiler and manifest
 

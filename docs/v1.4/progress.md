@@ -5,7 +5,7 @@
 | Repository reconnaissance | DONE | 2026-09-18 | `architecture-map.md`; baseline commands run. |
 | PRD/Handoff version control | DONE | 2026-09-18 | `main` commit `63ca32f`. |
 | Integration branch/worktree | DONE | 2026-09-18 | `refactor/v1.4-integration`. |
-| Shared contract freeze | DONE | 2026-09-19 | `158547b`; contract version `0.2.0`. |
+| Shared contract freeze | DONE | 2026-09-19 | Wave 2 prerequisite contract `0.3.0`; JobRequirement and frozen Match boundaries. |
 | Repository contract alignment | DONE | 2026-09-18 | `32 passed, 1 skipped`; Ruff passed. |
 | Additive migration strategy | DONE | 2026-09-18 | `migration-plan.md`; schema unchanged. |
 | Wave 1 decomposition/prompts | DONE | 2026-09-18 | `f98faf6`; four prompts, three active worktrees. |
@@ -22,6 +22,9 @@
 | Context Manifest atomic service/read | DONE | 2026-09-19 | `6ca47cc`; one transaction, canonical replay, exact ordered readback and compiler-output binding. |
 | Project typed reads / safe scanner | DONE | 2026-09-19 | `116fd50`, security fix `f3cfd9e`, merge `44a3e00`; handle-anchored scope enforcement. |
 | Capability typed read repository | DONE | 2026-09-19 | `1615581`, `3c2d18c`, merge `7e7dfa5`; Lead guard/contract fix `61b5a4f`. |
+| Project capability/task typed reads | READY | 2026-09-19 | Independent repository workstream after `finalized_at` contract alignment. |
+| Versioned Job/JobRequirement core | READY | 2026-09-19 | Required before canonical Match; parser/model output cannot self-promote. |
+| Match/Gap service/persistence | BLOCKED | 2026-09-19 | Awaiting canonical JobRequirement plus Project capability reads. |
 
 ## Integrated workstreams
 

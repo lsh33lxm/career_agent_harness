@@ -221,6 +221,7 @@ class ProjectCapabilityState(ProjectRecord):
     capability_id: OpaqueId
     state: ProjectCapabilityLevel
     basis: tuple[ProjectCapabilityBasis, ...] = Field(min_length=1)
+    finalized_at: datetime
 
     @model_validator(mode="after")
     def state_requires_appropriate_basis(self) -> ProjectCapabilityState:

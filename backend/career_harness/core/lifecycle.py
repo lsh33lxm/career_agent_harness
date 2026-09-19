@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import Field, model_validator
 
-from career_harness.core.common import FrozenModel, OpaqueId
+from career_harness.core.common import FrozenModel, OpaqueId, utc_now
 
 
 class DomainEntity(FrozenModel):
@@ -59,19 +60,43 @@ class SubmissionAuthority(StrEnum):
 
 class Application(DomainEntity):
     opportunity_id: OpaqueId
+    opportunity_revision: int = Field(ge=1)
     state: ApplicationState
+    resume_revision_id: OpaqueId | None = None
     submission_authority: SubmissionAuthority | None = None
+    submission_evidence_ref_id: OpaqueId | None = None
+    submitted_at: datetime | None = None
 
     @model_validator(mode="after")
     def submitted_state_requires_authority(self) -> Application:
-        submitted_or_later = self.state not in {
+        pre_submission = self.state in {
             ApplicationState.PREPARING,
             ApplicationState.READY_FOR_REVIEW,
         }
-        if submitted_or_later and self.submission_authority is None:
-            raise ValueError("submitted application state requires user confirmation or receipt")
-        if not submitted_or_later and self.submission_authority is not None:
-            raise ValueError("prepared application cannot carry submission authority")
+        submission = (
+            self.resume_revision_id,
+            self.submission_authority,
+            self.submission_evidence_ref_id,
+            self.submitted_at,
+        )
+        if pre_submission and any(value is not None for value in submission):
+            raise ValueError("pre-submission application cannot carry submission metadata")
+        if not pre_submission and any(
+            value is None
+            for value in (
+                self.resume_revision_id,
+                self.submission_authority,
+                self.submitted_at,
+            )
+        ):
+            raise ValueError(
+                "submitted application requires an exact ResumeRevision, time and authority"
+            )
+        if (
+            self.submission_authority is SubmissionAuthority.PORTAL_RECEIPT
+            and self.submission_evidence_ref_id is None
+        ):
+            raise ValueError("portal receipt authority requires an exact EvidenceRef")
         return self
 
 
@@ -89,8 +114,35 @@ class Prep(DomainEntity):
     pass
 
 
+class OutcomeType(StrEnum):
+    OFFER = "offer"
+    REJECTION = "rejection"
+    WITHDRAWAL = "withdrawal"
+    CLOSED = "closed"
+
+
+class OutcomeAuthority(StrEnum):
+    USER_CONFIRMED = "user_confirmed"
+    PORTAL_RECEIPT = "portal_receipt"
+
+
 class Outcome(DomainEntity):
-    pass
+    revision: int = Field(default=1, ge=1, le=1)
+    application_id: OpaqueId
+    application_revision: int = Field(ge=1)
+    result: OutcomeType
+    occurred_at: datetime = Field(default_factory=utc_now)
+    authority: OutcomeAuthority
+    evidence_refs: tuple[OpaqueId, ...] = ()
+    recorded_by: str = Field(min_length=1, max_length=255)
+
+    @model_validator(mode="after")
+    def receipt_authority_requires_evidence(self) -> Outcome:
+        if len(set(self.evidence_refs)) != len(self.evidence_refs):
+            raise ValueError("Outcome evidence refs must be unique")
+        if self.authority is OutcomeAuthority.PORTAL_RECEIPT and not self.evidence_refs:
+            raise ValueError("portal receipt Outcome requires exact EvidenceRefs")
+        return self
 
 
 class ApprovalStatus(StrEnum):
@@ -161,4 +213,3 @@ class RuntimeScope(FrozenModel):
         if self.environment is Environment.PROD and self.data_class is DataClass.TEST:
             raise ValueError("TEST data cannot enter PROD")
         return self
-

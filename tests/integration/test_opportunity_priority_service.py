@@ -19,6 +19,7 @@ from career_harness.db.opportunity_repository import OpportunityRepository
 from career_harness.db.session import create_sqlite_engine, sqlite_url
 from career_harness.services.command_service import CommandService
 from career_harness.services.opportunity_service import OpportunityService
+from tests.support.job_data import seed_job_revision
 
 
 def command(command_id: str, command_type: str, revision: int, *, actor: str) -> Command:
@@ -36,6 +37,7 @@ def setup_opportunity(tmp_path: Path):
     database_url = sqlite_url(tmp_path / "priorities.db")
     upgrade_to_head(database_url)
     engine = create_sqlite_engine(database_url)
+    seed_job_revision(engine, "job_001", 2)
     service = OpportunityService(CommandService(engine))
     service.admit_manually(
         command("command_admit_001", "opportunity.admit", 0, actor="user"),

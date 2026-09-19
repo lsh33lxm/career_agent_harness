@@ -21,6 +21,7 @@ from career_harness.db.models import (
 )
 from career_harness.db.session import create_sqlite_engine, sqlite_url
 from career_harness.services.command_service import CommandService, IdempotencyConflict
+from tests.support.job_data import seed_job_revision
 
 
 class FailingTransactionalWrite:
@@ -116,6 +117,7 @@ def test_transactional_write_failure_rolls_back_every_record(tmp_path: Path) -> 
     database_url = sqlite_url(tmp_path / "rollback.db")
     upgrade_to_head(database_url)
     engine = create_sqlite_engine(database_url)
+    seed_job_revision(engine, "job_rollback", 1)
     service = CommandService(engine)
 
     with pytest.raises(RuntimeError, match="typed write failed"):

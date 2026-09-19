@@ -23,6 +23,7 @@ from career_harness.db.models import (
 from career_harness.db.session import create_sqlite_engine, sqlite_url
 from career_harness.services.command_service import CommandService, IdempotencyConflict
 from career_harness.services.opportunity_service import OpportunityService
+from tests.support.job_data import seed_job_revision
 
 
 def admission_command(*, actor: str = "user", key: str = "opportunity-admit-001") -> Command:
@@ -40,6 +41,7 @@ def test_manual_admission_commits_typed_truth_and_audit_atomically(tmp_path: Pat
     database_url = sqlite_url(tmp_path / "manual-admission.db")
     upgrade_to_head(database_url)
     engine = create_sqlite_engine(database_url)
+    seed_job_revision(engine, "job_001", 2)
     service = OpportunityService(CommandService(engine))
 
     first = service.admit_manually(
@@ -80,6 +82,7 @@ def test_reviewed_ai_proposal_is_persisted_only_with_user_admission(tmp_path: Pa
     database_url = sqlite_url(tmp_path / "proposal-admission.db")
     upgrade_to_head(database_url)
     engine = create_sqlite_engine(database_url)
+    seed_job_revision(engine, "job_001", 3)
     service = OpportunityService(CommandService(engine))
     proposal = OpportunityAdmissionProposal(
         proposal_id="proposal_001",
@@ -126,7 +129,9 @@ def test_agent_command_cannot_admit_an_opportunity(tmp_path: Path) -> None:
 def test_idempotency_rejects_changed_typed_admission_input(tmp_path: Path) -> None:
     database_url = sqlite_url(tmp_path / "typed-idempotency.db")
     upgrade_to_head(database_url)
-    service = OpportunityService(CommandService(create_sqlite_engine(database_url)))
+    engine = create_sqlite_engine(database_url)
+    seed_job_revision(engine, "job_001", 1)
+    service = OpportunityService(CommandService(engine))
     command = admission_command()
     service.admit_manually(
         command,

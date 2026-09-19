@@ -34,6 +34,7 @@ from career_harness.db.models import (
     UserPriorityRow,
 )
 from career_harness.db.session import create_sqlite_engine, sqlite_url
+from tests.support.job_data import seed_job_revision
 
 
 def test_fresh_database_bootstraps_to_head(tmp_path: Path) -> None:
@@ -62,6 +63,13 @@ def test_fresh_database_bootstraps_to_head(tmp_path: Path) -> None:
         "entity_revision",
         "entity_state",
         "idempotency_record",
+        "job_identity",
+        "job_requirement_evidence_ref",
+        "job_requirement_identity",
+        "job_requirement_revision",
+        "job_requirement_scope",
+        "job_revision",
+        "job_revision_evidence_ref",
         "migration_mismatch",
         "opportunity_admission_decision",
         "opportunity_admission_proposal",
@@ -106,6 +114,148 @@ def test_evidence_migration_downgrades_on_disposable_database(tmp_path: Path) ->
         "evidence_ref",
     } & tables
     assert "capability_graph_version" in tables
+
+
+def test_job_migration_preserves_legacy_orphans_and_guards_future_writes(
+    tmp_path: Path,
+) -> None:
+    database_url = sqlite_url(tmp_path / "job-legacy-compatibility.db")
+    config = alembic_config(database_url)
+    command.upgrade(config, "0007_evidence_provenance")
+    engine = create_sqlite_engine(database_url)
+    now = datetime.now(UTC)
+    now_text = now.isoformat()
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            "INSERT INTO watchlist_item "
+            "(watchlist_item_id, job_id, job_revision, added_by, added_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("watch_legacy", "job_legacy", 7, "user", now_text),
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO opportunity_admission_proposal "
+            "(proposal_id, job_id, job_revision, proposed_by, reason, proposed_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            ("proposal_legacy", "job_legacy", 7, "agent", "Legacy proposal.", now_text),
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO opportunity_record "
+            "(opportunity_id, job_id, job_revision, state, revision, schema_version, "
+            "admitted_at, admitted_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("opportunity_legacy", "job_legacy", 7, "qualified", 1, 1, now_text, "user"),
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO opportunity_admission_decision "
+            "(decision_id, job_id, job_revision, decision, path, decided_by, proposal_id, "
+            "opportunity_id, reason, decided_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "decision_legacy",
+                "job_legacy",
+                7,
+                "admitted",
+                "proposal",
+                "user",
+                "proposal_legacy",
+                "opportunity_legacy",
+                "Legacy decision.",
+                now_text,
+            ),
+        )
+
+    command.upgrade(config, "0008_job_requirement_persistence")
+    with engine.begin() as connection:
+        counts = {
+            table: connection.exec_driver_sql(f"SELECT count(*) FROM {table}").scalar_one()
+            for table in (
+                "watchlist_item",
+                "opportunity_admission_proposal",
+                "opportunity_record",
+                "opportunity_admission_decision",
+            )
+        }
+        connection.exec_driver_sql(
+            "UPDATE opportunity_record SET revision = 2 WHERE opportunity_id = ?",
+            ("opportunity_legacy",),
+        )
+    assert set(counts.values()) == {1}
+
+    invalid_inserts = (
+        (
+            "INSERT INTO watchlist_item "
+            "(watchlist_item_id, job_id, job_revision, added_by, added_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("watch_new_orphan", "job_missing", 1, "user", now_text),
+        ),
+        (
+            "INSERT INTO opportunity_admission_proposal "
+            "(proposal_id, job_id, job_revision, proposed_by, reason, proposed_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            ("proposal_new_orphan", "job_missing", 1, "agent", "Missing job.", now_text),
+        ),
+        (
+            "INSERT INTO opportunity_record "
+            "(opportunity_id, job_id, job_revision, state, revision, schema_version, "
+            "admitted_at, admitted_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("opportunity_new_orphan", "job_missing", 1, "qualified", 1, 1, now_text, "user"),
+        ),
+        (
+            "INSERT INTO opportunity_admission_decision "
+            "(decision_id, job_id, job_revision, decision, path, decided_by, proposal_id, "
+            "opportunity_id, reason, decided_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "decision_new_orphan",
+                "job_missing",
+                1,
+                "admitted",
+                "proposal",
+                "user",
+                "proposal_legacy",
+                "opportunity_legacy",
+                "Missing job.",
+                now_text,
+            ),
+        ),
+    )
+    for statement, parameters in invalid_inserts:
+        with (
+            pytest.raises(IntegrityError, match="exact canonical job revision"),
+            engine.begin() as connection,
+        ):
+            connection.exec_driver_sql(statement, parameters)
+
+    invalid_updates = (
+        ("watchlist_item", "watchlist_item_id", "watch_legacy"),
+        ("opportunity_admission_proposal", "proposal_id", "proposal_legacy"),
+        ("opportunity_record", "opportunity_id", "opportunity_legacy"),
+        ("opportunity_admission_decision", "decision_id", "decision_legacy"),
+    )
+    for table_name, identity_column, identity in invalid_updates:
+        with (
+            pytest.raises(IntegrityError, match="exact canonical job revision"),
+            engine.begin() as connection,
+        ):
+            connection.exec_driver_sql(
+                f"UPDATE {table_name} SET job_revision = 8 WHERE {identity_column} = ?",
+                (identity,),
+            )
+
+    command.downgrade(config, "0007_evidence_provenance")
+    with engine.connect() as connection:
+        assert connection.exec_driver_sql(
+            "SELECT revision FROM opportunity_record WHERE opportunity_id = ?",
+            ("opportunity_legacy",),
+        ).scalar_one() == 2
+    tables = set(inspect(engine).get_table_names())
+    assert "job_identity" not in tables
+    assert "evidence_ref" in tables
+
+    command.upgrade(config, "0008_job_requirement_persistence")
+    with engine.connect() as connection:
+        guard_count = connection.exec_driver_sql(
+            "SELECT count(*) FROM sqlite_master WHERE type = 'trigger' "
+            "AND name LIKE 'trg_%_job_ref_%'"
+        ).scalar_one()
+    assert guard_count == 8
 
 
 def test_migrated_schema_matches_declared_metadata_columns(tmp_path: Path) -> None:
@@ -166,6 +316,7 @@ def test_user_priority_database_constraint_rejects_agent_actor(tmp_path: Path) -
     upgrade_to_head(database_url)
     engine = create_sqlite_engine(database_url)
     now = datetime.now(UTC)
+    seed_job_revision(engine, "job_001", 1)
 
     with engine.begin() as connection:
         connection.execute(

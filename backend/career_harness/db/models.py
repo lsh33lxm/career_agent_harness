@@ -173,6 +173,203 @@ class EvidenceRefRow(Base):
     selector: Mapped[str | None] = mapped_column(Text)
 
 
+class JobIdentityRow(Base):
+    __tablename__ = "job_identity"
+
+    job_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+
+
+class JobRevisionRow(Base):
+    __tablename__ = "job_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_job_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_job_schema_version"),
+        CheckConstraint(
+            "length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_job_content_sha256",
+        ),
+        CheckConstraint("source_evidence_count >= 1", name="ck_job_evidence_count"),
+    )
+
+    job_id: Mapped[str] = mapped_column(
+        ForeignKey("job_identity.job_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    source_evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class JobRevisionEvidenceRefRow(Base):
+    __tablename__ = "job_revision_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint("job_id", "job_revision", "evidence_ref_id"),
+        CheckConstraint("job_revision >= 1", name="ck_job_evidence_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_job_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["job_id", "job_revision"],
+            ["job_revision.job_id", "job_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    job_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    job_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+
+class JobRequirementIdentityRow(Base):
+    __tablename__ = "job_requirement_identity"
+    __table_args__ = (UniqueConstraint("requirement_id", "job_id"),)
+
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    job_id: Mapped[str] = mapped_column(
+        ForeignKey("job_identity.job_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+
+
+class JobRequirementRevisionRow(Base):
+    __tablename__ = "job_requirement_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_job_requirement_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_job_requirement_schema_version"),
+        CheckConstraint("job_revision >= 1", name="ck_job_requirement_job_revision"),
+        CheckConstraint(
+            "length(trim(requirement_text)) > 0 AND length(requirement_text) <= 4096",
+            name="ck_job_requirement_text",
+        ),
+        CheckConstraint(
+            "importance IN ('required', 'preferred')",
+            name="ck_job_requirement_importance",
+        ),
+        CheckConstraint(
+            "status IN ('proposed', 'accepted', 'rejected', 'superseded')",
+            name="ck_job_requirement_status",
+        ),
+        CheckConstraint(
+            "(capability_id IS NULL AND graph_version_id IS NULL) OR "
+            "(capability_id IS NOT NULL AND graph_version_id IS NOT NULL)",
+            name="ck_job_requirement_mapping_pair",
+        ),
+        CheckConstraint(
+            "required_scope_count >= 1 AND source_evidence_count >= 1",
+            name="ck_job_requirement_counts",
+        ),
+        CheckConstraint(
+            "length(trim(proposed_by)) > 0 AND "
+            "proposed_by_kind IN ('user', 'agent', 'rule')",
+            name="ck_job_requirement_proposer",
+        ),
+        CheckConstraint(
+            "(status = 'proposed' AND reviewed_by IS NULL AND reviewed_by_kind IS NULL "
+            "AND review_reason IS NULL AND reviewed_at IS NULL) OR "
+            "(status != 'proposed' AND length(trim(reviewed_by)) > 0 "
+            "AND reviewed_by_kind IN ('user', 'rule') "
+            "AND length(trim(review_reason)) > 0 AND reviewed_at IS NOT NULL)",
+            name="ck_job_requirement_review",
+        ),
+        CheckConstraint(
+            "status != 'accepted' OR capability_id IS NOT NULL",
+            name="ck_job_requirement_accepted_mapping",
+        ),
+        ForeignKeyConstraint(
+            ["requirement_id", "job_id"],
+            ["job_requirement_identity.requirement_id", "job_requirement_identity.job_id"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["job_id", "job_revision"],
+            ["job_revision.job_id", "job_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["capability_id", "graph_version_id"],
+            ["capability_node.capability_id", "capability_node.graph_version_id"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    job_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    job_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    requirement_text: Mapped[str] = mapped_column(Text, nullable=False)
+    importance: Mapped[str] = mapped_column(String(32), nullable=False)
+    capability_id: Mapped[str | None] = mapped_column(String(128))
+    graph_version_id: Mapped[str | None] = mapped_column(String(128))
+    required_scope_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    proposed_by_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by_kind: Mapped[str | None] = mapped_column(String(32))
+    review_reason: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class JobRequirementScopeRow(Base):
+    __tablename__ = "job_requirement_scope"
+    __table_args__ = (
+        UniqueConstraint("requirement_id", "requirement_revision", "scope"),
+        CheckConstraint("requirement_revision >= 1", name="ck_job_requirement_scope_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_job_requirement_scope_ordinal"),
+        CheckConstraint(
+            "scope IN ('understand', 'explain', 'apply', 'evidence', 'interview_ready')",
+            name="ck_job_requirement_scope_value",
+        ),
+        ForeignKeyConstraint(
+            ["requirement_id", "requirement_revision"],
+            ["job_requirement_revision.requirement_id", "job_requirement_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    requirement_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scope: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class JobRequirementEvidenceRefRow(Base):
+    __tablename__ = "job_requirement_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint("requirement_id", "requirement_revision", "evidence_ref_id"),
+        CheckConstraint(
+            "requirement_revision >= 1", name="ck_job_requirement_evidence_revision"
+        ),
+        CheckConstraint("ordinal >= 0", name="ck_job_requirement_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["requirement_id", "requirement_revision"],
+            ["job_requirement_revision.requirement_id", "job_requirement_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    requirement_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+
 class WatchlistItemRow(Base):
     __tablename__ = "watchlist_item"
     __table_args__ = (UniqueConstraint("job_id", "job_revision"),)

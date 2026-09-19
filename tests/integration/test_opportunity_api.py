@@ -13,6 +13,7 @@ from career_harness.db.opportunity_repository import OpportunityRepository
 from career_harness.db.session import create_sqlite_engine, sqlite_url
 from career_harness.services.command_service import CommandService
 from career_harness.services.opportunity_service import OpportunityService
+from tests.support.job_data import seed_job_revision
 
 TOKEN = "test-launch-token-value"
 AUTH = {"Authorization": f"Bearer {TOKEN}"}
@@ -22,6 +23,9 @@ def app_for_test(tmp_path: Path):  # type: ignore[no-untyped-def]
     database_url = sqlite_url(tmp_path / "api.db")
     upgrade_to_head(database_url)
     engine = create_sqlite_engine(database_url)
+    seed_job_revision(engine, "job_001", 1)
+    seed_job_revision(engine, "job_001", 2)
+    seed_job_revision(engine, "job_generated_ids_001", 1)
     return create_app(
         Settings.for_test(token=TOKEN),
         opportunity_api=OpportunityApi(

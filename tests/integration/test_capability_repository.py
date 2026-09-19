@@ -34,6 +34,7 @@ from career_harness.db.models import (
     ProjectSourceManifestRow,
 )
 from career_harness.db.session import create_sqlite_engine, sqlite_url
+from tests.support.job_data import seed_job_revision_rows
 
 
 def _repository(tmp_path: Path) -> tuple[CapabilityRepository, Connection]:
@@ -118,6 +119,7 @@ def _insert_project_evidence(connection: Connection, now: datetime) -> None:
 def _seed_capability_data(connection: Connection) -> None:
     now = datetime.now(UTC)
     earlier = now - timedelta(days=1)
+    seed_job_revision_rows(connection, "job_001", 1)
     connection.execute(
         CapabilityIdentityRow.__table__.insert(),
         [

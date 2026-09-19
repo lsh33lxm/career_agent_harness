@@ -6,12 +6,12 @@ composition over typed fallback data; a Core-owned Today read model remains futu
 
 # Current Goal
 
-Design the smallest additive W2-APP persistence/service slice over frozen contract `0.7.0`, without
-starting real ATS submission, production writes or P2 automation.
+Add the smallest authenticated Resume/Application/Outcome read projections required by the
+vertical loop, without starting real ATS submission, production writes or P2 automation.
 
 # Last Verified Commit
 
-`5727af6` - `feat(core): strengthen Application and Outcome invariants`
+`4b0bb68` - `feat(core): persist Application and Outcome truth`
 
 # Completed
 
@@ -162,10 +162,16 @@ starting real ATS submission, production writes or P2 automation.
   separate single-revision truth pinned to exact Application revisions. Full backend verification
   passed `329` tests with `3` known Windows symlink-permission skips. No migration or ATS action was
   added.
+- Added additive Application/Outcome persistence and atomic services (`4b0bb68`): migration 0012
+  stores immutable Application revisions and sealed Outcome Evidence aggregates; exact
+  Opportunity/Resume/Application/Evidence refs fail loud; portal receipt source type is validated
+  in service and write layers; submission identity cannot drift across later revisions. Focused
+  tests passed `11`; full backend verification passed `332` tests with `3` known Windows
+  symlink-permission skips. No ATS execution, credentials or raw form answers were added.
 
 # In Progress
 
-- W2-APP additive persistence/service design; migration 0012 is not created yet.
+- W2-UI authenticated read projections for Resume/Application/Outcome.
 
 # Blocked
 
@@ -180,8 +186,8 @@ starting real ATS submission, production writes or P2 automation.
 
 # Next Safe Tasks
 
-1. Design and review additive Application/Outcome persistence before assigning migration 0012.
-2. Add only the Project/Capability/Resume read projections required by the vertical loop.
+1. Add authenticated Resume/Application/Outcome read projections required by the vertical loop.
+2. Add only the Project/Capability read projections required by an actual UI consumer.
 3. Replace Today fallback data only after a Core-owned read model contract is frozen.
 4. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.

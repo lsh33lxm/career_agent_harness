@@ -25,6 +25,7 @@
 | M3e | Add durable Match/Gap assessment, requirement result and canonical Gap records | Completed in `f3c646e`/`4ff1ac3` (merge `b04d08e`); additive 0009, no backfill | Tested `0008 -> 0009 -> 0008 -> 0009` on disposable DB. |
 | M3f | Add ExtractedClaim review and revisioned Fact records | Completed in `427ce1b`/`8a76ad2` (merge `d43ebe4`); additive 0010, no backfill | Tested `0009 -> 0010 -> 0009 -> 0010` on disposable DB. |
 | M3g | Add Resume Base/Patch/Revision records | Completed in `c6bfe66` (merge `df5f4d2`); additive 0011, no backfill or legacy import | Tested `0010 -> 0011 -> 0010 -> 0011` on disposable DB. |
+| M3h | Add Application revisions and immutable Outcome records | Completed in `4b0bb68`; additive 0012, no ATS action, form payload or legacy backfill | Tested `0011 -> 0012 -> 0011 -> 0012` on disposable DB. |
 | M4 | Compatibility transform for `OpportunityState.WATCHING` | Explicit rehearsal report; user approval if real records exist | Preserve original revisions; reverse mapping. |
 | M5 | Resume/Application/Outcome vertical slice | Additive records with evidence refs | Tombstone new records; retain audit. |
 | M6 | Legacy import (future gate) | Approved manifest only | Restore verified pre-import backup. |

@@ -35,6 +35,7 @@
 | Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
 | Application/Outcome contract | DONE | 2026-09-20 | `d61af6c`; contract `0.7.0`, exact submission refs, user authority and no-ATS boundary. |
 | Application/Outcome typed invariants | DONE | 2026-09-20 | `5727af6`; exact Opportunity/Application refs, submission authority and receipt evidence gates; 329 passed, 3 skipped. |
+| Application/Outcome persistence | DONE | 2026-09-20 | `4b0bb68`; additive 0012, immutable revisions/outcomes, atomic USER-gated services; 332 passed, 3 skipped. |
 
 ## Integrated workstreams
 
@@ -115,6 +116,11 @@
   Outcome separate from state/signal. Exact refs and receipt evidence are mandatory where
   applicable; no persistence, API or ATS execution was added. Focused tests passed `17`; full
   integration passed `329 passed, 3 skipped`; changed-file Ruff/format and diff checks passed.
+- Application/Outcome Persistence: `4b0bb68`; additive 0012 pins exact Opportunity, ResumeRevision,
+  Application revision and Evidence refs. Submission identity is DB-stable, Outcome evidence is
+  ordered/sealed, receipt source type is checked in service and write layers, and typed rows,
+  generic revision, event and idempotency commit atomically. Focused tests passed `11`; full
+  integration passed `332 passed, 3 skipped`; changed-file Ruff/format and diff checks passed.
 
 ## Recorded follow-ups (non-blocking)
 

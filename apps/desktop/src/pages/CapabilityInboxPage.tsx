@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { listCapabilityInbox, reviewCapabilityCandidate, type InboxItem, type InboxReceipt, type InboxReviewRequest } from "../api/capabilityInbox";
 import "./CapabilityInboxPage.css";
@@ -72,6 +73,7 @@ function ReviewCard({ item, refresh }: { item: InboxItem; refresh: () => Promise
 }
 
 export function CapabilityInboxPage() {
+  const location = useLocation();
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -83,7 +85,7 @@ export function CapabilityInboxPage() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
-  return <main className="capability-inbox"><header><h1>能力候选收件箱</h1><p>候选属于全局能力本体，不表示个人掌握。接受会发布新官方图谱；忽略保留历史。</p><a href="/capabilities">返回能力地图</a></header>
+  return <main className="capability-inbox"><header><h1>能力候选收件箱</h1><p>候选属于全局能力本体，不表示个人掌握。接受会发布新官方图谱；忽略保留历史。</p><Link to="/capabilities" state={location.state}>返回能力地图</Link></header>
     {loading && <p role="status">正在加载收件箱…</p>}
     {error && <div role="alert">{error}<button disabled={loading} onClick={() => { void refresh(); }}>重试读取</button></div>}
     {loaded && !loading && !items.length && <p>暂无能力候选</p>}

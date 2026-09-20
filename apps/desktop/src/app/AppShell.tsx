@@ -8,7 +8,7 @@ export function AppShell() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand" aria-label="Agent Career Harness">
-          <img className="brand-mark" src="/brand-icon.png" alt="" />
+          <span className="brand-mark-frame"><img className="brand-mark" src="/brand-icon-clean.png" alt="" /></span>
           <span className="brand-copy">
             <strong>观复</strong>
             <small>CAREER HARNESS</small>
@@ -17,7 +17,7 @@ export function AppShell() {
         <p className="brand-motto">看见经历<br />也看见自己</p>
         <nav className="primary-nav" aria-label="Primary navigation">
           {navigation.map(({ path, label, icon: Icon }) => (
-            <NavLink key={path} to={path} end={path === "/"}>
+            <NavLink key={path} to={path} end={path === "/"} aria-label={label} title={label}>
               <Icon size={18} aria-hidden="true" />
               <span>{label}</span>
             </NavLink>

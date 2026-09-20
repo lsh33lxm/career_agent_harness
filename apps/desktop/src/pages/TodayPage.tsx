@@ -100,6 +100,10 @@ function TodayQueuePanel({ queue }: { queue: TodayQueue }) {
 export function TodayPage() {
   const [health, retryHealth] = useHealth();
   const [today, retryToday] = useToday();
+  const firstItem = today.status === "ready" ? today.data.items[0] : undefined;
+  const reviews = today.status === "ready"
+    ? today.data.items.filter((item) => item.kind === "review_request") : [];
+  const unavailable = today.status === "loading" ? "正在读取今日队列…" : "队列暂不可用，恢复连接后显示。";
   return (
     <main className="today-page">
       <header className="today-hero">
@@ -123,6 +127,17 @@ export function TodayPage() {
 
       <div className="today-layout">
         <div className="today-main-column">
+          <section className="today-panel focus-panel" aria-labelledby="focus-title">
+            <h2 className="today-section-title" id="focus-title"><span />今日焦点</h2>
+            <div className="today-focus-summary">
+              {firstItem ? <>
+                <h3>{kindLabels[firstItem.kind]}</h3>
+                <p>{firstItem.item_id}</p>
+                <small>沿用今日队列首项，不另行排序。完整理由与来源见下方队列。</small>
+                <a className="today-secondary" href="#queue-title">查看队列</a>
+              </> : <p>{today.status === "ready" ? "暂无焦点，今日队列为空。" : unavailable}</p>}
+            </div>
+          </section>
           {today.status === "loading" && (
             <section className="today-panel opportunity-stream" aria-label="今日队列加载中">
               <div className="empty-state">
@@ -141,14 +156,29 @@ export function TodayPage() {
             </section>
           )}
           {today.status === "ready" && <TodayQueuePanel queue={today.data} />}
+          <section className="today-panel weekly-panel" aria-labelledby="weekly-title">
+            <h2 className="today-section-title" id="weekly-title"><span />本周回看</h2>
+            <p className="today-unavailable">周度回看尚未接入，当前不展示进度或完成数量。</p>
+            <blockquote>积累真实的自己，走向更大的可能。</blockquote>
+          </section>
         </div>
 
         <aside className="today-side-column">
+          <section className="today-panel confirmation-panel" aria-labelledby="confirmation-title">
+            <h2 className="today-section-title" id="confirmation-title"><span />需要你确认</h2>
+            {today.status !== "ready" ? <p className="today-unavailable">{unavailable}</p>
+              : reviews.length === 0 ? <p className="today-unavailable">今日队列中暂无待确认事项。</p>
+                : <ul className="today-review-list">{reviews.map((item) => <li key={item.item_id}>
+                  <strong>{item.item_id}</strong>
+                  {item.reasons.map((reason) => <p key={reason.code}>{reason.explanation}</p>)}
+                </li>)}</ul>}
+            <small>仅展示队列中的待确认项；本页不执行审批。</small>
+          </section>
           <section className="today-panel capture-panel" aria-labelledby="capture-title">
             <h2 className="today-section-title" id="capture-title"><span />快速收集</h2>
-            <button className="capture-input" type="button"><Link2 size={17} />粘贴链接（职位、文章、公司页面等）</button>
-            <div className="capture-tools"><button type="button"><Upload size={16} />上传 PDF</button><button type="button"><ScanText size={16} />截图识别</button><button type="button"><FileText size={16} />粘贴文本</button></div>
-            <p>收集有价值的信息，让选择更有依据。</p>
+            <button className="capture-input" type="button" disabled><Link2 size={17} />粘贴链接（职位、文章、公司页面等）</button>
+            <div className="capture-tools"><button type="button" disabled><Upload size={16} />上传 PDF</button><button type="button" disabled><ScanText size={16} />截图识别</button><button type="button" disabled><FileText size={16} />粘贴文本</button></div>
+            <p>收集入口尚未接入，暂不可用。</p>
             <p className="capture-note">稳步前行<br />已经走在更好的路上</p>
           </section>
         </aside>

@@ -19,6 +19,7 @@ class ArchiveSelection(StrictModel):
     artifact_class: ArtifactClass = ArtifactClass.SENSITIVE
     source_class: str = "unknown"
     inspected: bool = False
+    source_code_exception_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 
 
 class ArchiveEntry(StrictModel):
@@ -29,6 +30,7 @@ class ArchiveEntry(StrictModel):
     reason: str
     archive_location: str | None = None
     artifact_class: ArtifactClass = ArtifactClass.SENSITIVE
+    source_code_exception_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 
 
 class ArchiveIndex(StrictModel):
@@ -84,6 +86,22 @@ def _excluded(relative: str) -> bool:
     )
 
 
+def _source_code_exception(relative: str, sha256: str, exception_sha: str | None) -> bool:
+    """Only inspected source-code basenames may override a suspicious-name match."""
+    path = PurePosixPath(relative.replace("\\", "/"))
+    if exception_sha is None:
+        return False
+    if (
+        exception_sha != sha256
+        or path.suffix.casefold() != ".py"
+        or not re.search(r"(?i)(profile|tokens)", path.stem)
+        or re.search(r"(?i)(credential|secret|session|cookie|password|\.env|\.ssh)", path.name)
+        or any(_excluded(part) for part in path.parts[:-1])
+    ):
+        raise ValueError("invalid inspected source-code path exception")
+    return True
+
+
 def archive_inventory(
     inventory_bytes: bytes,
     source_root: Path,
@@ -112,7 +130,13 @@ def archive_inventory(
         reason = "not inspected and explicitly selected; legacy dependency remains"
         location = None
         kind = selection.artifact_class if selection else ArtifactClass.SENSITIVE
-        if _excluded(source.relative_path) or kind == ArtifactClass.CREDENTIAL_SESSION:
+        exception_sha = selection.source_code_exception_sha256 if selection else None
+        exception = _source_code_exception(source.relative_path, source.sha256, exception_sha)
+        if exception and (not selection or not selection.inspected):
+            raise ValueError("source-code path exception requires content inspection")
+        if (
+            _excluded(source.relative_path) and not exception
+        ) or kind == ArtifactClass.CREDENTIAL_SESSION:
             disposition, reason = "excluded", "fixture or credential/session path"
         elif selection and selection.inspected:
             content = read_source_bytes(
@@ -141,6 +165,7 @@ def archive_inventory(
                 reason=reason,
                 archive_location=location,
                 artifact_class=kind,
+                source_code_exception_sha256=exception_sha,
             )
         )
     if source_metadata_signature(source_root) != before:
@@ -167,8 +192,12 @@ def load_verified_index(store: ArtifactStore, index_sha: str) -> ArchiveIndex:
         if entry.disposition == "preserved":
             if (
                 _excluded(entry.source.relative_path)
-                or entry.artifact_class == ArtifactClass.CREDENTIAL_SESSION
-            ):
+                and not _source_code_exception(
+                    entry.source.relative_path,
+                    entry.source.sha256,
+                    entry.source_code_exception_sha256,
+                )
+            ) or entry.artifact_class == ArtifactClass.CREDENTIAL_SESSION:
                 raise ValueError("excluded entry cannot be preserved")
             if entry.archive_location != artifact_location(entry.source.sha256):
                 raise ValueError("archive location mismatch")

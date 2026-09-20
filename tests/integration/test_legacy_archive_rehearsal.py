@@ -76,6 +76,37 @@ def test_preservation_exclusions_provenance_and_restore(tmp_path: Path):
     )
 
 
+@pytest.mark.parametrize("fault", [None, "hash", "credential", "parent", "uninspected"])
+def test_source_code_path_exception_is_exact_and_cannot_bypass_credentials(tmp_path, fault):
+    source = tmp_path / "source"
+    source.mkdir()
+    name = "secrets/phase1_profile.py" if fault == "parent" else "phase1_profile.py"
+    path = source / name
+    path.parent.mkdir(exist_ok=True)
+    path.write_text('password="sensitive"' if fault == "credential" else 'print("statistics")')
+    manifest = build_manifest(source)
+    selection = ArchiveSelection(
+        relative_path=name,
+        reason="reviewed source code, not a session profile",
+        inspected=fault != "uninspected",
+        source_code_exception_sha256="0" * 64
+        if fault == "hash"
+        else manifest.source_files[0].sha256,
+    )
+    store = ArtifactStore(tmp_path / "artifacts")
+    if fault in {"hash", "parent", "uninspected"}:
+        with pytest.raises(ValueError, match="exception"):
+            archive_inventory(manifest.model_dump_json().encode(), source, store, (selection,))
+    else:
+        index, index_sha = archive_inventory(
+            manifest.model_dump_json().encode(), source, store, (selection,)
+        )
+        assert index.entries[0].disposition == (
+            "excluded" if fault == "credential" else "preserved"
+        )
+        assert load_verified_index(store, index_sha) == index
+
+
 def test_uninspected_selection_and_unknown_content_deferred(tmp_path: Path):
     source, inventory, store, _ = fixture(tmp_path)
     index, _ = archive_inventory(

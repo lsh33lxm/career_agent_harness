@@ -12,7 +12,9 @@ Owned paths:
 - apps/desktop/src/api/capabilityInbox.ts and capabilityInbox.test.ts (new)
 - apps/desktop/src/pages/CapabilityInboxPage.tsx and CapabilityInboxPage.test.tsx (new)
 - apps/desktop/src/pages/CapabilityInboxPage.css (new, page-scoped)
-- apps/desktop/src/pages/CapabilitiesPage.tsx (only inbox navigation link)
+- apps/desktop/src/pages/CapabilitiesPage.tsx (inbox link and preserving submitted query on return)
+- apps/desktop/src/pages/CapabilitiesPage.test.tsx (only router wrapper required by client navigation)
+- apps/desktop/src/pages/CapabilityInboxNavigation.test.tsx (new route-level historical pin regression)
 - apps/desktop/src/app/App.tsx (only inbox route)
 
 All other paths read-only. No schema, Core/repository/service change, global CSS churn, shared

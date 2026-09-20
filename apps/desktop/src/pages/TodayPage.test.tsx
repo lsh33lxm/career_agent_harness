@@ -71,7 +71,7 @@ describe("TodayPage", () => {
 
     render(<TodayPage />);
 
-    expect(await screen.findByText(/今日队列为空/)).toBeTruthy();
+    expect(await screen.findByText("今日队列为空，Core 没有可展示的事项。")).toBeTruthy();
     expect(screen.queryByRole("article")).toBeNull();
   });
 
@@ -113,5 +113,26 @@ describe("TodayPage", () => {
     const ids = cards.map((card) => card.textContent ?? "");
     expect(ids[0]).toContain("today:opportunity_action:opportunity_low");
     expect(ids[1]).toContain("today:interview_prep:interview_urgent");
+    const focus = screen.getByRole("region", { name: "今日焦点" });
+    expect(focus.textContent).toContain(lowFirst.item_id);
+    expect(focus.textContent).not.toContain(urgentSecond.item_id);
+    expect(focus.textContent).toContain("沿用今日队列首项，不另行排序");
+  });
+
+  it("retains six honest regions and disables unavailable capture controls", async () => {
+    const review = todayItem({ item_id: "review_only", kind: "review_request" });
+    vi.mocked(getToday).mockResolvedValue(todayQueue([todayItem(), review]));
+    render(<TodayPage />);
+    await screen.findAllByRole("article");
+    expect(screen.getByRole("heading", { name: "今天" })).toBeTruthy();
+    for (const name of ["今日焦点", "今日队列", "需要你确认", "快速收集", "本周回看"]) {
+      expect(screen.getByRole("region", { name: new RegExp(name) })).toBeTruthy();
+    }
+    const confirmation = screen.getByRole("region", { name: "需要你确认" });
+    expect(confirmation.textContent).toContain("review_only");
+    expect(confirmation.textContent).not.toContain("opportunity_001");
+    const capture = screen.getByRole("region", { name: "快速收集" });
+    expect(within(capture).getAllByRole("button").every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
+    expect(screen.getByText("周度回看尚未接入，当前不展示进度或完成数量。")).toBeTruthy();
   });
 });

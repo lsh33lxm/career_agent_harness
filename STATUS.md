@@ -180,6 +180,10 @@ full suite 534 passed, 3 skipped; Ruff and 5-file format passed; unchanged front
 
 # In Progress
 
+- Runtime wiring correction: the existing Today API is now injected by create_runtime_app;
+  the strengthened runtime test reproduced 404 before the fix, then runtime/Today API tests
+  passed 5/5. No Core semantics or migration changed; independent review pending.
+
 - ACTIVE: W2-INBOX-CLIENT, contract `0.16.0` / D-026; authenticated proposal reads and explicit
   accept/ignore UI over the existing Core service; synthetic validation only.
 

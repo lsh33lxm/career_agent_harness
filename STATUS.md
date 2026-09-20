@@ -179,6 +179,9 @@ state with contract-first, review-gated increments.
 
 # In Progress
 
+- ACTIVE: W2-TODAY-INTERVIEW, contract `0.14.0` / D-024 frozen; enrich the existing
+  interview-stage Today item from exact canonical Interview schedules, read-only.
+
 - Codex-to-Kimi engineering handoff complete; Today read model contract `0.8.0` is frozen and the
   P0 vertical slice proof is integrated (`f132709`).
 - Core Today read model is integrated (`1d86b65`): deterministic projection, closed item kinds,
@@ -218,9 +221,7 @@ state with contract-first, review-gated increments.
 
 # Next Safe Tasks
 
-1. Select the next dependency-ready P1 slice now that Capability Visualization is complete.
-   Canonical Interview records exist, but Today still does not consume their schedule; this
-   bounded read-only follow-up can reuse the existing Today ordering and Interview contracts.
+1. Complete W2-TODAY-INTERVIEW implementation, independent review, integration and regression.
 2. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.
 3. Continue awaiting user adjudication for destructive legacy cutover decisions.

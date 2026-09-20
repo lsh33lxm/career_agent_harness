@@ -45,6 +45,8 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | DONE | Medium | Authenticated UI uses Core-owned IDs, preserves priority separation and passes responsive validation. |
 | W2-CAP-VIZ | Candidate-scoped Capability Workspace read API and visualization | W1-CAP-READ, Broad Market Trend | Subagent | capability-visualization | DONE | Medium | Merge `62f1ce8`; final recovery review APPROVE; full 403 passed, 3 skipped; frontend 27 passed/build and browser fixture checks passed. |
 
+| W2-TODAY-INTERVIEW | Exact Interview schedule inputs for existing Today interview-stage items | Today read model, Interview records | Subagent | today-interview | IN_PROGRESS | Medium | Contract `0.14.0` / D-024; exact schedule provenance, deterministic selection and zero writes tested. |
+
 ## P1 and P2 status
 
 Today dynamic queue and UI adapter, Capability Inbox review, broad market trends and incremental

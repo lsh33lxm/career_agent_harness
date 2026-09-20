@@ -39,6 +39,7 @@
 | Interview records | DONE | 2026-09-20 | `834b1fb` merged as `8c44620`; contract `0.11.0` + D-021; additive 0013; full 381 passed. |
 | Broad Market Trend | DONE | 2026-09-20 | `f7cb3c6` merged as `c6efb8b`; contract `0.12.0` + D-022; independent review APPROVE with no P0/P1/P2; full 391 passed, 3 skipped; Ruff passed. |
 | Capability Workspace Visualization | DONE | 2026-09-20 | Implementation `ae39eb6` + consistency fix `e076daf`, merged as `62f1ce8`; contract `0.13.0`, D-023. Recovery independent review of `f2727cf..e076daf`: APPROVE, no P0/P1/P2/P3. Focused backend 13 passed; full backend 403 passed, 3 known Windows symlink skips; frontend 27 passed; production build, full Ruff, 11 changed Python format checks and diff checks passed. |
+| Today Interview schedule inputs | IN_PROGRESS | 2026-09-20 | Contract `0.14.0` / D-024 frozen; W2-TODAY-INTERVIEW selected only after Capability Visualization closeout `a77ca2c`. |
 | Resume truth core | DONE | 2026-09-20 | `c6bfe66` merged as `df5f4d2`; additive 0011, exact reviewed patches and immutable content-hashed revisions. |
 | Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
 | Application/Outcome contract | DONE | 2026-09-20 | `d61af6c`; contract `0.7.0`, exact submission refs, user authority and no-ATS boundary. |

@@ -487,3 +487,24 @@ investment decision.
 **Impact:** The implementation adds repository list reads where needed, a pure assembly service,
 an authenticated read endpoint and a responsive desktop visualization. No migration or canonical
 write path is permitted. Missing identity context remains explicit rather than guessed.
+
+## D-024 - Enrich Today interview-stage items from exact canonical schedules
+
+**Decision:** ACCEPTED in contract `0.14.0` (read-only extension; no schema change).
+
+**Context:** Today already orders interview-stage Application items by optional interview time,
+but the service never supplied it. Interview persistence now exists, so the dependency is ready.
+
+**Alternatives:** Create a second per-Interview queue; infer Application state from a schedule;
+continue showing all interview-stage items with no schedule.
+
+**Chosen:** Preserve the existing Application-scoped item and ordering; select its earliest latest-
+revision SCHEDULED Interview with a stable ID tie-break. Record exact selected and consulted source
+refs, validate historical Application pins, and never turn scheduling into a state transition.
+Past still-scheduled records remain visible until explicitly completed/cancelled.
+
+**Reason:** Closes a recorded P1 projection gap without redefining business lifecycle or creating
+an additional queue. Exact refs explain both selected times and exclusion of terminal interviews.
+
+**Impact:** Narrow Today typed-input/policy/service changes plus focused tests. No migration,
+frontend business logic, real calendar operation or new authority. Other stages retain prior behavior.

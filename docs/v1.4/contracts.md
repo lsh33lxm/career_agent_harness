@@ -1,9 +1,10 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.13.0`
-**Status:** FROZEN FOR CAPABILITY WORKSPACE VISUALIZATION
+**Version:** `v1.4-contract-0.14.0`
+**Status:** FROZEN FOR TODAY INTERVIEW SCHEDULE INPUTS
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
+`0.14.0` retains all `0.13.0` guarantees and adds exact Today Interview schedule inputs below.
 `0.13.0` retains all `0.12.0` guarantees and adds the Capability Workspace read contract below.
 `0.12.0` added the Broad Market Trend contract. Earlier
 versions added Interview records (`0.11.0`), incremental project rescan (`0.10.0`), Capability
@@ -409,6 +410,29 @@ state and never changes UserPriority.
   substitutes latest-at-read for a frozen reference and never fabricates business data. Empty
   inputs yield an empty queue, not placeholder content.
 - Frontend renders the Core projection only; ranking logic must not live in React or any client.
+
+### Today Interview schedule inputs
+
+- This slice enriches the existing application-scoped `INTERVIEW_PREP` item only when the current
+  Application is in `INTERVIEW`. It does not change item identity, Application state, priorities,
+  Outcome or the existing total order. Other Application stages retain their existing projection.
+- Read the latest canonical revision of every Interview belonging to that Application through the
+  typed repository. Validate each Interview's pinned Application revision through an exact read;
+  a missing or mismatched reference fails loud. An Interview may validly pin an older Application
+  revision: do not substitute the current revision for that historical reference.
+- Select the earliest `SCHEDULED` Interview by UTC-normalized `(scheduled_at, interview_id)`.
+  Completed/cancelled latest revisions are excluded from time selection; do not resurrect an older
+  scheduled revision. A past scheduled time remains visible until an explicit completion/cancel
+  command; do not invent expiry from wall-clock time. No eligible schedule means `interview_at=null`.
+- The item's source refs retain current Application/Opportunity refs and add the selected exact
+  Interview revision plus its exact pinned Application ref (deduplicated). The queue's canonical
+  input revision set additionally includes every consulted Interview revision and pinned Application
+  revision, including completed/cancelled records used to exclude a schedule.
+- Schedule selection must be deterministic under repository return-order changes. Pure Today input
+  types must reject mismatched Interview/Application identity and duplicate/conflicting Interview
+  revisions; runtime assembly never accepts an unprovenanced bare timestamp as a canonical schedule.
+- No new endpoint, migration, persistence, status transition or frontend ranking is introduced.
+  Existing policy version/order remain valid: this fills the previously missing schedule dimension.
 
 ## Persistence ownership
 

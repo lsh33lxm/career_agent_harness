@@ -5,13 +5,13 @@ import { OpportunitiesPage } from "../pages/OpportunitiesPage";
 import { TodayPage } from "../pages/TodayPage";
 import { CapabilitiesPage } from "../pages/CapabilitiesPage";
 import { CapabilityInboxPage } from "../pages/CapabilityInboxPage";
+import { HistoryPage } from "../pages/HistoryPage";
 import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
 
 const sections = [
   ["projects", "Projects", "No connected projects"],
   ["resume", "Resume", "No resume revisions"],
-  ["history", "History", "No career outcomes yet"],
   ["context", "Me / Context", "No personal context configured"],
   ["settings", "Settings", "No local preferences configured"],
 ] as const;
@@ -26,6 +26,7 @@ export function App() {
             <Route path="opportunities" element={<OpportunitiesPage />} />
             <Route path="capabilities" element={<CapabilitiesPage />} />
             <Route path="capabilities/inbox" element={<CapabilityInboxPage />} />
+            <Route path="history" element={<HistoryPage />} />
             {sections.map(([path, title, emptyLabel]) => (
               <Route
                 key={path}

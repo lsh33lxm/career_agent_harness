@@ -174,7 +174,7 @@ export function CapabilitiesPage() {
   return (
     <main className="capability-page">
       <header className="capability-heading">
-        <div><span>Capability Workspace</span><h1>能力地图</h1><p>查看官方图谱、个人覆盖、市场信号与投资提案。</p></div>
+        <div><span>Capability Workspace</span><h1>能力地图</h1><p>查看官方图谱、个人覆盖、市场信号与投资提案。</p><a href="/capabilities/inbox">审核能力候选</a></div>
         {state.status === "ready" && state.data.graph_version !== null && (
           <div className="capability-version"><span>Graph</span><strong>{state.data.graph_version.version_label}</strong><code>{state.data.graph_version.graph_version_id}</code></div>
         )}

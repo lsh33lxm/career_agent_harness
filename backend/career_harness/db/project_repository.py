@@ -95,6 +95,19 @@ class ProjectRepository:
             row = session.get(ProjectSourceManifestRow, manifest_id)
             return self._to_source_manifest(session, row) if row is not None else None
 
+    def list_manifests_for_project(self, project_id: str) -> tuple[ProjectSourceManifest, ...]:
+        """All manifests for one project, ordered by generated_at then manifest_id."""
+        with Session(self.engine) as session:
+            rows = session.scalars(
+                select(ProjectSourceManifestRow)
+                .where(ProjectSourceManifestRow.project_id == project_id)
+                .order_by(
+                    ProjectSourceManifestRow.generated_at,
+                    ProjectSourceManifestRow.manifest_id,
+                )
+            ).all()
+            return tuple(self._to_source_manifest(session, row) for row in rows)
+
     def get_evidence(self, evidence_id: str, revision: int | None = None) -> ProjectEvidence | None:
         with Session(self.engine) as session:
             row = self._get_revisioned_row(

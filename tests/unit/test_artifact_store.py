@@ -23,3 +23,15 @@ def test_credential_session_is_rejected(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="credential/session"):
         store.put(b"cookie", ArtifactClass.CREDENTIAL_SESSION)
 
+
+@pytest.mark.parametrize("damaged", [b"bad", b"same size content"])
+def test_existing_corrupt_artifact_is_never_reused_or_repaired(tmp_path: Path, damaged: bytes):
+    store = ArtifactStore(tmp_path / "artifacts")
+    original = b"original content!"
+    stored = store.put(original, ArtifactClass.PERSONAL)
+    stored.path.write_bytes(damaged)
+    with pytest.raises(ValueError, match="hash"):
+        store.read(stored.sha256)
+    with pytest.raises(ValueError, match="hash"):
+        store.put(original, ArtifactClass.PERSONAL)
+    assert stored.path.read_bytes() == damaged

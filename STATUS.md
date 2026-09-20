@@ -179,6 +179,9 @@ state with contract-first, review-gated increments.
 
 # In Progress
 
+- ACTIVE: W2-L2-PREP, contract `0.15.0` / D-025; prepare exact-context CLI invocation
+  previews locally. Actual provider execution is not part of this slice.
+
 - W2-TODAY-INTERVIEW integrated as `dc85365` (`0b0fa6b`, `ae53689`), contract
   `0.14.1` / D-024. Existing interview-stage Today items now select canonical schedules with
   exact historical refs; UTC is recovered from exact immutable audit without changing replay.

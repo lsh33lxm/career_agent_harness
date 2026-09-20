@@ -518,3 +518,27 @@ Today through an additive typed repository read, validate typed/audit agreement 
 missing/naive/corrupt provenance. Keep general Interview get/list/write behavior unchanged here:
 global normalization could alter legacy transition idempotency hashes and exceeds this read slice.
 No data migration, timezone assumption or mutation is authorized by this amendment.
+
+## D-025 - Prepare explicit-context L2 invocations before authorizing execution
+
+**Decision:** ACCEPTED in contract `0.15.0` for local preparation only.
+
+**Context:** L1 tasks and exact scope/manifests exist. Scanner exposes hashes, not a public safe
+content reader. Local CLI help verifies Claude tools-disabled flags, but Codex read-only does not
+prove no-shell or scope-only reads. No user-selected project payload/budget has been authorized.
+
+**Alternatives:** Launch a CLI in the real project with a scope prompt; use ordinary path reads
+following the scanner; treat all providers as equally restricted; defer all preparation.
+
+**Chosen:** Prepare a deterministic review envelope from exact canonical refs and caller-supplied
+memory content that matches manifest bytes. No process launch/content read. Claude uses fixed
+no-tool flags; Codex reports unsupported for this capability. The preview binds exact context and
+limits and cannot act as self-approved external-inference consent.
+
+**Reason:** Supplies a concrete, testable permission boundary without weakening scanner protections
+or sending real code implicitly. Keeps the future runner and provider authorization reviewable.
+
+**Impact:** Small pure domain/preparation service and adapter; no migration, API, subprocess or
+network. Actual execution/result handling remains NOT IMPLEMENTED until its own contract/review.
+CLI versions inspected: Codex 0.155.1, Claude 2.1.214. Official Codex parameter reference:
+https://developers.openai.com/codex/cli/reference . No inference was run during preflight.

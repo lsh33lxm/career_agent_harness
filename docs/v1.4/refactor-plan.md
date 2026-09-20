@@ -46,7 +46,8 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-CAP-VIZ | Candidate-scoped Capability Workspace read API and visualization | W1-CAP-READ, Broad Market Trend | Subagent | capability-visualization | DONE | Medium | Merge `62f1ce8`; final recovery review APPROVE; full 403 passed, 3 skipped; frontend 27 passed/build and browser fixture checks passed. |
 | W2-TODAY-INTERVIEW | Exact Interview schedule inputs for existing Today interview-stage items | Today read model, Interview records | Subagent | today-interview | DONE | Medium | Merge `dc85365`; contract `0.14.1` / D-024; review APPROVE; full 440 passed, 3 skipped. |
 
-| W2-L2-ANALYSIS | Explicit-context, tools-disabled local CLI analysis adapter | Enhancement L1, exact project scope/manifest reads | Lead | integration (contract preparation) | READY | Medium | Offline transport tests and review; real inference requires exact context and budget authorization. |
+| W2-L2-PREP | Exact-context tools-disabled CLI invocation preparation | Enhancement L1, exact project scope/manifest reads | Subagent | l2-analysis-prep | IN_PROGRESS | Medium | Contract 0.15.0 / D-025; no subprocess/network; preview is not consent. |
+| W2-L2-RUN | Bounded CLI execution and proposal result handling | W2-L2-PREP, explicit context/provider/budget approval | Lead | unassigned | BLOCKED | High | Runner contract/review and explicit real-inference authorization required; not implemented. |
 
 ## P1 and P2 status
 

@@ -1,9 +1,10 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.14.1`
-**Status:** FROZEN FOR TODAY INTERVIEW SCHEDULE INPUTS
+**Version:** `v1.4-contract-0.15.0`
+**Status:** FROZEN FOR L2 ANALYSIS INVOCATION PREPARATION
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
+`0.15.0` adds L2 invocation preparation only; it does not authorize provider inference.
 `0.14.1` adds the exact schedule-time recovery boundary below; no data rewrite.
 `0.14.0` retains all `0.13.0` guarantees and adds exact Today Interview schedule inputs below.
 `0.13.0` retains all `0.12.0` guarantees and adds the Capability Workspace read contract below.
@@ -444,6 +445,40 @@ state and never changes UserPriority.
   normalization remains separate work requiring historical replay compatibility tests.
 - No new endpoint, migration, persistence, status transition or frontend ranking is introduced.
   Existing policy version/order remain valid: this fills the previously missing schedule dimension.
+
+## L2 analysis invocation preparation
+
+- The first L2 slice prepares a reviewable invocation, not execution. It performs zero subprocess,
+  network, filesystem-content reads or canonical writes. Existing L1 remains available without CLI.
+- Input pins task ID/revision, Project ID/revision, scope ID/revision, immutable manifest ID and an
+  explicitly selected provider/model plus bounded caller-supplied UTF-8 file contents. Core loads
+  exact task/project/scope/manifest through existing typed repository reads. IDs/revisions and all
+  cross-links must match; latest substitution, missing refs and mismatches fail loud.
+- The task must belong to the project and be READY or IN_PROGRESS. Manifest must pin that exact
+  scope. Each supplied path must be normalized, case-insensitively unique, scope-permitted under
+  deny-wins, present in the exact manifest, and its UTF-8 bytes must match recorded hash AND length.
+  Secret/session paths excluded by the scanner remain forbidden even if a scope allows them.
+  No root locator, full project contents, credentials or environment values enter the prompt.
+- A deterministic prepared envelope binds all exact refs, provider/model, bounded cost ceiling,
+  timeout and context digest to a request digest. The digest covers the complete outbound prompt
+  (task plans plus selected verified contents), provider/model and limits; changes invalidate it.
+  It is a preview, not consent. The prompt/context are transient: no persistence, events or logs.
+  Content-bearing fields must be omitted from repr/error messages.
+- The Claude adapter prepares fixed arguments for tools-disabled analysis: `--print --safe-mode
+  --tools "" --strict-mcp-config --no-session-persistence --no-chrome --input-format text
+  --output-format json`, selected `--model`, and `--max-budget-usd`. Model names are bounded simple
+  identifiers, never caller-supplied CLI flags; preserve the empty tools argument. Prompt goes to
+  stdin, never shell interpolation or argv. No executable is launched by this slice.
+- Codex support is explicitly unavailable for this no-shell/no-autonomous-file-read mode: its
+  read-only sandbox alone does not establish equivalent tool restrictions. Return a typed
+  unsupported-provider error, not a silently weaker invocation.
+- Prepared permission summary says provider inference requires explicit authorization; model
+  shell/read/write/network tools are disabled. It does not claim process-level egress isolation
+  or that the CLI runtime itself performs zero host writes. A future runner must independently
+  enforce timeout/output bounds, minimal environment and non-project cwd, then validate results.
+- Any future output is an unreviewed proposal; cannot mutate task state, Fact, Evidence, personal
+  mastery, UserPriority or Resume. Applying diffs, running tests and promoting evidence are later
+  explicit actions. This slice does not add a competing ProjectEnhancementTask representation.
 
 ## Persistence ownership
 

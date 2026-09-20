@@ -13,8 +13,8 @@ import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
 
 const sections = [
-  ["context", "Me / Context", "No personal context configured"],
-  ["settings", "Settings", "No local preferences configured"],
+  ["context", "Me / Context", "个人上下文页面尚未接入，未查询个人记录。"],
+  ["settings", "Settings", "偏好设置页面尚未接入，未读取本地配置。"],
 ] as const;
 
 export function App() {

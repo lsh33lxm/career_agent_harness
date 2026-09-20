@@ -17,7 +17,7 @@ export function SectionPage({ title, emptyLabel }: SectionPageProps) {
       <section className="work-queue">
         <div className="section-heading">
           <h2>Overview</h2>
-          <span>0 items</span>
+          <span>尚未接入</span>
         </div>
         <div className="empty-state">
           <div className="empty-state-mark" aria-hidden="true">

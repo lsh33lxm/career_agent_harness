@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { getEvidence, listEvidence } from "../api/evidence";
 import type { EvidencePageRead, EvidenceProvenance } from "../api/evidence";
@@ -67,7 +68,7 @@ export function EvidencePage() {
   }, [cursor, attempt]);
   function navigate(next: string | null) { setSelected(null); setCursor(next); }
   return <main className="page evidence-page">
-    <header className="page-heading"><div><p className="eyebrow">History / Evidence</p><h1>证据来源</h1><p>回看已保存材料的来源与精确引用。</p><a href="/history">返回职业历程</a></div></header>
+    <header className="page-heading"><div><p className="eyebrow">History / Evidence</p><h1>证据来源</h1><p>回看已保存材料的来源与精确引用。</p><Link to="/history">返回职业历程</Link></div></header>
     <section className="today-panel evidence-notice"><p>这里显示当前连接的 Core 记录。演练环境与正式环境分别读取，不会自动合并。</p><p>证据保存不等于事实确认，也不代表个人能力已掌握。</p></section>
     {state.status === "loading" && <p role="status">正在读取证据记录…</p>}
     {state.status === "error" && <div className="today-panel" role="alert"><p>{state.message}</p><button type="button" onClick={() => setAttempt((n) => n + 1)}>重试列表</button></div>}

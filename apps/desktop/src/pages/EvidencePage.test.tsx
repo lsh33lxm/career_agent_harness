@@ -1,3 +1,4 @@
+import { MemoryRouter } from "react-router-dom";
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -19,7 +20,7 @@ afterEach(cleanup);
 it("keeps loading and empty states explicit", async () => {
   let complete!: (data: { items: []; next_cursor: null }) => void;
   vi.mocked(listEvidence).mockReturnValue(new Promise((resolve) => { complete = resolve; }));
-  render(<EvidencePage />);
+  render(<MemoryRouter><EvidencePage /></MemoryRouter>);
   expect(screen.getByRole("status").textContent).toContain("正在读取");
   await act(async () => complete({ items: [], next_cursor: null }));
   expect(await screen.findByText("还没有证据记录。")).toBeTruthy();
@@ -28,7 +29,7 @@ it("keeps loading and empty states explicit", async () => {
 
 it("retries failures without substituting mock evidence", async () => {
   vi.mocked(listEvidence).mockRejectedValueOnce(new Error("offline")).mockResolvedValue({ items: [], next_cursor: null });
-  render(<EvidencePage />);
+  render(<MemoryRouter><EvidencePage /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: "重试列表" }));
   expect(await screen.findByText("还没有证据记录。")).toBeTruthy();
 });
@@ -36,7 +37,7 @@ it("retries failures without substituting mock evidence", async () => {
 it("shows exact metadata and historical unconfirmed boundary, keeping locator inert", async () => {
   vi.mocked(listEvidence).mockResolvedValue({ items: [evidence()], next_cursor: null });
   vi.mocked(getEvidence).mockResolvedValue(evidence());
-  render(<EvidencePage />);
+  render(<MemoryRouter><EvidencePage /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: /ref_a/ }));
   expect(await screen.findByText("a".repeat(64))).toBeTruthy();
   expect(screen.getByText(/保存材料不代表确认/)).toBeTruthy();
@@ -48,7 +49,7 @@ it("shows exact metadata and historical unconfirmed boundary, keeping locator in
 it("handles missing detail and retry", async () => {
   vi.mocked(listEvidence).mockResolvedValue({ items: [evidence()], next_cursor: null });
   vi.mocked(getEvidence).mockRejectedValueOnce(new ApiError("not found", 404)).mockResolvedValue(evidence());
-  render(<EvidencePage />);
+  render(<MemoryRouter><EvidencePage /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: /ref_a/ }));
   expect(await screen.findByText("这条证据引用不存在。")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "重试详情" }));
@@ -59,7 +60,7 @@ it("uses the server cursor and clears detail between pages", async () => {
   vi.mocked(listEvidence).mockResolvedValueOnce({ items: [evidence()], next_cursor: "ref_a" })
     .mockResolvedValueOnce({ items: [evidence("ref_b")], next_cursor: null });
   vi.mocked(getEvidence).mockResolvedValue(evidence());
-  render(<EvidencePage />);
+  render(<MemoryRouter><EvidencePage /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: /ref_a/ }));
   expect(await screen.findByText("a".repeat(64))).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "下一页" }));

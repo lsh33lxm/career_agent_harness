@@ -14,6 +14,7 @@ from career_harness.services.command_service import CommandService
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.today_service import TodayService
 from tests.integration.test_application_service import _command
+from tests.integration.test_today_service import NOW, _interview_stage_services, _schedule
 from tests.support.job_data import seed_job_revision
 
 TOKEN = "test-launch-token-value"
@@ -82,3 +83,31 @@ async def test_today_returns_queue_items(tmp_path: Path) -> None:
     assert "missing_user_priority" in codes
     assert "missing_suggested_priority" in codes
     assert payload["input_revisions"] == item["source_refs"]
+
+
+@pytest.mark.asyncio
+async def test_today_api_exposes_exact_selected_interview_and_historical_application(
+    tmp_path: Path,
+) -> None:
+    engine, _, interviews = _interview_stage_services(tmp_path)
+    _schedule(interviews, "interview_001")
+    app = create_app(
+        Settings.for_test(token=TOKEN), today_api=TodayApi(service=TodayService(engine))
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.get("/api/v1/today", headers=AUTH)
+    assert response.status_code == 200
+    payload = response.json()
+    item = next(item for item in payload["items"] if item["kind"] == "interview_prep")
+    assert item["item_id"] == "today:interview_prep:application_001"
+    assert item["interview_at"] == NOW.isoformat().replace("+00:00", "Z")
+    assert item["source_refs"] == [
+        {"entity_id": "application_001", "kind": "application", "revision": 4},
+        {"entity_id": "opportunity_001", "kind": "opportunity", "revision": 1},
+        {"entity_id": "interview_001", "kind": "interview", "revision": 1},
+        {"entity_id": "application_001", "kind": "application", "revision": 3},
+    ]
+    assert all(ref in payload["input_revisions"] for ref in item["source_refs"])
+    assert payload["policy_version"] == "today-policy-v1"

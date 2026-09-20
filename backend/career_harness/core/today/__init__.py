@@ -14,6 +14,7 @@ from career_harness.core.today.models import (
 from career_harness.core.today.policy import (
     ApplicationInput,
     EnhancementTaskInput,
+    InterviewInput,
     OpportunityInput,
     ReviewRequestInput,
     ReviewRequestStatus,
@@ -25,6 +26,7 @@ __all__ = [
     "TODAY_POLICY_VERSION",
     "ApplicationInput",
     "EnhancementTaskInput",
+    "InterviewInput",
     "OpportunityInput",
     "ReviewRequestInput",
     "ReviewRequestStatus",

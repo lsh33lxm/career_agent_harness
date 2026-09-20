@@ -1,8 +1,10 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
+from itertools import permutations
 
 import pytest
 
 from career_harness.core.common import EntityKind
+from career_harness.core.interview import InterviewStatus
 from career_harness.core.lifecycle import ApplicationState, OpportunityState
 from career_harness.core.opportunity import PriorityLevel
 from career_harness.core.project import ProjectEnhancementTaskStatus
@@ -10,6 +12,7 @@ from career_harness.core.today import (
     TODAY_POLICY_VERSION,
     ApplicationInput,
     EnhancementTaskInput,
+    InterviewInput,
     OpportunityInput,
     ReviewRequestInput,
     ReviewRequestStatus,
@@ -337,3 +340,172 @@ def test_queue_rejects_unordered_items() -> None:
             input_revisions=queue.input_revisions,
             generated_at=NOW,
         )
+
+
+def _interview(
+    entity_id: str,
+    *,
+    scheduled_at: datetime = NOW,
+    status: InterviewStatus = InterviewStatus.SCHEDULED,
+    revision: int = 1,
+    application_id: str = "application_001",
+) -> InterviewInput:
+    return InterviewInput(
+        source=_source(entity_id, EntityKind.INTERVIEW, revision),
+        application=_source(application_id, EntityKind.APPLICATION, 3),
+        status=status,
+        scheduled_at=scheduled_at,
+    )
+
+
+def test_canonical_interviews_choose_earliest_utc_then_id_and_record_all_refs() -> None:
+    interviews = (
+        _interview("interview_later", scheduled_at=LATER),
+        _interview("interview_b"),
+        _interview("interview_a", scheduled_at=NOW.astimezone(timezone(timedelta(hours=8)))),
+        _interview(
+            "interview_cancelled",
+            scheduled_at=NOW - timedelta(days=1),
+            status=InterviewStatus.CANCELLED,
+            revision=2,
+        ),
+    )
+    current = _source("application_001", EntityKind.APPLICATION, 4)
+    opportunity = _source("opportunity_001", EntityKind.OPPORTUNITY, 2)
+    queues = [
+        build_today_queue(
+            TodayInputs(
+                applications=(
+                    ApplicationInput(
+                        source=current,
+                        opportunity=opportunity,
+                        state=ApplicationState.INTERVIEW,
+                        interviews=order,
+                    ),
+                )
+            ),
+            generated_at=LATER,
+        )
+        for order in permutations(interviews)
+    ]
+    assert all(queue == queues[0] for queue in queues)
+    item = queues[0].items[0]
+    assert item.interview_at == NOW  # Past schedules do not expire on read.
+    assert item.interview_at.tzinfo is UTC
+    assert item.item_id == "today:interview_prep:application_001"
+    assert item.source_refs == (
+        current,
+        opportunity,
+        interviews[2].source,
+        interviews[2].application,
+    )
+    assert set(queues[0].input_revisions) == {
+        current,
+        opportunity,
+        interviews[0].application,
+        *(interview.source for interview in interviews),
+    }
+
+
+@pytest.mark.parametrize("status", [InterviewStatus.COMPLETED, InterviewStatus.CANCELLED])
+def test_only_terminal_interviews_have_no_time_but_keep_consulted_refs(
+    status: InterviewStatus,
+) -> None:
+    interview = _interview("interview_001", status=status, revision=2)
+    source = interview.application
+    queue = build_today_queue(
+        TodayInputs(
+            applications=(
+                ApplicationInput(
+                    source=source, state=ApplicationState.INTERVIEW, interviews=(interview,)
+                ),
+            )
+        ),
+        generated_at=NOW,
+    )
+    assert queue.items[0].interview_at is None
+    assert queue.items[0].source_refs == (source,)
+    assert set(queue.input_revisions) == {source, interview.source}
+
+
+def test_selected_current_application_pin_is_deduplicated() -> None:
+    interview = _interview("interview_001")
+    queue = build_today_queue(
+        TodayInputs(
+            applications=(
+                ApplicationInput(
+                    source=interview.application,
+                    state=ApplicationState.INTERVIEW,
+                    interviews=(interview,),
+                ),
+            )
+        ),
+        generated_at=NOW,
+    )
+    assert queue.items[0].source_refs == (interview.application, interview.source)
+
+
+@pytest.mark.parametrize("revision", [1, 2])
+def test_duplicate_or_conflicting_interview_revisions_fail(revision: int) -> None:
+    with pytest.raises(ValueError, match="duplicate or conflicting"):
+        ApplicationInput(
+            source=_source("application_001", EntityKind.APPLICATION, 4),
+            state=ApplicationState.INTERVIEW,
+            interviews=(
+                _interview("interview_001"),
+                _interview("interview_001", revision=revision),
+            ),
+        )
+
+
+def test_interview_input_rejects_cross_application_and_unprovenanced_timestamp() -> None:
+    with pytest.raises(ValueError, match="same application"):
+        ApplicationInput(
+            source=_source("application_001", EntityKind.APPLICATION),
+            state=ApplicationState.INTERVIEW,
+            interviews=(_interview("interview_001", application_id="application_002"),),
+        )
+    for interviews in ((), (_interview("interview_001"),)):
+        with pytest.raises(ValueError, match="bare interview timestamp"):
+            ApplicationInput(
+                source=_source("application_001", EntityKind.APPLICATION),
+                state=ApplicationState.INTERVIEW,
+                interview_at=NOW,
+                interviews=interviews,
+            )
+
+
+@pytest.mark.parametrize("field", ["source", "application"])
+def test_interview_input_requires_typed_refs(field: str) -> None:
+    data = _interview("interview_001").model_dump()
+    data[field] = _source("opportunity_001", EntityKind.OPPORTUNITY)
+    with pytest.raises(ValueError, match="source must be"):
+        InterviewInput.model_validate(data)
+
+
+def test_canonical_interview_time_retains_priority_first_queue_order() -> None:
+    def application(entity_id: str, time: datetime, priority: PriorityLevel) -> ApplicationInput:
+        return ApplicationInput(
+            source=_source(entity_id, EntityKind.APPLICATION, 3),
+            state=ApplicationState.INTERVIEW,
+            user_priority=priority,
+            interviews=(
+                _interview(f"interview_{entity_id}", application_id=entity_id, scheduled_at=time),
+            ),
+        )
+
+    queue = build_today_queue(
+        TodayInputs(
+            applications=(
+                application("application_late", LATER, PriorityLevel.LOW),
+                application("application_early", NOW, PriorityLevel.LOW),
+                application("application_urgent", LATER, PriorityLevel.URGENT),
+            )
+        ),
+        generated_at=NOW,
+    )
+    assert [item.source_refs[0].entity_id for item in queue.items] == [
+        "application_urgent",
+        "application_early",
+        "application_late",
+    ]

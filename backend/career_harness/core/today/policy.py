@@ -6,12 +6,13 @@ mutation: equal inputs always produce equal output regardless of input order.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 
 from career_harness.core.common import EntityKind, FrozenModel
+from career_harness.core.interview import InterviewStatus
 from career_harness.core.lifecycle import ApplicationState, OpportunityState
 from career_harness.core.opportunity import PriorityLevel
 from career_harness.core.project import ProjectEnhancementTaskStatus
@@ -86,6 +87,28 @@ class OpportunityInput(FrozenModel):
         return self
 
 
+class InterviewInput(FrozenModel):
+    """Latest canonical Interview revision with its exact Application pin."""
+
+    source: TodaySourceRef
+    application: TodaySourceRef
+    status: InterviewStatus
+    scheduled_at: datetime
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def schedule_is_utc(cls, value: datetime) -> datetime:
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def sources_are_typed(self) -> InterviewInput:
+        if self.source.kind is not EntityKind.INTERVIEW:
+            raise ValueError("interview input source must be an interview")
+        if self.application.kind is not EntityKind.APPLICATION:
+            raise ValueError("interview application source must be an application")
+        return self
+
+
 class ApplicationInput(FrozenModel):
     source: TodaySourceRef
     opportunity: TodaySourceRef | None = None
@@ -93,6 +116,9 @@ class ApplicationInput(FrozenModel):
     user_priority: PriorityLevel | None = None
     suggested_priority: PriorityLevel | None = None
     interview_at: datetime | None = None
+    # None preserves direct policy callers; runtime always supplies canonical inputs,
+    # including an empty tuple, and cannot use the legacy bare timestamp path.
+    interviews: tuple[InterviewInput, ...] | None = None
 
     @model_validator(mode="after")
     def sources_are_typed(self) -> ApplicationInput:
@@ -100,6 +126,20 @@ class ApplicationInput(FrozenModel):
             raise ValueError("application input source must be an application")
         if self.opportunity is not None and self.opportunity.kind is not EntityKind.OPPORTUNITY:
             raise ValueError("application opportunity source must be an opportunity")
+        if self.interviews is not None:
+            if self.interview_at is not None:
+                raise ValueError(
+                    "canonical interview inputs cannot carry a bare interview timestamp"
+                )
+            if self.interviews and self.state is not ApplicationState.INTERVIEW:
+                raise ValueError("interview inputs require an interview-stage application")
+            interview_ids: set[str] = set()
+            for interview in self.interviews:
+                if interview.application.entity_id != self.source.entity_id:
+                    raise ValueError("interview must belong to the same application")
+                if interview.source.entity_id in interview_ids:
+                    raise ValueError("duplicate or conflicting interview revisions")
+                interview_ids.add(interview.source.entity_id)
         return self
 
 
@@ -210,6 +250,7 @@ def _opportunity_item(input_: OpportunityInput) -> TodayItem | None:
 
 
 def _application_item(input_: ApplicationInput) -> TodayItem | None:
+    selected: InterviewInput | None = None
     if input_.state in APPLICATION_STEP_STATES:
         kind = TodayItemKind.APPLICATION_STEP
         reasons = [
@@ -227,14 +268,22 @@ def _application_item(input_: ApplicationInput) -> TodayItem | None:
                 explanation="application is in the interview stage",
             )
         ]
-        if input_.interview_at is not None:
+        if input_.interviews is None:
+            interview_at = input_.interview_at
+        else:
+            selected = min(
+                (i for i in input_.interviews if i.status is InterviewStatus.SCHEDULED),
+                key=lambda i: (i.scheduled_at, i.source.entity_id),
+                default=None,
+            )
+            interview_at = selected.scheduled_at if selected is not None else None
+        if interview_at is not None:
             reasons.append(
                 TodayReason(
                     code=TodayReasonCode.INTERVIEW_UPCOMING,
-                    explanation=f"interview is scheduled at {input_.interview_at.isoformat()}",
+                    explanation=f"interview is scheduled at {interview_at.isoformat()}",
                 )
             )
-        interview_at = input_.interview_at
     else:
         return None
     reasons.extend(_priority_reasons(input_.user_priority, input_.suggested_priority))
@@ -246,6 +295,8 @@ def _application_item(input_: ApplicationInput) -> TodayItem | None:
             input_.opportunity,
         )
     )
+    if selected is not None:
+        source_refs = tuple(dict.fromkeys((*source_refs, selected.source, selected.application)))
     return TodayItem(
         item_id=today_item_id(kind, input_.source.entity_id),
         kind=kind,
@@ -329,6 +380,10 @@ def build_today_queue(inputs: TodayInputs, *, generated_at: datetime) -> TodayQu
         )
         if ref is not None
     }
+    for application in inputs.applications:
+        for interview in application.interviews or ():
+            for ref in (interview.source, interview.application):
+                used_refs[(ref.entity_id, ref.kind, ref.revision)] = ref
     input_revisions = tuple(
         sorted(used_refs.values(), key=lambda ref: (ref.entity_id, ref.kind.value, ref.revision))
     )

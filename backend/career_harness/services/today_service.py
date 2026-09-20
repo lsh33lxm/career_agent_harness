@@ -16,9 +16,12 @@ from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from career_harness.core.common import EntityKind, utc_now
+from career_harness.core.interview import InterviewStatus
+from career_harness.core.lifecycle import ApplicationState
 from career_harness.core.today import (
     ApplicationInput,
     EnhancementTaskInput,
+    InterviewInput,
     OpportunityInput,
     ReviewRequestInput,
     TodayInputs,
@@ -27,6 +30,7 @@ from career_harness.core.today import (
     build_today_queue,
 )
 from career_harness.db.application_repository import ApplicationRepository
+from career_harness.db.interview_repository import InterviewRepository
 from career_harness.db.models import (
     ExtractedClaimRevisionRow,
     JobRequirementRevisionRow,
@@ -41,6 +45,7 @@ class TodayService:
         self.engine = engine
         self.opportunities = OpportunityRepository(engine)
         self.applications = ApplicationRepository(engine)
+        self.interviews = InterviewRepository(engine)
 
     def build_queue(self, *, generated_at: datetime | None = None) -> TodayQueue:
         details = self.opportunities.list()
@@ -84,6 +89,11 @@ class TodayService:
                         else None
                     ),
                     state=application.state,
+                    interviews=(
+                        self._interview_inputs(application.entity_id)
+                        if application.state is ApplicationState.INTERVIEW
+                        else ()
+                    ),
                     user_priority=(
                         detail.user_priority.level
                         if detail is not None and detail.user_priority is not None
@@ -103,6 +113,44 @@ class TodayService:
             review_requests=self._review_request_inputs(),
         )
         return build_today_queue(inputs, generated_at=generated_at or utc_now())
+
+    def _interview_inputs(self, application_id: str) -> tuple[InterviewInput, ...]:
+        inputs: list[InterviewInput] = []
+        for interview in self.interviews.list_for_application(application_id):
+            if interview.application_id != application_id:
+                raise ValueError("Interview must belong to the requested Application")
+            application = self.applications.get(
+                interview.application_id, interview.application_revision
+            )
+            if (
+                application is None
+                or application.entity_id != interview.application_id
+                or application.revision != interview.application_revision
+            ):
+                raise ValueError("Interview requires its exact pinned Application revision")
+            inputs.append(
+                InterviewInput(
+                    source=TodaySourceRef(
+                        entity_id=interview.entity_id,
+                        kind=EntityKind.INTERVIEW,
+                        revision=interview.revision,
+                    ),
+                    application=TodaySourceRef(
+                        entity_id=application.entity_id,
+                        kind=EntityKind.APPLICATION,
+                        revision=application.revision,
+                    ),
+                    status=interview.status,
+                    scheduled_at=(
+                        self.interviews.get_scheduled_at_utc(
+                            interview.entity_id, interview.revision
+                        )
+                        if interview.status is InterviewStatus.SCHEDULED
+                        else interview.scheduled_at
+                    ),
+                )
+            )
+        return tuple(inputs)
 
     def _open_enhancement_tasks(self) -> tuple[EnhancementTaskInput, ...]:
         with Session(self.engine) as session:

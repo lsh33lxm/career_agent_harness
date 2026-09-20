@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from career_harness.core.interview import Interview, InterviewRound, InterviewStatus
 from career_harness.db.models import (
+    EntityRevisionRow,
     InterviewEvidenceRefRow,
     InterviewIdentityRow,
     InterviewRevisionRow,
@@ -53,6 +56,47 @@ class InterviewRepository:
                 interviews.append((row.scheduled_at, self._to_interview(session, identity, row)))
             interviews.sort(key=lambda item: (item[0], item[1].entity_id))
             return tuple(interview for _, interview in interviews)
+
+    def get_scheduled_at_utc(self, interview_id: str, revision: int) -> datetime:
+        """Recover an exact scheduled instant without changing legacy read/replay payloads."""
+        interview = self.get(interview_id, revision)
+        if interview is None or interview.status is not InterviewStatus.SCHEDULED:
+            raise ValueError("exact scheduled Interview revision is required")
+        with Session(self.engine) as session:
+            audit = session.scalar(
+                select(EntityRevisionRow).where(
+                    EntityRevisionRow.entity_id == interview_id,
+                    EntityRevisionRow.revision == revision,
+                )
+            )
+            if audit is None or not isinstance(audit.state, dict):
+                raise ValueError("exact Interview schedule audit is missing or malformed")
+            state = audit.state
+        expected = {
+            "entity_id": interview.entity_id,
+            "revision": interview.revision,
+            "application_id": interview.application_id,
+            "application_revision": interview.application_revision,
+            "status": interview.status.value,
+        }
+        if any(
+            type(state.get(key)) is not type(value) or state.get(key) != value
+            for key, value in expected.items()
+        ):
+            raise ValueError("Interview schedule audit does not match the typed revision")
+        raw_time = state.get("scheduled_at")
+        if not isinstance(raw_time, str):
+            raise ValueError("Interview schedule audit requires an offset-aware ISO timestamp")
+        try:
+            scheduled_at = datetime.fromisoformat(raw_time)
+        except ValueError as exc:
+            raise ValueError("Interview schedule audit timestamp is malformed") from exc
+        if scheduled_at.tzinfo is None or scheduled_at.utcoffset() is None:
+            raise ValueError("Interview schedule audit requires an offset-aware ISO timestamp")
+        # Existing SQLite DateTime storage retained the original wall clock, not UTC.
+        if scheduled_at.replace(tzinfo=None) != interview.scheduled_at.replace(tzinfo=None):
+            raise ValueError("Interview schedule audit timestamp does not match the typed row")
+        return scheduled_at.astimezone(UTC)
 
     @staticmethod
     def _to_interview(

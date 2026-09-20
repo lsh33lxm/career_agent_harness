@@ -1,5 +1,10 @@
 # v1.4 Progress
 
+Overnight continuation: visual baseline DONE (babf9c0), migration safeguards DONE (875bedd),
+History projection DONE (76fe21d); all independently reviewed. Backend 573 passed/5 skipped;
+frontend 45 passed/build. Reversible archive/rehearsal ACTIVE under contract 0.17.0/D-027.
+See ../v1.5/overnight-progress.md for fresh inventory and remaining A-H gates.
+
 | Work item | Status | Last update | Evidence |
 | --- | --- | --- | --- |
 | Repository reconnaissance | DONE | 2026-09-18 | `architecture-map.md`; baseline commands run. |

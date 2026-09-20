@@ -1,5 +1,13 @@
 # Current Phase
 
+Overnight A-H goal ACTIVE (2026-09-21). Guangfu visual baseline integrated at babf9c0;
+legacy safe-read/artifact-integrity safeguards at 875bedd; History read projection at 76fe21d.
+Shared contract 0.17.0 / D-027 freezes reversible archive/rehearsal, not canonical cutover.
+Full backend at babf9c0: 573 passed, 5 environment skips; Ruff passed. Frontend at 76fe21d:
+45 passed/build. Fresh legacy inventory: 2426 files / 377785991 bytes, unchanged metadata,
+zero hash failures. Archive implementation is under review; real archive/import not yet run.
+Current ledger: docs/v1.5/overnight-progress.md. Older counts below are historical.
+
 PRD v1.4 Wave 1, the implemented Wave 2 Core slices and the completed P1 read/review slices are
 integrated through Capability Workspace Visualization. The desktop Today page consumes the Core-owned deterministic
 read model; Capability Inbox review, incremental rescan and Interview records are also integrated.

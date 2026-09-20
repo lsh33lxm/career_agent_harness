@@ -2,6 +2,18 @@
 
 Feature branches are integrated only after contract and test review; `main` remains unchanged.
 
+## Overnight 2026-09-21 checkpoint
+
+- 7168804 -> 875bedd: safe legacy reads and artifact hash verification. Lead review plus
+  independent mtime-fix review APPROVE; 30 focused passed/3 environment skips.
+- 30d6e77 -> babf9c0: Guangfu baseline/derivative logo/Today six regions; independent
+  APPROVE, no findings. 40 frontend passed/build and 84 synthetic browser combinations.
+- e48e925 -> 76fe21d: read-only History Application/Outcome projection; independent
+  APPROVE, P3 fixture repaired. 45 integration frontend passed/build.
+- Full backend at babf9c0: 573 passed/5 Windows privilege skips; Ruff passed.
+- a803e14 freezes contract 0.17.0/D-027. Archive implementation is not yet integrated;
+  fresh inventory verified 2426 files, source metadata unchanged. No canonical cutover.
+
 | Branch | Commit | Modules | Tests | Conflicts | Migration | Follow-up |
 | --- | --- | --- | --- | --- | --- | --- |
 | `main` baseline | `63ca32f` | v1.4 PRD/Handoff | Read/verified | None | None | Wave 0 contract freeze |

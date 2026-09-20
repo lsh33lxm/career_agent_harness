@@ -9,7 +9,7 @@
 - Repository: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness`
 - Integration Worktree: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness-worktrees\integration`
 - Integration Branch: `refactor/v1.4-integration`
-- Verified Integration HEAD at handoff: `3db621d` (`merge: integrate capability inbox review flow`)
+- Verified Integration HEAD at handoff: `693619c` (`merge: integrate incremental project rescan`)
 - Main HEAD: `63ca32f` (unchanged; do not merge or push without explicit approval)
 - Handoff ID: `ACH-V14-KIMI-CODEX-2026-09-20`
 - Prior handoff: `docs/v1.4/HANDOFF_CODEX_TO_KIMI_2026-09-20.md` (superseded by this file)
@@ -94,11 +94,12 @@ Do not define competing representations. Missing fields require a CONTRACT CHANG
 
 ## F. In Flight At Handoff
 
-- `kimi/v14-incremental-rescan` (worktree `incremental-rescan`, base `42afb75`): contract `0.10.0`
-  + D-020 are frozen and the prompt is ready at `docs/v1.4/agents/incremental-rescan.md`. The Kimi
-  coder stalled twice with zero output and was stopped; the worktree is clean with no partial work.
-  Pick this up fresh: a Codex agent can execute the prompt as-is, or it can wait for a later Kimi
-  session.
+None. `kimi/v14-incremental-rescan` was implemented by the Lead after the assigned coder stalled;
+it was reviewed (APPROVE WITH FIXES), fixed (staleness commands now pin the motivating manifest per
+D-020) and merged as `693619c`, verified at `371 passed, 3 skipped`.
+
+Completed earlier in this session: `kimi/v14-today-ui-adapter` merged as `c986936` (Vitest 22
+passed, build passed), and `kimi/v14-capability-inbox-review` merged as `3db621d`.
 
 ## G. Recorded Follow-ups (non-blocking)
 

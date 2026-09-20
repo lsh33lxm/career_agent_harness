@@ -13,8 +13,8 @@ new feature; transfer the verified integration state to Kimi.
 
 # Last Verified Commit
 
-`3db621d` - `merge: integrate capability inbox review flow` (contract `0.9.0`; full suite
-367 passed, 3 skipped; Vitest 22 passed)
+`693619c` - `merge: integrate incremental project rescan` (contract `0.10.0`; full suite
+371 passed, 3 skipped)
 
 # Completed
 

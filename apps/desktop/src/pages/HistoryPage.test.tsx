@@ -1,3 +1,4 @@
+import { MemoryRouter } from "react-router-dom";
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -22,7 +23,7 @@ afterEach(cleanup);
 it("renders real current state separately from historical outcome revisions and evidence", async () => {
   vi.mocked(listApplications).mockResolvedValue([application("application_a")]);
   vi.mocked(listOutcomes).mockResolvedValue([outcome("application_a")]);
-  render(<HistoryPage />);
+  render(<MemoryRouter><HistoryPage /></MemoryRouter>);
   expect(await screen.findByRole("heading", { name: "未通过" })).toBeTruthy();
   expect(screen.getByText("当前阶段：面试中")).toBeTruthy();
   expect(screen.getByText("application_a#2")).toBeTruthy();
@@ -32,7 +33,7 @@ it("renders real current state separately from historical outcome revisions and 
 
 it("does not infer outcomes for empty applications", async () => {
   vi.mocked(listApplications).mockResolvedValue([]);
-  render(<HistoryPage />);
+  render(<MemoryRouter><HistoryPage /></MemoryRouter>);
   expect(await screen.findByText("还没有申请记录")).toBeTruthy();
   expect(listOutcomes).not.toHaveBeenCalled();
 });
@@ -40,7 +41,7 @@ it("does not infer outcomes for empty applications", async () => {
 it("reports failures and retries without substituting sample data", async () => {
   vi.mocked(listApplications).mockRejectedValueOnce(new Error("offline")).mockResolvedValue([application("application_a")]);
   vi.mocked(listOutcomes).mockRejectedValueOnce(new Error("offline")).mockResolvedValue([]);
-  render(<HistoryPage />);
+  render(<MemoryRouter><HistoryPage /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: "重试申请" }));
   fireEvent.click(await screen.findByRole("button", { name: "重试结果" }));
   expect(await screen.findByText("这份申请尚无已记录的结果。")).toBeTruthy();
@@ -51,7 +52,7 @@ it("ignores a stale result when another application is selected", async () => {
   vi.mocked(listApplications).mockResolvedValue([application("application_a"), application("application_b")]);
   vi.mocked(listOutcomes).mockImplementation((id) => id === "application_a"
     ? new Promise((resolve) => { finishFirst = resolve; }) : Promise.resolve([]));
-  render(<HistoryPage />);
+  render(<MemoryRouter><HistoryPage /></MemoryRouter>);
   fireEvent.change(await screen.findByLabelText("选择申请"), { target: { value: "application_b" } });
   expect(await screen.findByText("这份申请尚无已记录的结果。")).toBeTruthy();
   await act(async () => finishFirst([outcome("application_a")]));

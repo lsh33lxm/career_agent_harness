@@ -6,11 +6,13 @@ from career_harness.api.app import create_app
 from career_harness.api.capabilities import CapabilityApi
 from career_harness.api.capability_inbox import CapabilityInboxApi
 from career_harness.api.career_reads import CareerReadApi
+from career_harness.api.evidence import EvidenceApi
 from career_harness.api.opportunities import OpportunityApi
 from career_harness.api.today import TodayApi
 from career_harness.config import Settings
 from career_harness.db.application_repository import ApplicationRepository
 from career_harness.db.capability_repository import CapabilityRepository
+from career_harness.db.evidence_repository import EvidenceRepository
 from career_harness.db.migrations import upgrade_to_head
 from career_harness.db.opportunity_repository import OpportunityRepository
 from career_harness.db.resume_repository import ResumeRepository
@@ -31,6 +33,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
     engine = create_sqlite_engine(database_url)
     return create_app(
         settings,
+        evidence_api=EvidenceApi(repository=EvidenceRepository(engine)),
         today_api=TodayApi(service=TodayService(engine)),
         opportunity_api=OpportunityApi(
             repository=OpportunityRepository(engine),

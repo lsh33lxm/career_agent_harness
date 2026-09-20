@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
 from career_harness import __version__
+from career_harness.api.capabilities import CapabilityApi, create_capability_router
 from career_harness.api.career_reads import CareerReadApi, create_career_read_router
 from career_harness.api.opportunities import OpportunityApi, create_opportunity_router
 from career_harness.api.today import TodayApi, create_today_router
@@ -29,6 +30,7 @@ def create_app(
     opportunity_api: OpportunityApi | None = None,
     career_read_api: CareerReadApi | None = None,
     today_api: TodayApi | None = None,
+    capability_api: CapabilityApi | None = None,
 ) -> FastAPI:
     active_settings = settings or Settings()
     app = FastAPI(title="Agent Career Harness Local API", version=__version__)
@@ -71,5 +73,7 @@ def create_app(
         app.include_router(create_career_read_router(career_read_api))
     if today_api is not None:
         app.include_router(create_today_router(today_api))
+    if capability_api is not None:
+        app.include_router(create_capability_router(capability_api))
 
     return app

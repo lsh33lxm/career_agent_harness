@@ -19,8 +19,14 @@ async def test_runtime_app_bootstraps_local_database_and_business_routes(tmp_pat
             "/api/v1/opportunities",
             headers={"Authorization": "Bearer test-launch-token-value"},
         )
+        capability_response = await client.get(
+            "/api/v1/capabilities/candidate_001",
+            headers={"Authorization": "Bearer test-launch-token-value"},
+        )
 
     assert response.status_code == 200
     assert response.json() == []
+    assert capability_response.status_code == 200
+    assert capability_response.json()["graph_version"] is None
     assert paths.database.is_file()
     assert paths.artifacts.is_dir()

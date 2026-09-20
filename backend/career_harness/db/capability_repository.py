@@ -153,6 +153,27 @@ class CapabilityRepository:
             ).all()
             return tuple(self._to_personal_state(row) for row in rows)
 
+    def list_latest_personal_states(
+        self, *, candidate_id: str
+    ) -> tuple[PersonalCapabilityState, ...]:
+        """Return one deterministic latest state per capability for one candidate."""
+
+        with Session(self.engine) as session:
+            rows = session.scalars(
+                select(PersonalCapabilityStateRow)
+                .where(PersonalCapabilityStateRow.candidate_id == candidate_id)
+                .order_by(
+                    PersonalCapabilityStateRow.capability_id,
+                    PersonalCapabilityStateRow.updated_at.desc(),
+                    PersonalCapabilityStateRow.revision.desc(),
+                    PersonalCapabilityStateRow.personal_state_id,
+                )
+            ).all()
+        latest: dict[str, PersonalCapabilityState] = {}
+        for row in rows:
+            latest.setdefault(row.capability_id, self._to_personal_state(row))
+        return tuple(latest.values())
+
     def list_evidence_bindings(
         self, *, personal_state_id: str, personal_state_revision: int
     ) -> tuple[EvidenceBinding, ...]:
@@ -161,8 +182,7 @@ class CapabilityRepository:
                 select(CapabilityEvidenceBindingRow)
                 .where(
                     CapabilityEvidenceBindingRow.personal_state_id == personal_state_id,
-                    CapabilityEvidenceBindingRow.personal_state_revision
-                    == personal_state_revision,
+                    CapabilityEvidenceBindingRow.personal_state_revision == personal_state_revision,
                 )
                 .order_by(
                     CapabilityEvidenceBindingRow.bound_at,
@@ -200,17 +220,13 @@ class CapabilityRepository:
             CapabilityInvestmentStateRow.candidate_id == candidate_id
         )
         if capability_id is not None:
-            statement = statement.where(
-                CapabilityInvestmentStateRow.capability_id == capability_id
-            )
+            statement = statement.where(CapabilityInvestmentStateRow.capability_id == capability_id)
         statement = statement.order_by(
             CapabilityInvestmentStateRow.calculated_at.desc(),
             CapabilityInvestmentStateRow.investment_state_id,
         )
         with Session(self.engine) as session:
-            return tuple(
-                self._to_investment_state(row) for row in session.scalars(statement).all()
-            )
+            return tuple(self._to_investment_state(row) for row in session.scalars(statement).all())
 
     @staticmethod
     def _list_nodes(session: Session, graph_version_id: str) -> tuple[CapabilityNode, ...]:
@@ -222,9 +238,7 @@ class CapabilityRepository:
         return tuple(CapabilityRepository._to_node(row) for row in rows)
 
     @staticmethod
-    def _list_relations(
-        session: Session, graph_version_id: str
-    ) -> tuple[CapabilityRelation, ...]:
+    def _list_relations(session: Session, graph_version_id: str) -> tuple[CapabilityRelation, ...]:
         rows = session.scalars(
             select(CapabilityRelationRow)
             .where(CapabilityRelationRow.graph_version_id == graph_version_id)

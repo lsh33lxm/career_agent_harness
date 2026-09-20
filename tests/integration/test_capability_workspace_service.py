@@ -1,9 +1,14 @@
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from career_harness.db.models import Base
+from career_harness.db.models import (
+    Base,
+    CapabilityInvestmentStateRow,
+    PersonalCapabilityStateRow,
+)
 from career_harness.services.capability_workspace_service import (
     CapabilityGraphNotFoundError,
     CapabilityWorkspaceService,
@@ -86,3 +91,66 @@ def test_empty_repository_returns_explicit_empty_workspace(tmp_path: Path) -> No
     assert workspace.candidate_id == "candidate_unknown"
     assert workspace.graph_version is None
     assert workspace.projections == ()
+
+
+def test_service_never_leaks_coexisting_other_candidate_overlay_or_investment(
+    tmp_path: Path,
+) -> None:
+    repository, connection = _repository(tmp_path)
+    with connection.begin():
+        _seed_capability_data(connection)
+        future = datetime.now(UTC) + timedelta(days=30)
+        connection.execute(
+            PersonalCapabilityStateRow.__table__.insert(),
+            {
+                "personal_state_id": "personal_state_other",
+                "candidate_id": "candidate_other",
+                "capability_id": "capability_a",
+                "understand": True,
+                "explain": True,
+                "apply": True,
+                "evidence": True,
+                "interview_ready": True,
+                "revision": 1,
+                "schema_version": 1,
+                "updated_at": future,
+                "updated_by": "user",
+                "updated_by_kind": "user",
+            },
+        )
+        existing = dict(
+            connection.execute(
+                select(CapabilityInvestmentStateRow.__table__).where(
+                    CapabilityInvestmentStateRow.investment_state_id == "investment_001"
+                )
+            )
+            .mappings()
+            .one()
+        )
+        existing.update(
+            {
+                "investment_state_id": "investment_other",
+                "candidate_id": "candidate_other",
+                "personal_state_id": "personal_state_other",
+                "personal_state_revision": 1,
+                "calculated_at": future,
+            }
+        )
+        connection.execute(CapabilityInvestmentStateRow.__table__.insert(), existing)
+    connection.close()
+    service = CapabilityWorkspaceService(repository)
+
+    workspace = service.get_workspace(candidate_id="candidate_001")
+    other_workspace = service.get_workspace(candidate_id="candidate_other")
+
+    alpha = workspace.projections[0]
+    assert alpha.personal_state is not None
+    assert alpha.personal_state.candidate_id == "candidate_001"
+    assert alpha.personal_state.personal_state_id != "personal_state_other"
+    assert alpha.investment_state is not None
+    assert alpha.investment_state.investment_state_id == "investment_001"
+    other_alpha = other_workspace.projections[0]
+    assert other_alpha.personal_state is not None
+    assert other_alpha.personal_state.personal_state_id == "personal_state_other"
+    assert other_alpha.investment_state is not None
+    assert other_alpha.investment_state.investment_state_id == "investment_other"

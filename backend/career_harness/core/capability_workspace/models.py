@@ -65,6 +65,109 @@ class CapabilityProjection(FrozenModel):
     broad_market_bindings: tuple[MarketBinding, ...] = ()
     investment_state: InvestmentState | None = None
 
+    @model_validator(mode="after")
+    def nested_refs_match_projection(self) -> CapabilityProjection:
+        state = self.personal_state
+        if state is not None and state.capability_id != self.capability_id:
+            raise ValueError("personal state capability must match its projection")
+        if state is None and self.evidence_bindings:
+            raise ValueError("evidence bindings require a projected personal state")
+
+        evidence_ids = [binding.binding_id for binding in self.evidence_bindings]
+        if len(evidence_ids) != len(set(evidence_ids)):
+            raise ValueError("projection evidence binding ids must be unique")
+        for binding in self.evidence_bindings:
+            if binding.capability_id != self.capability_id:
+                raise ValueError("evidence binding capability must match its projection")
+            if state is not None and (
+                binding.personal_state_id != state.personal_state_id
+                or binding.personal_state_revision != state.revision
+            ):
+                raise ValueError("evidence binding must pin the projected personal state revision")
+
+        target_ids = [binding.binding_id for binding in self.target_market_bindings]
+        broad_ids = [binding.binding_id for binding in self.broad_market_bindings]
+        if len(target_ids) != len(set(target_ids)):
+            raise ValueError("projection target market binding ids must be unique")
+        if len(broad_ids) != len(set(broad_ids)):
+            raise ValueError("projection broad market binding ids must be unique")
+        if set(target_ids) & set(broad_ids):
+            raise ValueError("market binding cannot appear in both target and broad projections")
+        for binding in self.target_market_bindings:
+            if (
+                binding.capability_id != self.capability_id
+                or binding.market_scope is not MarketBindingScope.TARGET
+            ):
+                raise ValueError("target market binding must match projection capability and scope")
+        for binding in self.broad_market_bindings:
+            if (
+                binding.capability_id != self.capability_id
+                or binding.market_scope is not MarketBindingScope.BROAD
+            ):
+                raise ValueError("broad market binding must match projection capability and scope")
+
+        if (
+            self.investment_state is not None
+            and self.investment_state.capability_id != self.capability_id
+        ):
+            raise ValueError("investment state capability must match its projection")
+        return self
+
+
+def _input_ref_key(ref: WorkspaceInputRef) -> tuple[str, str, int]:
+    return (ref.kind.value, ref.entity_id, ref.revision or 0)
+
+
+def _expected_input_refs(
+    graph_version: CapabilityGraphVersion,
+    projections: Iterable[CapabilityProjection],
+) -> tuple[WorkspaceInputRef, ...]:
+    refs = [
+        WorkspaceInputRef(
+            kind=WorkspaceInputKind.GRAPH_VERSION,
+            entity_id=graph_version.graph_version_id,
+        )
+    ]
+    for projection in projections:
+        state = projection.personal_state
+        if state is not None:
+            refs.append(
+                WorkspaceInputRef(
+                    kind=WorkspaceInputKind.PERSONAL_STATE,
+                    entity_id=state.personal_state_id,
+                    revision=state.revision,
+                )
+            )
+        refs.extend(
+            WorkspaceInputRef(
+                kind=WorkspaceInputKind.EVIDENCE_BINDING,
+                entity_id=binding.binding_id,
+            )
+            for binding in projection.evidence_bindings
+        )
+        refs.extend(
+            WorkspaceInputRef(
+                kind=WorkspaceInputKind.TARGET_MARKET_BINDING,
+                entity_id=binding.binding_id,
+            )
+            for binding in projection.target_market_bindings
+        )
+        refs.extend(
+            WorkspaceInputRef(
+                kind=WorkspaceInputKind.BROAD_MARKET_BINDING,
+                entity_id=binding.binding_id,
+            )
+            for binding in projection.broad_market_bindings
+        )
+        if projection.investment_state is not None:
+            refs.append(
+                WorkspaceInputRef(
+                    kind=WorkspaceInputKind.INVESTMENT_STATE,
+                    entity_id=projection.investment_state.investment_state_id,
+                )
+            )
+    return tuple(sorted(refs, key=_input_ref_key))
+
 
 class CapabilityWorkspace(FrozenModel):
     candidate_id: OpaqueId
@@ -78,10 +181,64 @@ class CapabilityWorkspace(FrozenModel):
     @model_validator(mode="after")
     def projection_matches_graph(self) -> CapabilityWorkspace:
         node_ids = tuple(node.capability_id for node in self.nodes)
-        if tuple(item.capability_id for item in self.projections) != node_ids:
-            raise ValueError("workspace requires exactly one ordered projection per official node")
-        if self.graph_version is None and (self.nodes or self.relations or self.input_revisions):
+        projection_ids = tuple(item.capability_id for item in self.projections)
+        if self.graph_version is None and (
+            self.nodes or self.relations or self.projections or self.input_revisions
+        ):
             raise ValueError("an empty workspace cannot contain graph data or input refs")
+        if self.graph_version is None:
+            return self
+
+        graph_version_id = self.graph_version.graph_version_id
+        if len(node_ids) != len(set(node_ids)):
+            raise ValueError("workspace capability node ids must be unique")
+        if any(node.graph_version_id != graph_version_id for node in self.nodes):
+            raise ValueError("workspace nodes must belong to the selected graph version")
+        if len(projection_ids) != len(set(projection_ids)):
+            raise ValueError("workspace projection capability ids must be unique")
+        if projection_ids != node_ids:
+            raise ValueError("workspace requires exactly one ordered projection per official node")
+
+        relation_ids = [relation.relation_id for relation in self.relations]
+        if len(relation_ids) != len(set(relation_ids)):
+            raise ValueError("workspace relation ids must be unique")
+        relation_edges = [
+            (
+                relation.source_capability_id,
+                relation.target_capability_id,
+                relation.relation_type,
+            )
+            for relation in self.relations
+        ]
+        if len(relation_edges) != len(set(relation_edges)):
+            raise ValueError("workspace relation edges must be unique")
+        node_id_set = set(node_ids)
+        for relation in self.relations:
+            if relation.graph_version_id != graph_version_id:
+                raise ValueError("workspace relations must belong to the selected graph version")
+            if (
+                relation.source_capability_id not in node_id_set
+                or relation.target_capability_id not in node_id_set
+            ):
+                raise ValueError("workspace relation cannot reference a node outside the graph")
+
+        for projection in self.projections:
+            state = projection.personal_state
+            if state is not None and state.candidate_id != self.candidate_id:
+                raise ValueError("personal state candidate must match the workspace candidate")
+            investment = projection.investment_state
+            if investment is not None and investment.candidate_id != self.candidate_id:
+                raise ValueError("investment state candidate must match the workspace candidate")
+
+        input_ref_identities = [
+            (ref.kind, ref.entity_id, ref.revision) for ref in self.input_revisions
+        ]
+        if len(input_ref_identities) != len(set(input_ref_identities)):
+            raise ValueError("workspace input revision refs must be unique")
+        if self.input_revisions != _expected_input_refs(self.graph_version, self.projections):
+            raise ValueError(
+                "workspace input revisions must exactly match projected canonical inputs"
+            )
         return self
 
 
@@ -140,22 +297,10 @@ def build_capability_workspace(
     if graph_version is None:
         return CapabilityWorkspace(candidate_id=candidate_id)
 
-    ordered_nodes = tuple(
-        sorted(
-            (node for node in nodes if node.graph_version_id == graph_version.graph_version_id),
-            key=_node_key,
-        )
-    )
-    node_ids = {node.capability_id for node in ordered_nodes}
+    ordered_nodes = tuple(sorted(nodes, key=_node_key))
     ordered_relations = tuple(
         sorted(
-            (
-                relation
-                for relation in relations
-                if relation.graph_version_id == graph_version.graph_version_id
-                and relation.source_capability_id in node_ids
-                and relation.target_capability_id in node_ids
-            ),
+            relations,
             key=lambda relation: (
                 relation.source_capability_id,
                 relation.target_capability_id,

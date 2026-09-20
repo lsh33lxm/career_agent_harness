@@ -179,6 +179,8 @@ full suite 551 passed, 3 skipped; Ruff and 5-file format passed; frontend 39 pas
 
 # In Progress
 
+- ACTIVE: section 29 item 7 offline L1 acceptance; test-only, no new contract semantics.
+
 - Runtime wiring correction: the existing Today API is now injected by create_runtime_app;
   the strengthened runtime test reproduced 404 before the fix, then runtime/Today API tests
   passed 5/5. Independent review APPROVE, P0-P3 none (`c984efc`); included in full 551-test run.

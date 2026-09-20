@@ -1,11 +1,15 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import Mock
 
-from sqlalchemy import Engine, func, select
+import pytest
+from sqlalchemy import Engine, event, func, select
 from sqlalchemy.orm import Session
 
 from career_harness.core.common import EntityKind
+from career_harness.core.interview import Interview, InterviewRound, InterviewStatus
 from career_harness.core.job import JobRef
+from career_harness.core.lifecycle import ApplicationState
 from career_harness.core.opportunity import PriorityInputRevision, PriorityLevel
 from career_harness.core.today import TodayReasonCode
 from career_harness.db.migrations import upgrade_to_head
@@ -29,10 +33,12 @@ from career_harness.db.models import (
 from career_harness.db.session import create_sqlite_engine, sqlite_url
 from career_harness.services.application_service import ApplicationService
 from career_harness.services.command_service import CommandService
+from career_harness.services.interview_service import InterviewService
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.today_service import TodayService
 from tests.integration.test_application_service import _command
 from tests.integration.test_fact_service import EVIDENCE_REF_ID, _seed_evidence_ref
+from tests.integration.test_interview_service import _services
 from tests.support.job_data import seed_job_revision
 
 NOW = datetime(2026, 9, 20, 12, 0, tzinfo=UTC)
@@ -306,3 +312,161 @@ def test_today_service_returns_empty_queue_for_empty_database(tmp_path: Path) ->
     assert _table_counts(engine) == before
     assert queue.items == ()
     assert queue.input_revisions == ()
+
+
+def _interview_stage_services(
+    tmp_path: Path,
+) -> tuple[Engine, ApplicationService, InterviewService]:
+    engine, applications, interviews = _services(tmp_path)
+    applications.advance_state(
+        _command(
+            "application_001", EntityKind.APPLICATION, "command_interview", expected_revision=3
+        ),
+        state=ApplicationState.INTERVIEW,
+    )
+    return engine, applications, interviews
+
+
+def _schedule(
+    interviews: InterviewService,
+    interview_id: str,
+    *,
+    scheduled_at: datetime = NOW,
+    application_revision: int = 3,
+) -> Interview:
+    return interviews.schedule_interview(
+        _command(interview_id, EntityKind.INTERVIEW, f"command_schedule_{interview_id}"),
+        application_id="application_001",
+        application_revision=application_revision,
+        round=InterviewRound.TECHNICAL,
+        scheduled_at=scheduled_at,
+    )
+
+
+def test_today_interviews_use_latest_status_and_exact_historical_pins_without_writes(
+    tmp_path: Path,
+) -> None:
+    engine, _, interviews = _interview_stage_services(tmp_path)
+    _schedule(interviews, "interview_later", scheduled_at=NOW + timedelta(days=1))
+    _schedule(interviews, "interview_b", application_revision=4)
+    selected = _schedule(interviews, "interview_a")
+    for interview_id, terminal in (
+        ("interview_cancelled", interviews.cancel_interview),
+        ("interview_completed", interviews.complete_interview),
+    ):
+        _schedule(interviews, interview_id, scheduled_at=NOW - timedelta(days=1))
+        terminal(
+            _command(
+                interview_id, EntityKind.INTERVIEW, f"command_{interview_id}", expected_revision=1
+            )
+        )
+    today = TodayService(engine)
+    before = _table_counts(engine)
+    statements = []
+
+    def capture_sql(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", capture_sql)
+    try:
+        queue = today.build_queue(generated_at=NOW + timedelta(days=2))
+    finally:
+        event.remove(engine, "before_cursor_execute", capture_sql)
+    assert statements and all(
+        statement.lstrip().upper().startswith("SELECT") for statement in statements
+    )
+    assert _table_counts(engine) == before
+    item = next(item for item in queue.items if item.kind.value == "interview_prep")
+    assert item.interview_at == selected.scheduled_at.replace(tzinfo=UTC) == NOW
+    assert [(ref.entity_id, ref.revision) for ref in item.source_refs] == [
+        ("application_001", 4),
+        ("opportunity_001", 1),
+        ("interview_a", 1),
+        ("application_001", 3),
+    ]
+    assert {(ref.entity_id, ref.revision) for ref in queue.input_revisions} == {
+        ("application_001", 3),
+        ("application_001", 4),
+        ("opportunity_001", 1),
+        ("interview_a", 1),
+        ("interview_b", 1),
+        ("interview_later", 1),
+        ("interview_cancelled", 2),
+        ("interview_completed", 2),
+    }
+    latest = today.interviews.list_for_application("application_001")
+    today.interviews.list_for_application = Mock(return_value=tuple(reversed(latest)))
+    assert today.build_queue(generated_at=queue.generated_at) == queue
+
+
+@pytest.mark.parametrize("status", [None, InterviewStatus.CANCELLED, InterviewStatus.COMPLETED])
+def test_today_interview_without_eligible_schedule_has_no_timestamp(
+    tmp_path: Path, status: InterviewStatus | None
+) -> None:
+    engine, _, interviews = _interview_stage_services(tmp_path)
+    if status is not None:
+        _schedule(interviews, "interview_001")
+        transition = (
+            interviews.cancel_interview
+            if status is InterviewStatus.CANCELLED
+            else interviews.complete_interview
+        )
+        transition(
+            _command("interview_001", EntityKind.INTERVIEW, "command_terminal", expected_revision=1)
+        )
+    queue = TodayService(engine).build_queue(generated_at=NOW)
+    item = next(item for item in queue.items if item.kind.value == "interview_prep")
+    assert item.interview_at is None
+    assert all(ref.kind is not EntityKind.INTERVIEW for ref in item.source_refs)
+    consulted = [ref for ref in queue.input_revisions if ref.kind is EntityKind.INTERVIEW]
+    assert [(ref.entity_id, ref.revision) for ref in consulted] == (
+        [] if status is None else [("interview_001", 2)]
+    )
+
+
+@pytest.mark.parametrize("fault", ["missing", "wrong_id", "wrong_revision"])
+@pytest.mark.parametrize("terminal", [False, True])
+def test_today_rejects_missing_or_mismatched_exact_application_pins(
+    tmp_path: Path, fault: str, terminal: bool
+) -> None:
+    engine, applications, interviews = _interview_stage_services(tmp_path)
+    _schedule(interviews, "interview_001")
+    if terminal:
+        interviews.cancel_interview(
+            _command("interview_001", EntityKind.INTERVIEW, "command_cancel", expected_revision=1)
+        )
+    historical = applications.repository.get("application_001", 3)
+    assert historical is not None
+    if fault == "missing":
+        resolved = None
+    elif fault == "wrong_id":
+        resolved = historical.model_copy(update={"entity_id": "application_002"})
+    else:
+        resolved = applications.repository.get("application_001", 4)
+    today = TodayService(engine)
+    today.applications.get = Mock(return_value=resolved)
+    with pytest.raises(ValueError, match="exact pinned Application revision"):
+        today.build_queue(generated_at=NOW)
+    today.applications.get.assert_called_once_with("application_001", 3)
+
+
+def test_today_rejects_cross_application_interview_returned_by_repository(tmp_path: Path) -> None:
+    engine, _, interviews = _interview_stage_services(tmp_path)
+    interview = _schedule(interviews, "interview_001")
+    today = TodayService(engine)
+    today.interviews.list_for_application = Mock(
+        return_value=(interview.model_copy(update={"application_id": "application_other"}),)
+    )
+    with pytest.raises(ValueError, match="requested Application"):
+        today.build_queue(generated_at=NOW)
+
+
+def test_today_ignores_interviews_for_other_application_stages(tmp_path: Path) -> None:
+    engine, _, interviews = _services(tmp_path)
+    _schedule(interviews, "interview_001")
+    today = TodayService(engine)
+    today.interviews.list_for_application = Mock(side_effect=AssertionError("unexpected read"))
+    queue = today.build_queue(generated_at=NOW)
+    assert all(item.kind.value != "interview_prep" for item in queue.items)
+    assert all(ref.kind is not EntityKind.INTERVIEW for ref in queue.input_revisions)
+    today.interviews.list_for_application.assert_not_called()

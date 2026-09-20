@@ -47,14 +47,14 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-TODAY-INTERVIEW | Exact Interview schedule inputs for existing Today interview-stage items | Today read model, Interview records | Subagent | today-interview | DONE | Medium | Merge `dc85365`; contract `0.14.1` / D-024; review APPROVE; full 440 passed, 3 skipped. |
 
 | W2-L2-PREP | Exact-context tools-disabled CLI invocation preparation | Enhancement L1, exact project scope/manifest reads | Subagent | l2-analysis-prep | DONE | Medium | Merge `9101085`; contract 0.15.0 / D-025; final review APPROVE; full 534 passed, 3 skipped; no execution. |
-| W2-INBOX-CLIENT | Capability Inbox authenticated reads and explicit user review UI | Inbox Core, Capability Workspace | Subagent | capability-inbox-client | IN_PROGRESS | Medium | Contract 0.16.0 / D-026; exact revision/retry semantics, independent review and regression. |
+| W2-INBOX-CLIENT | Capability Inbox authenticated reads and explicit user review UI | Inbox Core, Capability Workspace | Subagent | capability-inbox-client | DONE | Medium | Merge `6ba054d`; contract 0.16.0 / D-026; final APPROVE; full 551 passed, 3 skipped; frontend 39 passed/build and browser E2E. |
 | W2-L2-RUN | Bounded CLI execution and proposal result handling | W2-L2-PREP, explicit context/provider/budget approval | Lead | unassigned | BLOCKED | High | Runner contract/review and explicit real-inference authorization required; not implemented. |
 
 ## P1 and P2 status
 
 Today dynamic queue and UI adapter, Capability Inbox review, broad market trends and incremental
-scanning and Capability Workspace visualization are implemented. Capability Inbox UI and optional
-Claude/Codex CLI adapters remain P1. The P0 end-to-end acceptance fixture is integrated; the next
+scanning, Capability Workspace visualization and Inbox accept/ignore UI are implemented. Optional
+CLI execution and dynamic SuggestedPriority policy remain P1; L2 invocation preparation is done. The P0 end-to-end acceptance fixture is integrated; the next
 READY slice must be selected from the remaining dependency graph and receive a contract freeze.
 
 L3 executor/worktree automation, advanced graph versioning and outcome-driven recommendation are

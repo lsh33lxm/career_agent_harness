@@ -40,7 +40,7 @@
 | Broad Market Trend | DONE | 2026-09-20 | `f7cb3c6` merged as `c6efb8b`; contract `0.12.0` + D-022; independent review APPROVE with no P0/P1/P2; full 391 passed, 3 skipped; Ruff passed. |
 | Capability Workspace Visualization | DONE | 2026-09-20 | Implementation `ae39eb6` + consistency fix `e076daf`, merged as `62f1ce8`; contract `0.13.0`, D-023. Recovery independent review of `f2727cf..e076daf`: APPROVE, no P0/P1/P2/P3. Focused backend 13 passed; full backend 403 passed, 3 known Windows symlink skips; frontend 27 passed; production build, full Ruff, 11 changed Python format checks and diff checks passed. |
 | Today Interview schedule inputs | DONE | 2026-09-20 | `0b0fa6b`, `ae53689`, merge `dc85365`; contract `0.14.1` / D-024; final review APPROVE (P0-P3 none); focused 62 passed; full 440 passed, 3 skipped; Ruff/7-file format passed. |
-| Capability Inbox client entry | IN_PROGRESS | 2026-09-21 | Contract 0.16.0 / D-026; list/detail/review API and explicit user UI, no real-data review. |
+| Capability Inbox client entry | DONE | 2026-09-21 | `6a18116` + historical pin fix `26c27f2`, merge `6ba054d`; contract 0.16.0 / D-026; final review APPROVE, P0-P3 none; focused 29 passed; full 551 passed, 3 skipped; frontend 39 passed/build; Ruff/5-file format/diff passed. |
 | L2 invocation preparation | DONE | 2026-09-21 | `56ae9d8` + privacy fix `1fac397`, merge `9101085`; contract 0.15.0 / D-025; independent final review APPROVE, P0-P3 none; focused 95 passed; full 534 passed, 3 skipped; Ruff/5-file format/diff passed. No CLI execution. |
 | Resume truth core | DONE | 2026-09-20 | `c6bfe66` merged as `df5f4d2`; additive 0011, exact reviewed patches and immutable content-hashed revisions. |
 | Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
@@ -158,6 +158,18 @@ final review of `e0cdb2c..1fac397` returned APPROVE, P0-P3 none. Focused 95 pass
 refs and verifies supplied UTF-8 hashes/lengths without executing a provider or changing truth.
 Runner/result handling is still unimplemented; no CLI inference or external content transfer ran.
 
+## Inbox client closeout (2026-09-21)
+
+Merge `6ba054d` contains `6a18116` and historical query fix `26c27f2`. First independent
+review found P2: plain navigation discarded the explicit historical graph pin. Client routing
+now retains the submitted query; final review APPROVE, P0-P3 none; four pinned/latest and
+accept/ignore routing tests passed. Full 551 passed, 3 skipped; frontend 39 passed/build;
+full Ruff, five-file format and diff passed. Chromium 320/390/1366 px synthetic fixtures show
+no overflow; successful receipts survive read-refresh failure. Real localhost API + browser +
+disposable database verified acceptance, new graph and return to the original historical graph.
+No real-data review occurred. Temporary servers stopped. Separate runtime correction `c984efc`
+wires existing Today API (404 reproduced before fix; 5 focused tests; independent APPROVE).
+
 ## Recorded follow-ups (non-blocking)
 
 - `MatchAssessmentWrite.stage()` converges duplicate manifest requirement refs to the last entry
@@ -201,12 +213,12 @@ Runner/result handling is still unimplemented; no CLI inference or external cont
 
 ## Latest handoff verification
 
-- Backend full suite at `9101085`: `534 passed, 3 skipped`; skips are Windows symlink privilege limitations.
+- Backend full suite at `6ba054d`: `551 passed, 3 skipped`; skips are Windows symlink privilege limitations.
 - Alembic head remains `0013_interview`; Capability Workspace required no migration.
 - Ruff lint: passed.
 - Ruff format check: baseline failure, 57 files would be reformatted and 97 were already formatted;
   no broad formatting change was made during handoff.
-- Frontend: `27 passed`; `tsc -b && vite build` passed.
+- Frontend: `39 passed`; `tsc -b && vite build` passed.
 - Chromium populated/no-overlay synthetic fixtures: 320/390/1366 px, no horizontal page overflow.
   This is browser fixture validation, not a real-data or Tauri end-to-end test.
-- Latest changed Python format check: 5 L2 files passed. Tauri/Rust was not re-run (no shell changes).
+- Latest changed Python format check: 5 Inbox/runtime files passed. Tauri/Rust was not re-run (no shell changes).

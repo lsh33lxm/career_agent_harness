@@ -1,9 +1,18 @@
 # Agent Career Harness v1.4 Architecture Map
 
-**Observed repository:** integration commit `9101085` on 2026-09-21
+**Observed repository:** integration commit `6ba054d` on 2026-09-21
 **Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
 **Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
-**Contract version:** `v1.4-contract-0.15.0` (L2 preparation integrated)
+**Contract version:** `v1.4-contract-0.16.0` (Capability Inbox client integrated)
+
+## Integrated Capability Inbox client (2026-09-21)
+
+Merge `6ba054d` exposes existing Core review via authenticated list/detail/review routes and
+`/capabilities/inbox`. Read DTO validates typed candidate against generic revision; server fixes
+USER authority and reuses atomic review/replay. Client explicit accept publishes a graph; ignore
+preserves history. Router state retains historical workspace selection. No schema or personal
+state changes. Final independent review APPROVE; full 551 passed, 3 skipped; frontend 39 passed.
+Runtime also retains `c984efc`, wiring the previously unmounted Today API.
 
 ## Integrated L2 preparation (2026-09-21)
 

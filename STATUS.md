@@ -13,9 +13,8 @@ state with contract-first, review-gated increments.
 
 # Last Verified Commit
 
-`9101085` - `merge: integrate exact-context L2 invocation preparation` (contract `0.15.0`;
-full suite 534 passed, 3 skipped; Ruff and 5-file format passed; unchanged frontend previously
-27 passed/build)
+`6ba054d` - `merge: integrate reviewed Capability Inbox client` (contract `0.16.0`;
+full suite 551 passed, 3 skipped; Ruff and 5-file format passed; frontend 39 passed/build)
 
 # Completed
 
@@ -182,10 +181,12 @@ full suite 534 passed, 3 skipped; Ruff and 5-file format passed; unchanged front
 
 - Runtime wiring correction: the existing Today API is now injected by create_runtime_app;
   the strengthened runtime test reproduced 404 before the fix, then runtime/Today API tests
-  passed 5/5. No Core semantics or migration changed; independent review pending.
+  passed 5/5. Independent review APPROVE, P0-P3 none (`c984efc`); included in full 551-test run.
 
-- ACTIVE: W2-INBOX-CLIENT, contract `0.16.0` / D-026; authenticated proposal reads and explicit
-  accept/ignore UI over the existing Core service; synthetic validation only.
+- W2-INBOX-CLIENT integrated as `6ba054d` (`6a18116`, historical-query fix `26c27f2`),
+  contract `0.16.0` / D-026; final independent APPROVE, P0-P3 none; full 551 passed, 3 skipped.
+  Frontend 39 passed/build; real localhost API + Chromium + disposable synthetic DB verified
+  acceptance, graph publication, receipt/history and preservation of the original historical pin.
 
 - W2-L2-PREP integrated as `9101085` (`56ae9d8`, privacy fix `1fac397`), contract
   `0.15.0` / D-025. Exact-context previews grant no execution authority. Independent final
@@ -235,8 +236,8 @@ full suite 534 passed, 3 skipped; Ruff and 5-file format passed; unchanged front
 
 # Next Safe Tasks
 
-1. READY: Capability Inbox client/API entry point, reusing the integrated Core review service.
-   Freeze the projection/command/retry boundary before implementation.
+1. READY: PRD section 29 pluggability acceptance of existing offline Core/L1 boundaries.
+   Audit evidence first; do not claim unimplemented Browser/LLM/Skill replacement support.
 2. L2 runner/result handling remains unimplemented; offline engineering requires its own contract,
    and real inference additionally requires selected project context, provider/model and budget.
 3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema

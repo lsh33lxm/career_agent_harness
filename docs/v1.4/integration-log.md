@@ -48,5 +48,8 @@ Feature branches are integrated only after contract and test review; `main` rema
 
 | `codex/v14-l2-analysis-prep` | `56ae9d8`, `1fac397` (merge `9101085`) | Exact-ref, scope/hash/length-verified transient L2 preview; fixed Claude argv, explicit Codex unsupported | Focused 95 passed; full 534 passed, 3 skipped; Ruff/5-file format/diff passed; independent final APPROVE, P0-P3 none | P2 automatic task-text root locator disclosure fixed before merge; no conflicts | None | Preview is not authorization; runner/result handling unimplemented; no real inference |
 
+| integration | `c984efc` | Wire existing Today API into real runtime | Red-green runtime test reproduced 404; runtime/Today API 5 passed; independent APPROVE, P0-P3 none; included in subsequent full regression | None | None | No Core policy change |
+| `codex/v14-capability-inbox-client` | `6a18116`, `26c27f2` (merge `6ba054d`) | Authenticated Inbox reads/review and explicit desktop accept/ignore; true revisions and replay | Focused 29 passed; reviewer frontend 16 passed; full 551 passed, 3 skipped; frontend 39 passed/build; Ruff/5-file format/diff passed; final APPROVE, P0-P3 none; browser and temporary DB E2E passed | P2 lost historical pin fixed before merge; automatic runtime merge retained both Today and Inbox wiring | None | Merge-target UI and bulk actions deferred; no real-data reviews |
+
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.

@@ -9,7 +9,7 @@
 - Repository: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness`
 - Integration Worktree: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness-worktrees\integration`
 - Integration Branch: `refactor/v1.4-integration`
-- Verified feature integration HEAD after recovery continuation: `6ba054d` (`merge: integrate reviewed Capability Inbox client`)
+- Verified feature integration HEAD after recovery continuation: `3626994` (`merge: integrate reviewed offline L1 acceptance`)
 - Main HEAD: `63ca32f` (unchanged; do not merge or push without explicit approval)
 - Handoff ID: `ACH-V14-KIMI-CODEX-2026-09-20`
 - Prior handoff: `docs/v1.4/HANDOFF_CODEX_TO_KIMI_2026-09-20.md` (superseded by this file)
@@ -42,7 +42,7 @@ never clean it incidentally.
 
 Verified during this session with the root `.venv`:
 
-- Backend full after Inbox client merge: `551 passed, 3 skipped` (3 known Windows symlink
+- Backend full after L1 acceptance merge: `552 passed, 3 skipped` (3 known Windows symlink
   privilege skips).
 - Ruff lint: PASS. `git diff --check`: PASS.
 - Repo-wide `ruff format --check` has a KNOWN pre-existing baseline failure (~40-57 files,
@@ -102,6 +102,10 @@ Do not define competing representations. Missing fields require a CONTRACT CHANG
 
 ## F. Completed After Handoff
 
+- Offline L1 acceptance: `aa08afa`, merge `3626994`; independent APPROVE, P0-P3 none;
+  focused 12 passed, full 552 passed, 3 skipped; full Ruff/changed format/diff passed.
+  No production code changed. Section 29 evidence matrix: pluggability-acceptance.md.
+
 - Inbox client: `6a18116` + historical pin fix `26c27f2`, merge `6ba054d`; final independent
   APPROVE, P0-P3 none. Focused 29 passed; full 551 passed, 3 skipped; frontend 39 passed/build;
   Ruff/5-file format/diff passed. Chromium responsive and receipt-refresh fixtures passed; real
@@ -158,8 +162,9 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
    contract `0.14.1` / D-024, final review APPROVE, full 440 passed, 3 skipped.
    W2-L2-PREP is DONE at `9101085`, full 534 passed, 3 skipped.
    W2-INBOX-CLIENT is DONE at `6ba054d`, full 551 passed, 3 skipped.
-   Next READY: section 29 acceptance for existing offline Core/L1 pluggability boundaries;
-   do not claim Browser/LLM/Skill replacement support before it exists.
+   Section 29.7 L1 acceptance is DONE at `3626994`; full 552 passed, 3 skipped.
+   Next preparation candidates: dynamic SuggestedPriority policy and bounded L2 runner/results.
+   Neither is implemented; other section 29 replacement items remain explicit gaps, not passes.
    L2 runner/result handling still needs its own contract; real inference additionally needs
    explicitly selected project content, provider/model and budget.
    Local Codex 0.155.1 / Claude 2.1.214 are installed and login checks succeeded; no inference run.

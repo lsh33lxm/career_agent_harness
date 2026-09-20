@@ -48,6 +48,7 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 
 | W2-L2-PREP | Exact-context tools-disabled CLI invocation preparation | Enhancement L1, exact project scope/manifest reads | Subagent | l2-analysis-prep | DONE | Medium | Merge `9101085`; contract 0.15.0 / D-025; final review APPROVE; full 534 passed, 3 skipped; no execution. |
 | W2-INBOX-CLIENT | Capability Inbox authenticated reads and explicit user review UI | Inbox Core, Capability Workspace | Subagent | capability-inbox-client | DONE | Medium | Merge `6ba054d`; contract 0.16.0 / D-026; final APPROVE; full 551 passed, 3 skipped; frontend 39 passed/build and browser E2E. |
+| W2-L1-OFFLINE | Section 29.7 offline L1 acceptance | L1 executor, ProjectService | Subagent | l1-offline-acceptance | DONE | Low | `aa08afa`, merge `3626994`; final APPROVE; full 552 passed, 3 skipped. |
 | W2-L2-RUN | Bounded CLI execution and proposal result handling | W2-L2-PREP, explicit context/provider/budget approval | Lead | unassigned | BLOCKED | High | Runner contract/review and explicit real-inference authorization required; not implemented. |
 
 ## P1 and P2 status

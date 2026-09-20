@@ -51,5 +51,7 @@ Feature branches are integrated only after contract and test review; `main` rema
 | integration | `c984efc` | Wire existing Today API into real runtime | Red-green runtime test reproduced 404; runtime/Today API 5 passed; independent APPROVE, P0-P3 none; included in subsequent full regression | None | None | No Core policy change |
 | `codex/v14-capability-inbox-client` | `6a18116`, `26c27f2` (merge `6ba054d`) | Authenticated Inbox reads/review and explicit desktop accept/ignore; true revisions and replay | Focused 29 passed; reviewer frontend 16 passed; full 551 passed, 3 skipped; frontend 39 passed/build; Ruff/5-file format/diff passed; final APPROVE, P0-P3 none; browser and temporary DB E2E passed | P2 lost historical pin fixed before merge; automatic runtime merge retained both Today and Inbox wiring | None | Merge-target UI and bulk actions deferred; no real-data reviews |
 
+| `codex/v14-l1-offline-acceptance` | `aa08afa` (merge `3626994`) | Test-only PRD 29.7 proof using real L1 executor/service and canonical task flow | Focused 12 passed; independent APPROVE, P0-P3 none; full 552 passed, 3 skipped; Ruff/changed format/diff passed | None | None | Controlled offline path proof only; Browser/LLM/Skill/live Executor replacement remains unproven |
+
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.

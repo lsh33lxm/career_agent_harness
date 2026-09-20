@@ -1,9 +1,15 @@
 # Agent Career Harness v1.4 Architecture Map
 
-**Observed repository:** integration commit `6ba054d` on 2026-09-21
+**Observed repository:** integration commit `3626994` on 2026-09-21
 **Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
 **Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
 **Contract version:** `v1.4-contract-0.16.0` (Capability Inbox client integrated)
+
+## Verified offline L1 boundary (2026-09-21)
+
+Test-only merge `3626994` proves PRD 29.7 with real L1 generation, canonical task commands,
+exact reads/replay and protected-state checks. Final independent APPROVE; full 552 passed,
+3 skipped. See pluggability-acceptance.md; this does not implement other adapter lifecycles.
 
 ## Integrated Capability Inbox client (2026-09-21)
 

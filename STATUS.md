@@ -13,8 +13,9 @@ state with contract-first, review-gated increments.
 
 # Last Verified Commit
 
-`6ba054d` - `merge: integrate reviewed Capability Inbox client` (contract `0.16.0`;
-full suite 551 passed, 3 skipped; Ruff and 5-file format passed; frontend 39 passed/build)
+`3626994` - `merge: integrate reviewed offline L1 acceptance` (contract remains `0.16.0`;
+full suite 552 passed, 3 skipped; Ruff and changed-file format passed; frontend 39 passed/build
+verified at unchanged production code `6ba054d`)
 
 # Completed
 
@@ -179,7 +180,9 @@ full suite 551 passed, 3 skipped; Ruff and 5-file format passed; frontend 39 pas
 
 # In Progress
 
-- ACTIVE: section 29 item 7 offline L1 acceptance; test-only, no new contract semantics.
+- Section 29 item 7 offline L1 acceptance is complete: `aa08afa`, merge `3626994`;
+  independent APPROVE, P0-P3 none; focused 12 passed, full 552 passed, 3 skipped.
+  See docs/v1.4/pluggability-acceptance.md for the eight-item evidence matrix and limits.
 
 - Runtime wiring correction: the existing Today API is now injected by create_runtime_app;
   the strengthened runtime test reproduced 404 before the fix, then runtime/Today API tests
@@ -238,8 +241,9 @@ full suite 551 passed, 3 skipped; Ruff and 5-file format passed; frontend 39 pas
 
 # Next Safe Tasks
 
-1. READY: PRD section 29 pluggability acceptance of existing offline Core/L1 boundaries.
-   Audit evidence first; do not claim unimplemented Browser/LLM/Skill replacement support.
+1. Next contract preparation: remaining P1 dynamic SuggestedPriority recalculation policy or
+   bounded L2 runner/result handling. Neither is implemented by completed preview/Inbox slices.
+   Preserve user authority and exact provenance; no live inference without explicit context/limits.
 2. L2 runner/result handling remains unimplemented; offline engineering requires its own contract,
    and real inference additionally requires selected project context, provider/model and budget.
 3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema

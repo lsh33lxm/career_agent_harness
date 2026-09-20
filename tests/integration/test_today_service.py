@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -16,6 +16,7 @@ from career_harness.db.migrations import upgrade_to_head
 from career_harness.db.models import (
     Base,
     CapabilityIdentityRow,
+    EntityRevisionRow,
     ExtractedClaimEvidenceRefRow,
     ExtractedClaimIdentityRow,
     ExtractedClaimRevisionRow,
@@ -470,3 +471,143 @@ def test_today_ignores_interviews_for_other_application_stages(tmp_path: Path) -
     assert all(item.kind.value != "interview_prep" for item in queue.items)
     assert all(ref.kind is not EntityKind.INTERVIEW for ref in queue.input_revisions)
     today.interviews.list_for_application.assert_not_called()
+
+
+def test_today_recovers_original_offsets_before_selecting_and_preserves_replay(
+    tmp_path: Path,
+) -> None:
+    engine, _, interviews = _interview_stage_services(tmp_path)
+    local_time = datetime(2026, 9, 20, 12, tzinfo=timezone(timedelta(hours=8)))
+    later_utc = datetime(2026, 9, 20, 5, tzinfo=UTC)
+    schedule_command = _command("interview_local", EntityKind.INTERVIEW, "command_schedule_local")
+    scheduled = interviews.schedule_interview(
+        schedule_command,
+        application_id="application_001",
+        application_revision=3,
+        round=InterviewRound.TECHNICAL,
+        scheduled_at=local_time,
+    )
+    _schedule(interviews, "interview_utc", scheduled_at=later_utc)
+    # The existing general read intentionally still exposes SQLite's wall-clock value.
+    assert scheduled.scheduled_at == local_time.replace(tzinfo=None)
+    before = _table_counts(engine)
+    statements = []
+
+    def capture_sql(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", capture_sql)
+    try:
+        queue = TodayService(engine).build_queue(generated_at=NOW)
+    finally:
+        event.remove(engine, "before_cursor_execute", capture_sql)
+    assert statements and all(
+        statement.lstrip().upper().startswith("SELECT") for statement in statements
+    )
+    assert _table_counts(engine) == before
+    item = next(item for item in queue.items if item.kind.value == "interview_prep")
+    assert item.interview_at == datetime(2026, 9, 20, 4, tzinfo=UTC)
+    assert item.source_refs[2].entity_id == "interview_local"
+    assert interviews.repository.get("interview_local", 1) == scheduled
+    assert (
+        interviews.schedule_interview(
+            schedule_command,
+            application_id="application_001",
+            application_revision=3,
+            round=InterviewRound.TECHNICAL,
+            scheduled_at=local_time,
+        )
+        == scheduled
+    )
+
+    command = _command(
+        "interview_local", EntityKind.INTERVIEW, "command_cancel_local", expected_revision=1
+    )
+    cancelled = interviews.cancel_interview(command)
+    assert interviews.cancel_interview(command) == cancelled
+    assert cancelled.scheduled_at == scheduled.scheduled_at
+    terminal_queue = TodayService(engine).build_queue(generated_at=NOW)
+    terminal_item = next(
+        item for item in terminal_queue.items if item.kind.value == "interview_prep"
+    )
+    assert terminal_item.interview_at == later_utc
+    assert terminal_item.source_refs[2].entity_id == "interview_utc"
+    assert any(
+        ref.entity_id == "interview_local" and ref.revision == 2
+        for ref in terminal_queue.input_revisions
+    )
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "missing",
+        "non_object",
+        "entity_id",
+        "revision",
+        "application_id",
+        "application_revision",
+        "status",
+        "missing_time",
+        "malformed_time",
+        "naive_time",
+        "non_string_time",
+        "wall_clock_mismatch",
+    ],
+)
+def test_today_fails_loud_on_damaged_exact_schedule_audit(tmp_path: Path, fault: str) -> None:
+    engine, _, interviews = _interview_stage_services(tmp_path)
+    _schedule(interviews, "interview_001")
+    with Session(engine) as session:
+        audit = session.scalar(
+            select(EntityRevisionRow).where(EntityRevisionRow.entity_id == "interview_001")
+        )
+        assert audit is not None
+        state = dict(audit.state)
+    # Simulate damaged storage only in this disposable test database.
+    with engine.begin() as connection:
+        if fault == "missing":
+            connection.exec_driver_sql("DROP TRIGGER trg_entity_revision_no_delete")
+            connection.execute(
+                EntityRevisionRow.__table__.delete().where(
+                    EntityRevisionRow.entity_id == "interview_001"
+                )
+            )
+        else:
+            if fault in {"entity_id", "application_id", "status"}:
+                state[fault] = "mismatched"
+            elif fault in {"revision", "application_revision"}:
+                state[fault] += 1
+            elif fault == "missing_time":
+                state.pop("scheduled_at")
+            elif fault == "malformed_time":
+                state["scheduled_at"] = "not-a-timestamp"
+            elif fault == "naive_time":
+                state["scheduled_at"] = NOW.replace(tzinfo=None).isoformat()
+            elif fault == "non_string_time":
+                state["scheduled_at"] = 1234
+            elif fault == "wall_clock_mismatch":
+                state["scheduled_at"] = (NOW + timedelta(hours=1)).isoformat()
+            connection.exec_driver_sql("DROP TRIGGER trg_entity_revision_no_update")
+            connection.execute(
+                EntityRevisionRow.__table__.update()
+                .where(EntityRevisionRow.entity_id == "interview_001")
+                .values(state=[] if fault == "non_object" else state)
+            )
+    with pytest.raises(ValueError, match="Interview schedule audit"):
+        TodayService(engine).build_queue(generated_at=NOW)
+
+
+def test_exact_schedule_read_never_falls_back_to_latest_revision(tmp_path: Path) -> None:
+    engine, _, interviews = _interview_stage_services(tmp_path)
+    local_time = datetime(2026, 9, 20, 12, tzinfo=timezone(timedelta(hours=8)))
+    _schedule(interviews, "interview_001", scheduled_at=local_time)
+    interviews.complete_interview(
+        _command("interview_001", EntityKind.INTERVIEW, "command_complete", expected_revision=1)
+    )
+    assert interviews.repository.get_scheduled_at_utc("interview_001", 1) == local_time.astimezone(
+        UTC
+    )
+    for revision in (2, 3):
+        with pytest.raises(ValueError, match="exact scheduled Interview revision"):
+            interviews.repository.get_scheduled_at_utc("interview_001", revision)

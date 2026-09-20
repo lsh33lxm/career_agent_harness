@@ -16,6 +16,7 @@ from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from career_harness.core.common import EntityKind, utc_now
+from career_harness.core.interview import InterviewStatus
 from career_harness.core.lifecycle import ApplicationState
 from career_harness.core.today import (
     ApplicationInput,
@@ -140,7 +141,13 @@ class TodayService:
                         revision=application.revision,
                     ),
                     status=interview.status,
-                    scheduled_at=interview.scheduled_at,
+                    scheduled_at=(
+                        self.interviews.get_scheduled_at_utc(
+                            interview.entity_id, interview.revision
+                        )
+                        if interview.status is InterviewStatus.SCHEDULED
+                        else interview.scheduled_at
+                    ),
                 )
             )
         return tuple(inputs)

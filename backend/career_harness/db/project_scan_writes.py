@@ -13,8 +13,6 @@ from career_harness.db.models import (
     ProjectSourceManifestRow,
 )
 
-# Bounded diff payload for the rescan event; larger diffs keep exact counts and a truncated view.
-
 
 class ProjectRescanWrite:
     """Stages one immutable source manifest revision from a rescan.

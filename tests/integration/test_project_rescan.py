@@ -224,6 +224,18 @@ def test_first_scan_and_rescan_diff_is_recorded(tmp_path: Path) -> None:
     )
     assert third.diff == type(third.diff)(added=(), changed=(), removed=())
 
+    # Removing a file records the removed branch.
+    scanner.entries = [_entry("src/agent.py", b"print('v2')")]
+    fourth = service.rescan(
+        _rescan_command("manifest_004"),
+        project_id="project_001",
+        scope_id="scope_001",
+        scope_revision=1,
+        manifest_id="manifest_004",
+    )
+    assert fourth.diff.removed == ("src/tools.py",)
+    assert fourth.diff.added == () and fourth.diff.changed == ()
+
 
 def test_rescan_is_idempotent_and_pins_exact_scope(tmp_path: Path) -> None:
     engine, service = _engine(tmp_path)
@@ -272,7 +284,8 @@ def test_mark_stale_appends_a_revision_without_rewriting_content(tmp_path: Path)
             actor="user",
         ),
         evidence_id="evidence_001",
-        reason="rescan manifest_002 changed src/agent.py",
+        manifest_id="manifest_000",
+        reason="rescan manifest_000 changed src/agent.py",
     )
     assert commit.commit.revision == 2
 
@@ -306,16 +319,29 @@ def test_stale_transition_fails_loud_on_missing_or_non_current(tmp_path: Path) -
         service.mark_stale_evidence(
             _command_for("evidence_missing", 0, "missing"),
             evidence_id="evidence_missing",
+            manifest_id="manifest_000",
             reason="unknown evidence",
         )
 
+    with pytest.raises(ValueError, match="resolvable motivating manifest"):
+        service.mark_stale_evidence(
+            _command_for("evidence_001", 1, "dangling_manifest"),
+            evidence_id="evidence_001",
+            manifest_id="manifest_missing",
+            reason="dangling manifest",
+        )
+
     service.mark_stale_evidence(
-        _command_for("evidence_001", 1, "first"), evidence_id="evidence_001", reason="r1"
+        _command_for("evidence_001", 1, "first"),
+        evidence_id="evidence_001",
+        manifest_id="manifest_000",
+        reason="r1",
     )
     with pytest.raises(ValueError, match="only CURRENT"):
         service.mark_stale_evidence(
             _command_for("evidence_001", 2, "second"),
             evidence_id="evidence_001",
+            manifest_id="manifest_000",
             reason="already stale",
         )
 

@@ -104,9 +104,14 @@ class ProjectScanService:
         command: Command,
         *,
         evidence_id: OpaqueId,
+        manifest_id: OpaqueId,
         reason: str,
     ) -> StaleMarkCommit:
-        """Append a STALE revision of CURRENT evidence; content is never rewritten."""
+        """Append a STALE revision of CURRENT evidence; content is never rewritten.
+
+        The motivating manifest revision is part of the command's auditable input
+        (D-020): it must resolve and belong to the evidence's project.
+        """
         if command.target.kind is not EntityKind.PROJECT_EVIDENCE:
             raise ValueError("command requires a project_evidence target")
         if command.target.entity_id != evidence_id:
@@ -114,6 +119,12 @@ class ProjectScanService:
         current = self.repository.get_evidence(evidence_id)
         if current is None:
             raise ValueError("staleness transition requires existing Project Evidence")
+        manifest = self.repository.get_source_manifest(manifest_id)
+        if manifest is None:
+            raise ValueError("staleness transition requires a resolvable motivating manifest")
+        scope = self.repository.get_scan_scope(manifest.scan_scope_id, manifest.scan_scope_revision)
+        if scope is None or scope.project_id != current.project_id:
+            raise ValueError("motivating manifest must belong to the evidence project")
         commit = self.commands.commit(
             command,
             {
@@ -126,6 +137,7 @@ class ProjectScanService:
                 "evidence_id": evidence_id,
                 "from_revision": command.expected_revision,
                 "to_revision": command.expected_revision + 1,
+                "manifest_id": manifest_id,
                 "reason": reason,
             },
             transactional_write=ProjectEvidenceStaleWrite(

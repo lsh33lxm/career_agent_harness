@@ -84,10 +84,11 @@ decision is D-018. An earlier Kimi commit briefly misnumbered it; fixed in `196a
 
 ## E. Contracts
 
-`docs/v1.4/contracts.md` is `v1.4-contract-0.8.0`, frozen sections now include: Evidence/Fact
+`docs/v1.4/contracts.md` is `v1.4-contract-0.10.0`. Frozen sections include: Evidence/Fact
 authority, claim review + Fact promotion, Job/Requirement, Opportunity/Priority, Match/Gap
-persistence+resolver+replay, Capability graph/overlay, Project evidence/enhancement write path,
-Context manifest, Resume write path, Application/Outcome, and the Today read model.
+persistence+resolver+replay, Capability graph/overlay, Capability inbox review (`0.9.0`), Project
+evidence/enhancement, incremental project rescan (`0.10.0`), Context manifest, Resume write path,
+Application/Outcome, and the Today read model.
 
 Do not define competing representations. Missing fields require a CONTRACT CHANGE REQUEST.
 
@@ -121,10 +122,12 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
 
 ## H. Next READY Work
 
-1. Review + merge `kimi/v14-today-ui-adapter` (section F).
-2. P1 items per the previous handoff, in rough priority: Capability Inbox review flow, incremental
-   Project Scan, Broad Market Trend aggregation, Capability graph visualization, CLI executor
-   adapters. Each needs its own contract freeze + scoped prompt first.
+1. Implement the incremental project rescan per contract `0.10.0` + D-020 (reuses the anchored
+   readers; freshness changes are explicit commands with typed events; accepted evidence content
+   is never mutated).
+2. Remaining P1 items per the previous handoff, in rough priority: Broad Market Trend aggregation,
+   Interview workflow, Capability graph visualization, CLI executor adapters. Each needs its own
+   contract freeze + scoped prompt first.
 3. The four long-term feedback loops (PRD section 32) and section 29 pluggability checks remain
    open; Today read model closes only the "next action" projection, not Career Reasoning.
 

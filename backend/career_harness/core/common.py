@@ -22,6 +22,7 @@ class EntityKind(StrEnum):
     EXTRACTED_CLAIM = "extracted_claim"
     FACT = "fact"
     CANDIDATE = "candidate"
+    CAPABILITY_CANDIDATE = "capability_candidate"
     MARKET = "market"
     JOB = "job"
     JOB_REQUIREMENT = "job_requirement"

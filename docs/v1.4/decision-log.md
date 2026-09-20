@@ -462,3 +462,28 @@ deciding what the user should become.
 
 **Impact:** A later workstream adds a trend read service and optional API projection; no migration
 is needed.
+
+## D-023 - Compose Capability Visualization as a candidate-scoped read model
+
+**Decision:** ACCEPTED in contract `0.13.0` (docs-only freeze; no schema change).
+
+**Context:** Official graph, personal overlay, evidence/market bindings, InvestmentState and Broad
+Market Trend exist, but the desktop Capability route is a placeholder. Rendering these stores
+independently in React would move join semantics into the client and risk mixing candidate identity,
+target demand, broad trends and proposals.
+
+**Alternatives:** Let the client call each repository-shaped endpoint and join locally; persist a
+denormalized capability dashboard; render only the official graph without personal/market context.
+
+**Chosen:** Core produces one deterministic, candidate-scoped Capability Workspace projection over
+one selected official graph version. It keeps official, personal, evidence, target, broad and
+investment fields distinct, records the exact input set and never writes. The client owns layout
+and selection only.
+
+**Reason:** This makes the existing capability assets inspectable without creating a second truth,
+leaking another candidate's overlay or allowing broad-market frequency to masquerade as a personal
+investment decision.
+
+**Impact:** The implementation adds repository list reads where needed, a pure assembly service,
+an authenticated read endpoint and a responsive desktop visualization. No migration or canonical
+write path is permitted. Missing identity context remains explicit rather than guessed.

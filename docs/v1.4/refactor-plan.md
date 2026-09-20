@@ -43,6 +43,7 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | Lead | integration | IN_PROGRESS | Medium | Today composition is integrated over typed fallback; real read models replace selected placeholders. |
 | W2-CAREER-READ | Authenticated Resume/Application/Outcome reads | W2-RESUME, W2-APP | Lead | integration | DONE | Medium | Exact/latest read-only projections pass auth, 404 and no-write-route tests. |
 | W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | DONE | Medium | Authenticated UI uses Core-owned IDs, preserves priority separation and passes responsive validation. |
+| W2-CAP-VIZ | Candidate-scoped Capability Workspace read API and visualization | W1-CAP-READ, Broad Market Trend | Subagent | capability-visualization | READY | Medium | Core composes exact separated inputs; desktop renders responsive graph/overlay without client business logic. |
 
 ## P1 and P2 status
 

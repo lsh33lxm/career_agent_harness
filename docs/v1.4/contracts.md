@@ -1,10 +1,11 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.12.0`
-**Status:** FROZEN FOR BROAD MARKET TREND
+**Version:** `v1.4-contract-0.13.0`
+**Status:** FROZEN FOR CAPABILITY WORKSPACE VISUALIZATION
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.12.0` retains all `0.11.0` guarantees and adds the Broad Market Trend contract below. Earlier
+`0.13.0` retains all `0.12.0` guarantees and adds the Capability Workspace read contract below.
+`0.12.0` added the Broad Market Trend contract. Earlier
 versions added Interview records (`0.11.0`), incremental project rescan (`0.10.0`), Capability
 inbox review (`0.9.0`), the Today read model (`0.8.0`), Application/Outcome (`0.7.0`), the Resume
 write path (`0.6.0`), claim review and Fact promotion (`0.5.0`) and the Match/enhancement contracts
@@ -209,6 +210,30 @@ joined into one read model.
 - Reviewed candidates stay immutable history; rejection is auditable and never silently deletes
   the proposal or its source evidence refs.
 - Reviewing candidates never mutates personal overlays, bindings, Match results or priorities.
+
+### Capability workspace read model
+
+- The Capability Workspace is a Core-owned derived read model, not a canonical entity. A request
+  explicitly supplies one `candidate_id` and may pin an exact official `graph_version_id`; when no
+  version is supplied, Core selects the latest released graph once for that response. Candidate
+  overlays from different identities are never combined or inferred.
+- The response contains the selected official graph version, its nodes and relations, plus one
+  projection per official node. Each projection may include the candidate's latest canonical
+  Personal Capability State, the exact EvidenceBindings for that state revision, TARGET and BROAD
+  MarketBindings, and the latest InvestmentState proposal for that candidate/capability. Missing
+  personal or investment data stays explicitly absent; project presence never fills it in.
+- Broad demand is an exploration signal only. Target demand, broad demand, personal state,
+  evidence and investment recommendation remain separately labeled fields; the workspace never
+  synthesizes a new score, changes priority or treats an InvestmentState proposal as a decision.
+- The response carries a canonical input revision set: graph version, personal state IDs/revisions,
+  EvidenceBinding IDs, MarketBinding IDs and InvestmentState IDs used. Nodes and relations use a
+  documented stable total order so identical canonical inputs produce identical business output.
+- With no released graph, the workspace returns an explicit empty projection. Unknown candidate
+  IDs do not reveal or borrow another candidate's overlay; the official graph may still render with
+  every personal field absent.
+- Computing or serving the workspace performs zero writes. The authenticated Local API exposes the
+  Core projection; clients may choose layout, selection and presentation filters only. Clients must
+  not recompute demand, investment ranking, personal status or graph membership.
 
 ## Project evidence and enhancement
 

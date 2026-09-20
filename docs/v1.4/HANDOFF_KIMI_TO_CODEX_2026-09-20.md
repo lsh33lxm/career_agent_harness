@@ -94,12 +94,12 @@ Do not define competing representations. Missing fields require a CONTRACT CHANG
 
 ## F. In Flight At Handoff
 
-None. `kimi/v14-capability-inbox-review` completed after the previous edit: reviewed (APPROVE, no
-P0/P1/P2), merged as `3db621d`, verified at `367 passed, 3 skipped`. Integration HEAD is now
-`3db621d` plus the docs commits that follow it.
-
-Completed earlier in this session: `kimi/v14-today-ui-adapter` merged as `c986936` (Vitest 22
-passed, build passed, backend 355 passed).
+- `kimi/v14-incremental-rescan` (worktree `incremental-rescan`, base `42afb75`): incremental
+  project rescan per contract `0.10.0` + D-020. Prompt:
+  `docs/v1.4/agents/incremental-rescan.md`. If still running, wait for its
+  `feat: add incremental project rescan` commit, then review (diff is a record not a mutation,
+  explicit staleness commands only, scanner safety invariants unchanged), merge with `--no-ff`,
+  run the full suite and update the status docs.
 
 ## G. Recorded Follow-ups (non-blocking)
 

@@ -13,8 +13,9 @@ state with contract-first, review-gated increments.
 
 # Last Verified Commit
 
-`dc85365` - `merge: integrate exact Today interview schedules` (contract `0.14.1`; full suite
-440 passed, 3 skipped; Ruff and 7-file format passed; prior unchanged frontend 27 passed/build)
+`9101085` - `merge: integrate exact-context L2 invocation preparation` (contract `0.15.0`;
+full suite 534 passed, 3 skipped; Ruff and 5-file format passed; unchanged frontend previously
+27 passed/build)
 
 # Completed
 
@@ -179,8 +180,9 @@ state with contract-first, review-gated increments.
 
 # In Progress
 
-- ACTIVE: W2-L2-PREP, contract `0.15.0` / D-025; prepare exact-context CLI invocation
-  previews locally. Actual provider execution is not part of this slice.
+- W2-L2-PREP integrated as `9101085` (`56ae9d8`, privacy fix `1fac397`), contract
+  `0.15.0` / D-025. Exact-context previews grant no execution authority. Independent final
+  review APPROVE, P0-P3 none; focused 95 passed; full 534 passed, 3 skipped. No CLI launched.
 
 - W2-TODAY-INTERVIEW integrated as `dc85365` (`0b0fa6b`, `ae53689`), contract
   `0.14.1` / D-024. Existing interview-stage Today items now select canonical schedules with
@@ -226,11 +228,13 @@ state with contract-first, review-gated increments.
 
 # Next Safe Tasks
 
-1. READY: constrained L2 CLI analysis adapter. Freeze explicit context/permission/result contract;
-   implement and review offline tests before any real provider inference.
-2. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
+1. READY: Capability Inbox client/API entry point, reusing the integrated Core review service.
+   Freeze the projection/command/retry boundary before implementation.
+2. L2 runner/result handling remains unimplemented; offline engineering requires its own contract,
+   and real inference additionally requires selected project context, provider/model and budget.
+3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.
-3. Continue awaiting user adjudication for destructive legacy cutover decisions.
+4. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet
 

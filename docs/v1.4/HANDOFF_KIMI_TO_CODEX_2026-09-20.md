@@ -9,7 +9,7 @@
 - Repository: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness`
 - Integration Worktree: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness-worktrees\integration`
 - Integration Branch: `refactor/v1.4-integration`
-- Verified feature integration HEAD after recovery continuation: `dc85365` (`merge: integrate exact Today interview schedules`)
+- Verified feature integration HEAD after recovery continuation: `9101085` (`merge: integrate exact-context L2 invocation preparation`)
 - Main HEAD: `63ca32f` (unchanged; do not merge or push without explicit approval)
 - Handoff ID: `ACH-V14-KIMI-CODEX-2026-09-20`
 - Prior handoff: `docs/v1.4/HANDOFF_CODEX_TO_KIMI_2026-09-20.md` (superseded by this file)
@@ -42,7 +42,7 @@ never clean it incidentally.
 
 Verified during this session with the root `.venv`:
 
-- Backend full after Today Interview merge: `440 passed, 3 skipped` (3 known Windows symlink
+- Backend full after L2 preparation merge: `534 passed, 3 skipped` (3 known Windows symlink
   privilege skips).
 - Ruff lint: PASS. `git diff --check`: PASS.
 - Repo-wide `ruff format --check` has a KNOWN pre-existing baseline failure (~40-57 files,
@@ -89,7 +89,8 @@ decision is D-018. An earlier Kimi commit briefly misnumbered it; fixed in `196a
 
 ## E. Contracts
 
-`docs/v1.4/contracts.md` is `v1.4-contract-0.14.1` (Today Interview inputs, D-024); Capability Workspace
+`docs/v1.4/contracts.md` is `v1.4-contract-0.15.0` (L2 preparation, D-025); Today Interview
+`0.14.1` / D-024 and Capability Workspace
 `0.13.0` / D-023 is complete. Frozen sections include: Evidence/Fact
 authority, claim review + Fact promotion, Job/Requirement, Opportunity/Priority, Match/Gap
 persistence+resolver+replay, Capability graph/overlay, Capability inbox review (`0.9.0`), Project
@@ -99,6 +100,11 @@ Application/Outcome, and the Today read model.
 Do not define competing representations. Missing fields require a CONTRACT CHANGE REQUEST.
 
 ## F. Completed After Handoff
+
+- L2 preparation: `56ae9d8` + privacy fix `1fac397`, merge `9101085`; contract 0.15.0 / D-025.
+  Final independent review APPROVE, P0-P3 none. Focused 95 passed; full 534 passed, 3 skipped;
+  Ruff/5-file format/diff passed. Original P2 task-text root locator disclosure is fixed.
+  No CLI execution/network/canonical writes; preview is not consent; runner is unimplemented.
 
 - Capability Workspace Visualization: Implementation `ae39eb6` + consistency fix `e076daf`, merged as `62f1ce8`; contract `0.13.0`, D-023. Recovery independent review of `f2727cf..e076daf`: APPROVE, no P0/P1/P2/P3. Focused backend 13 passed; full backend 403 passed, 3 known Windows symlink skips; frontend 27 passed; production build, full Ruff, 11 changed Python format checks and diff checks passed.
   The recovery verified the existing merge and independently reviewed the final implementation;
@@ -142,7 +148,10 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
 
 1. W2-TODAY-INTERVIEW is DONE: `0b0fa6b` + timezone fix `ae53689`, merge `dc85365`;
    contract `0.14.1` / D-024, final review APPROVE, full 440 passed, 3 skipped.
-   Next READY: W2-L2-ANALYSIS; explicit-context CLI analysis contract and offline tests first.
+   W2-L2-PREP is DONE at `9101085`, full 534 passed, 3 skipped.
+   Next READY: Capability Inbox client/API entry point using the existing Core review service.
+   L2 runner/result handling still needs its own contract; real inference additionally needs
+   explicitly selected project content, provider/model and budget.
    Local Codex 0.155.1 / Claude 2.1.214 are installed and login checks succeeded; no inference run.
    Claude tools-disabled mode is available; Codex read-only does not prove no-shell/scope-read
    isolation. Do not use unsafe file reads to extract context from scanner hash manifests.

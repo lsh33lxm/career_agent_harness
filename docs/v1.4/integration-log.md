@@ -46,5 +46,7 @@ Feature branches are integrated only after contract and test review; `main` rema
 
 | `codex/v14-today-interview` | `0b0fa6b`, `ae53689` (merge `dc85365`) | Exact canonical schedules for Today interview-stage items; stable UTC/ID order, full consulted refs, historical Application validation | Focused 62 passed; Lead service/API 32 passed; reviewer service 28 passed; full 440 passed, 3 skipped; Ruff/7-file format/diff passed; final review APPROVE, P0-P3 none | Blocking P2 non-UTC SQLite offset loss fixed before merge using exact audit time recovery under contract 0.14.1; no conflicts | None | Canonical deadlines and general Interview datetime normalization remain separate work; no frontend change |
 
+| `codex/v14-l2-analysis-prep` | `56ae9d8`, `1fac397` (merge `9101085`) | Exact-ref, scope/hash/length-verified transient L2 preview; fixed Claude argv, explicit Codex unsupported | Focused 95 passed; full 534 passed, 3 skipped; Ruff/5-file format/diff passed; independent final APPROVE, P0-P3 none | P2 automatic task-text root locator disclosure fixed before merge; no conflicts | None | Preview is not authorization; runner/result handling unimplemented; no real inference |
+
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.

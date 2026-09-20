@@ -1,9 +1,18 @@
 # Agent Career Harness v1.4 Architecture Map
 
-**Observed repository:** integration commit `dc85365` on 2026-09-20
+**Observed repository:** integration commit `9101085` on 2026-09-21
 **Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
 **Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
-**Contract version:** `v1.4-contract-0.14.1` (Today Interview inputs integrated)
+**Contract version:** `v1.4-contract-0.15.0` (L2 preparation integrated)
+
+## Integrated L2 preparation (2026-09-21)
+
+Merge `9101085` adds exact canonical task/project/scope/manifest resolution plus caller-supplied
+in-memory UTF-8 context verification and deterministic invocation previews. Claude fixed no-tool
+arguments are prepared, never launched; Codex is explicitly unsupported for this capability.
+Preview grants no consent and performs no content reads, network, subprocess or canonical writes.
+Root locators in automatically introduced task text fail closed. Contract 0.15.0 / D-025; final
+independent review APPROVE; full 534 passed, 3 skipped. Runner/results remain unimplemented.
 
 ## Integrated Today Interview inputs (2026-09-20)
 

@@ -1,5 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+import { ProjectsPage } from "../pages/ProjectsPage";
+import { ResumePage } from "../pages/ResumePage";
 import { SectionPage } from "../pages/SectionPage";
 import { OpportunitiesPage } from "../pages/OpportunitiesPage";
 import { TodayPage } from "../pages/TodayPage";
@@ -11,8 +13,6 @@ import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
 
 const sections = [
-  ["projects", "Projects", "No connected projects"],
-  ["resume", "Resume", "No resume revisions"],
   ["context", "Me / Context", "No personal context configured"],
   ["settings", "Settings", "No local preferences configured"],
 ] as const;
@@ -24,6 +24,8 @@ export function App() {
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<TodayPage />} />
+            <Route path="projects" element={<ProjectsPage />} />
+            <Route path="resume" element={<ResumePage />} />
             <Route path="opportunities" element={<OpportunitiesPage />} />
             <Route path="capabilities" element={<CapabilitiesPage />} />
             <Route path="capabilities/inbox" element={<CapabilityInboxPage />} />

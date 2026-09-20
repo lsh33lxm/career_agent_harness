@@ -205,7 +205,7 @@ state with contract-first, review-gated increments.
   APPROVE with no P0/P1/P2/P3; focused 13 passed; full 403 passed, 3 skipped.
 - Real Chromium synthetic fixtures (populated and no overlay) passed 320/390/1366 px
   page-overflow checks; frontend 27 passed and production build passed.
-- `W2-UI` remains incomplete because primary views other than Today remain placeholders or lack
+- `W2-UI` remains incomplete because some remaining primary views (for example Projects) are placeholders or lack
   product read projections.
 
 # Blocked

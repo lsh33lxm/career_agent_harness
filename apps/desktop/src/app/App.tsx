@@ -4,6 +4,7 @@ import { SectionPage } from "../pages/SectionPage";
 import { OpportunitiesPage } from "../pages/OpportunitiesPage";
 import { TodayPage } from "../pages/TodayPage";
 import { CapabilitiesPage } from "../pages/CapabilitiesPage";
+import { CapabilityInboxPage } from "../pages/CapabilityInboxPage";
 import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
 
@@ -24,6 +25,7 @@ export function App() {
             <Route index element={<TodayPage />} />
             <Route path="opportunities" element={<OpportunitiesPage />} />
             <Route path="capabilities" element={<CapabilitiesPage />} />
+            <Route path="capabilities/inbox" element={<CapabilityInboxPage />} />
             {sections.map(([path, title, emptyLabel]) => (
               <Route
                 key={path}

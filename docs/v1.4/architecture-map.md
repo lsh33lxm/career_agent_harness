@@ -1,9 +1,9 @@
 # Agent Career Harness v1.4 Architecture Map
 
-**Observed repository:** integration commit `68a4046` on 2026-09-19
+**Observed repository:** integration commit `c6efb8b` on 2026-09-20
 **Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
 **Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
-**Contract version:** `v1.4-contract-0.3.0`
+**Contract version:** `v1.4-contract-0.12.0`
 
 ## Current architecture
 
@@ -80,7 +80,7 @@ Local Artifact Store and isolated session/extension/reference directories
 | Career State | PARTIAL | Opportunity/Application/Outcome skeletons only. |
 | Project Evidence | PARTIAL | Core/schema, exact reads and scope-safe scanner exist; write service/API remain. |
 | Target Market Evidence | PARTIAL | Target MarketBinding exists; canonical versioned JobRequirement is the next prerequisite. |
-| Broad Market Trend | MISSING | Deferred beyond initial vertical slice. |
+| Broad Market Trend | EXISTS | Deterministic on-read aggregation over BROAD MarketBindings; merge `c6efb8b`, zero canonical writes. |
 | Career History / Outcomes | PARTIAL | Outcome skeleton only; no history/query/provenance. |
 | Context Compiler | EXISTS | Deterministic five-asset compiler and atomic audit write/read exist; advanced compression remains deferred. |
 | Context Manifest | EXISTS | Immutable metadata-only 0005 schema and atomic service are integrated. |

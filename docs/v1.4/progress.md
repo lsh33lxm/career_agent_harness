@@ -37,6 +37,7 @@
 | Capability inbox review | DONE | 2026-09-20 | `54e2c0d` merged as `3db621d`; contract `0.9.0` + D-019; USER-only acceptance through new graph releases; full 367 passed. |
 | Incremental project rescan | DONE | 2026-09-20 | `6b345ff`, `cc8cb43` merged as `693619c`; contract `0.10.0` + D-020; full 371 passed. |
 | Interview records | DONE | 2026-09-20 | `834b1fb` merged as `8c44620`; contract `0.11.0` + D-021; additive 0013; full 381 passed. |
+| Broad Market Trend | DONE | 2026-09-20 | `f7cb3c6` merged as `c6efb8b`; contract `0.12.0` + D-022; independent review APPROVE with no P0/P1/P2; full 391 passed, 3 skipped; Ruff passed. |
 | Resume truth core | DONE | 2026-09-20 | `c6bfe66` merged as `df5f4d2`; additive 0011, exact reviewed patches and immutable content-hashed revisions. |
 | Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
 | Application/Outcome contract | DONE | 2026-09-20 | `d61af6c`; contract `0.7.0`, exact submission refs, user authority and no-ATS boundary. |
@@ -133,6 +134,10 @@
   ResumeBase, ResumeRevision, latest/exact Application and per-Application Outcome history. No
   Application mutation route or write service is wired into the API. API regression passed `11`;
   full integration passed `334 passed, 3 skipped`; changed-file Ruff/format and diff checks passed.
+- Broad Market Trend: `f7cb3c6` merged as `c6efb8b`; the derived read model aggregates only BROAD
+  MarketBindings by capability, returns exact binding/evidence refs and the input binding revision
+  set, and performs zero canonical writes. Independent review returned APPROVE with no P0/P1/P2;
+  full integration passed `391 passed, 3 skipped`, and Ruff passed.
 
 ## Recorded follow-ups (non-blocking)
 
@@ -164,14 +169,24 @@
   source exists, so that total-order dimension is dormant until those entities land (review P2).
 - TodayService reads pending reviews via raw read-only SELECTs; promote them to typed repository
   reads when the corresponding review list APIs exist (review P3).
+- `MarketTrendService` uses a direct read-only SELECT; add
+  `CapabilityRepository.list_broad_market_bindings()` only when another consumer justifies it
+  (Broad Market Trend review P3).
+- `capability_market_binding` has no DB-level immutable trigger; add revision/immutability semantics
+  before introducing any in-place update path (Broad Market Trend review P3).
+- `BroadMarketTrend.trend_version` may be narrowed from `str` to
+  `Literal["broad-market-trend-v1"]` in a future contract-compatible hardening pass (review P3).
+- The zero-write service test compares all table row counts before and after reads; stronger SQL
+  write interception is optional defense in depth (Broad Market Trend review P3).
 
 ## Latest handoff verification
 
-- Backend full suite: `334 passed, 3 skipped`; skips are Windows symlink privilege limitations.
-- Migration focus: Alembic head `0012_application_outcome`; `49 passed`.
-- Ruff lint: passed with cache-write permission warnings only.
+- Backend full suite: `391 passed, 3 skipped`; skips are Windows symlink privilege limitations.
+- Alembic head remains `0013_interview`; Broad Market Trend required no migration.
+- Ruff lint: passed.
 - Ruff format check: baseline failure, 57 files would be reformatted and 97 were already formatted;
   no broad formatting change was made during handoff.
-- Frontend: `16 passed`; `tsc -b && vite build` passed.
+- Frontend was not re-run for the backend-only Broad Market Trend slice; the prior verified Today UI
+  baseline remains `22 passed` with `tsc -b && vite build` passed.
 - Browser responsive and Tauri/Rust checks were not re-run during handoff; prior results remain in
   the integration log and handoff file.

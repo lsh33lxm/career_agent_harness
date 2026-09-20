@@ -46,10 +46,10 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 
 ## P1 and P2 status
 
-Today dynamic queue, Capability Inbox review/UI, broad market trends, incremental scanning and
-optional Claude/Codex CLI adapters are P1 and are not implemented. The Core-owned Today read model
-contract is the next READY design slice; a coherent P0 end-to-end acceptance fixture remains
-required before the P0 vertical loop can be declared stage-complete.
+Today dynamic queue and UI adapter, Capability Inbox review, broad market trends and incremental
+scanning are implemented. Capability Inbox UI, Capability Graph visualization and optional
+Claude/Codex CLI adapters remain P1. The P0 end-to-end acceptance fixture is integrated; the next
+READY slice must be selected from the remaining dependency graph and receive a contract freeze.
 
 L3 executor/worktree automation, advanced graph versioning and outcome-driven recommendation are
 P2 and remain deferred.

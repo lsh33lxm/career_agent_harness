@@ -1,20 +1,20 @@
 # Current Phase
 
-PRD v1.4 Wave 1 and the implemented Wave 2 Core slices are integrated through Application/Outcome
-persistence and authenticated career-history reads. The desktop has a responsive Today composition
-over typed fallback data; a Core-owned Today read model is not yet frozen or implemented.
+PRD v1.4 Wave 1, the implemented Wave 2 Core slices and the completed P1 read/review slices are
+integrated through Broad Market Trend. The desktop Today page consumes the Core-owned deterministic
+read model; Capability Inbox review, incremental rescan and Interview records are also integrated.
 
 # Current Goal
 
 Complete the PRD v1.4 stage rather than any single milestone: prove the P0 career/capability/L1
-enhancement slices end to end, implement the listed P1 capabilities, validate section 29
-pluggability and close the four section 32 feedback loops. During this handoff, do not implement a
-new feature; transfer the verified integration state to Kimi.
+enhancement slices end to end, implement the remaining P1 capabilities, validate section 29
+pluggability and close the four section 32 feedback loops. Continue from the verified integration
+state with contract-first, review-gated increments.
 
 # Last Verified Commit
 
-`8c44620` - `merge: integrate interview records and lifecycle` (contract `0.11.0`; full suite
-381 passed, 3 skipped)
+`c6efb8b` - `merge: integrate broad market trend read model` (contract `0.12.0`; full suite
+391 passed, 3 skipped; Ruff passed)
 
 # Completed
 
@@ -193,8 +193,11 @@ new feature; transfer the verified integration state to Kimi.
 - Interview records are integrated (`8c44620`, contract `0.11.0`): revisioned interviews pinned to
   exact Application revisions with explicit schedule/complete/cancel commands; interviews never
   create or imply Outcomes.
-- `W2-UI` remains incomplete because Today uses typed fallback and other primary views remain
-  placeholders or lack product read projections.
+- Broad Market Trend is integrated (`c6efb8b`, implementation `f7cb3c6`, contract `0.12.0`, D-022):
+  deterministic on-read aggregation over BROAD MarketBindings with exact binding/evidence refs and
+  zero canonical writes. Independent review approved it with no P0/P1/P2.
+- `W2-UI` remains incomplete because primary views other than Today remain placeholders or lack
+  product read projections.
 
 # Blocked
 
@@ -209,13 +212,12 @@ new feature; transfer the verified integration state to Kimi.
 
 # Next Safe Tasks
 
-1. Freeze a Core-owned Today read model and Suggested Priority recomputation contract before
-   replacing the typed fallback adapter.
-2. Add a coherent P0 vertical-slice integration/acceptance test across existing Core services.
-3. Implement the Today queue/read API and then connect the existing UI adapter.
-4. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
+1. Re-evaluate Capability Visualization, the L2 CLI/Coding Executor adapter boundary and the
+   smallest Career Reasoning service slice against the dependency graph; freeze the selected
+   shared contract before implementation.
+2. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.
-5. Continue awaiting user adjudication for destructive legacy cutover decisions.
+3. Continue awaiting user adjudication for destructive legacy cutover decisions.
 
 # Do Not Start Yet
 

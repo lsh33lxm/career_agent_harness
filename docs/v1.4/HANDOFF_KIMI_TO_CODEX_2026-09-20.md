@@ -9,7 +9,7 @@
 - Repository: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness`
 - Integration Worktree: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness-worktrees\integration`
 - Integration Branch: `refactor/v1.4-integration`
-- Verified Integration HEAD at handoff: `8c44620` (`merge: integrate interview records and lifecycle`)
+- Verified Integration HEAD after closeout: `c6efb8b` (`merge: integrate broad market trend read model`)
 - Main HEAD: `63ca32f` (unchanged; do not merge or push without explicit approval)
 - Handoff ID: `ACH-V14-KIMI-CODEX-2026-09-20`
 - Prior handoff: `docs/v1.4/HANDOFF_CODEX_TO_KIMI_2026-09-20.md` (superseded by this file)
@@ -18,8 +18,8 @@ The Goal remains ACTIVE. A completed milestone is not the complete PRD v1.4 stag
 
 ## B. Git State
 
-Integration was clean at `f0cf91d` when this handoff was written (`git status --short --branch`
-returned only the branch line). All feature branches are merged into integration; no stale WIP.
+Integration was clean at `c6efb8b` when Codex resumed this handoff (`git status --short --branch`
+returned only the branch line). Broad Market Trend is merged; no feature is in flight.
 
 New worktrees/branches added during this Kimi session (all merged unless noted):
 
@@ -40,7 +40,8 @@ never clean it incidentally.
 
 Verified during this session with the root `.venv`:
 
-- Backend full: `355 passed, 3 skipped` (3 known Windows symlink privilege skips).
+- Backend full after Broad Market Trend merge: `391 passed, 3 skipped` (3 known Windows symlink
+  privilege skips).
 - Ruff lint: PASS. `git diff --check`: PASS.
 - Repo-wide `ruff format --check` has a KNOWN pre-existing baseline failure (~40-57 files,
   line-ending churn); only check files you touched.
@@ -84,7 +85,7 @@ decision is D-018. An earlier Kimi commit briefly misnumbered it; fixed in `196a
 
 ## E. Contracts
 
-`docs/v1.4/contracts.md` is `v1.4-contract-0.10.0`. Frozen sections include: Evidence/Fact
+`docs/v1.4/contracts.md` is `v1.4-contract-0.12.0`. Frozen sections include: Evidence/Fact
 authority, claim review + Fact promotion, Job/Requirement, Opportunity/Priority, Match/Gap
 persistence+resolver+replay, Capability graph/overlay, Capability inbox review (`0.9.0`), Project
 evidence/enhancement, incremental project rescan (`0.10.0`), Context manifest, Resume write path,
@@ -92,14 +93,13 @@ Application/Outcome, and the Today read model.
 
 Do not define competing representations. Missing fields require a CONTRACT CHANGE REQUEST.
 
-## F. In Flight At Handoff
+## F. Completed After Handoff
 
-- `kimi/v14-broad-market-trend` (worktree `broad-market-trend`, base `d710b0c`): Broad Market
-  Trend derived read model per contract `0.12.0` + D-022; read-only, no migration. Prompt:
-  `docs/v1.4/agents/broad-market-trend.md`. If still running, wait for its
-  `feat: add broad market trend read model` commit, then review (derived read model, never an
-  authority, deterministic, zero writes), merge with `--no-ff`, run the full suite and update the
-  status docs.
+- `kimi/v14-broad-market-trend` completed as `f7cb3c6` and merged into integration as `c6efb8b`.
+  Contract `0.12.0` + D-022 remain unchanged: the deterministic derived read model aggregates
+  BROAD MarketBindings on read, records exact binding/evidence refs and performs zero canonical
+  writes. Independent review returned APPROVE with no P0/P1/P2. Full verification passed
+  `391 passed, 3 skipped`; Ruff passed.
 
 `kimi/v14-interview-core` completed: reviewed (APPROVE, no P0/P1/P2), merged as `8c44620`,
 verified at `381 passed, 3 skipped` with migration rehearsal `0012→0013→0012→0013` passed.
@@ -124,16 +124,16 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
 - Completed enhancement tasks do not orchestrate rescan/new Evidence/promotion.
 - Today: deadline/interview ordering dimension is dormant (no data source yet); pending-review
   reads use raw SELECTs that should become typed repository reads.
+- Broad Market Trend P3: consider a repository list read, DB-level MarketBinding immutability if an
+  update path appears, a Literal trend version and stronger write interception. None blocks the
+  next workstream.
 
 ## H. Next READY Work
 
-1. Implement the incremental project rescan per contract `0.10.0` + D-020 (reuses the anchored
-   readers; freshness changes are explicit commands with typed events; accepted evidence content
-   is never mutated).
-2. Remaining P1 items per the previous handoff, in rough priority: Broad Market Trend aggregation,
-   Interview workflow, Capability graph visualization, CLI executor adapters. Each needs its own
-   contract freeze + scoped prompt first.
-3. The four long-term feedback loops (PRD section 32) and section 29 pluggability checks remain
+1. Re-evaluate the remaining P1 work: Capability graph visualization and optional CLI executor
+   adapters, plus the smallest serviceable Career Reasoning slice. Freeze the chosen contract and
+   record a decision before implementation.
+2. The four long-term feedback loops (PRD section 32) and section 29 pluggability checks remain
    open; Today read model closes only the "next action" projection, not Career Reasoning.
 
 ## I. Safety Boundaries (unchanged)

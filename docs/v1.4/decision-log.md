@@ -508,3 +508,13 @@ an additional queue. Exact refs explain both selected times and exclusion of ter
 
 **Impact:** Narrow Today typed-input/policy/service changes plus focused tests. No migration,
 frontend business logic, real calendar operation or new authority. Other stages retain prior behavior.
+
+### D-024 review amendment (`0.14.1`)
+
+Independent review reproduced a P2: 12:00+08:00 is stored by SQLite as naive 12:00,
+then Today incorrectly treats it as 12:00Z and can select the wrong Interview.
+The exact generic revision retains the original ISO timestamp. Recover only SCHEDULED times for
+Today through an additive typed repository read, validate typed/audit agreement and fail loud on
+missing/naive/corrupt provenance. Keep general Interview get/list/write behavior unchanged here:
+global normalization could alter legacy transition idempotency hashes and exceeds this read slice.
+No data migration, timezone assumption or mutation is authorized by this amendment.

@@ -1,7 +1,7 @@
 # Scoped Agent Task: Today Interview Schedule Inputs
 
 ## Role / Goal
-Implement W2-TODAY-INTERVIEW only, under frozen contract `v1.4-contract-0.14.0` / D-024.
+Implement W2-TODAY-INTERVIEW only, under frozen contract `v1.4-contract-0.14.1` / D-024.
 Fill the missing canonical schedule dimension of existing Today interview-stage items.
 
 ## Base / Branch / Worktree
@@ -19,6 +19,7 @@ The user's v1.4 continuation authorization supersedes the old AGENTS P0F phase r
 ## Owned paths
 - backend/career_harness/core/today/ (narrow typed-input/policy/export changes only)
 - backend/career_harness/services/today_service.py
+- backend/career_harness/db/interview_repository.py (add exact UTC time read only; existing get/list semantics unchanged)
 - tests/unit/test_today_policy.py
 - tests/integration/test_today_service.py
 - tests/integration/test_today_api.py
@@ -47,3 +48,12 @@ completed suppression, exact historical Application pins, wrong/dangling refs an
 API regression must expose the exact selected refs/time through authenticated GET /today.
 Self-review, explicitly stage owned files and commit a focused feature on your branch. Never merge
 or push. Return SHA, files, commands/results, residual limitations and any contract request.
+
+## Review fix scope (P2, 0.14.1)
+Original implementation `0b0fa6b` is APPROVE WITH FIXES, not mergeable yet.
+Add a typed exact scheduled-time repository read validating same-revision generic audit against
+Interview typed ID/revision/Application pin/status and original wall-clock timestamp. Parse ISO
+with explicit timezone and return UTC. Missing/naive/malformed/mismatched data fails loud. Today
+calls it only for SCHEDULED records, preserving terminal exclusion/audit. Do not normalize general
+Interview writes/reads or alter old idempotency payloads. Add actual non-UTC service->SQLite->Today
+ordering test plus damaged/missing/naive audit tests and assure the path stays SELECT-only.

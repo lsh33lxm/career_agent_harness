@@ -179,7 +179,7 @@ state with contract-first, review-gated increments.
 
 # In Progress
 
-- ACTIVE: W2-TODAY-INTERVIEW, contract `0.14.0` / D-024 frozen; enrich the existing
+- ACTIVE: W2-TODAY-INTERVIEW, contract `0.14.1` / D-024 frozen; enrich the existing
   interview-stage Today item from exact canonical Interview schedules, read-only.
 
 - Codex-to-Kimi engineering handoff complete; Today read model contract `0.8.0` is frozen and the

@@ -3,7 +3,7 @@
 **Observed repository:** integration commit `62f1ce8` on 2026-09-20
 **Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
 **Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
-**Contract version:** `v1.4-contract-0.14.0` (Today Interview inputs frozen; implementation in flight)
+**Contract version:** `v1.4-contract-0.14.1` (Today Interview inputs frozen; implementation in flight)
 
 ## Integrated capability workspace (2026-09-20)
 

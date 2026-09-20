@@ -89,7 +89,7 @@ decision is D-018. An earlier Kimi commit briefly misnumbered it; fixed in `196a
 
 ## E. Contracts
 
-`docs/v1.4/contracts.md` is `v1.4-contract-0.14.0` (Today Interview inputs, D-024); Capability Workspace
+`docs/v1.4/contracts.md` is `v1.4-contract-0.14.1` (Today Interview inputs, D-024); Capability Workspace
 `0.13.0` / D-023 is complete. Frozen sections include: Evidence/Fact
 authority, claim review + Fact promotion, Job/Requirement, Opportunity/Priority, Match/Gap
 persistence+resolver+replay, Capability graph/overlay, Capability inbox review (`0.9.0`), Project
@@ -140,7 +140,7 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
 
 ## H. Next READY Work
 
-1. ACTIVE: W2-TODAY-INTERVIEW. Contract `0.14.0` / D-024 is frozen after Capability
+1. ACTIVE: W2-TODAY-INTERVIEW. Contract `0.14.1` / D-024 is frozen after Capability
    Visualization closeout `a77ca2c`; implement/review exact canonical schedule inputs for
    existing interview-stage Today items in scoped branch `codex/v14-today-interview`.
 2. The four long-term feedback loops (PRD section 32) and section 29 pluggability checks remain

@@ -1,9 +1,10 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.14.0`
+**Version:** `v1.4-contract-0.14.1`
 **Status:** FROZEN FOR TODAY INTERVIEW SCHEDULE INPUTS
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
+`0.14.1` adds the exact schedule-time recovery boundary below; no data rewrite.
 `0.14.0` retains all `0.13.0` guarantees and adds exact Today Interview schedule inputs below.
 `0.13.0` retains all `0.12.0` guarantees and adds the Capability Workspace read contract below.
 `0.12.0` added the Broad Market Trend contract. Earlier
@@ -431,6 +432,16 @@ state and never changes UserPriority.
 - Schedule selection must be deterministic under repository return-order changes. Pure Today input
   types must reject mismatched Interview/Application identity and duplicate/conflicting Interview
   revisions; runtime assembly never accepts an unprovenanced bare timestamp as a canonical schedule.
+- SQLite's existing Interview datetime column may have lost the original offset. For each
+  SCHEDULED Interview used by Today, a typed repository time read must resolve the exact same
+  immutable generic entity revision, verify Interview identity/revision/Application pin/status and
+  the original wall-clock value against the typed row, and recover UTC from its offset-aware ISO
+  `scheduled_at`. Missing, malformed, naive or mismatched audit data fails loud; never infer the
+  user's timezone or rewrite old data. That exact Interview revision is already in the input set.
+- Terminal Interview timestamps do not participate in schedule selection; their exact revisions
+  and Application pins still participate in exclusion audit. This repair does not change existing
+  general Interview reads/writes or their idempotency payloads. A broader datetime storage
+  normalization remains separate work requiring historical replay compatibility tests.
 - No new endpoint, migration, persistence, status transition or frontend ranking is introduced.
   Existing policy version/order remain valid: this fills the previously missing schedule dimension.
 

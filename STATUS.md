@@ -13,8 +13,8 @@ new feature; transfer the verified integration state to Kimi.
 
 # Last Verified Commit
 
-`693619c` - `merge: integrate incremental project rescan` (contract `0.10.0`; full suite
-371 passed, 3 skipped)
+`8c44620` - `merge: integrate interview records and lifecycle` (contract `0.11.0`; full suite
+381 passed, 3 skipped)
 
 # Completed
 
@@ -187,6 +187,12 @@ new feature; transfer the verified integration state to Kimi.
   appears in the production path, and error/offline states are explicit.
 - Capability inbox review is integrated (`3db621d`, contract `0.9.0`): USER-only acceptance enters
   the official ontology only through a new graph release or an explicit merge target.
+- Incremental project rescan is integrated (`693619c`, contract `0.10.0`): new immutable manifest
+  revisions with auditable diffs, and explicit staleness commands pinned to the motivating
+  manifest; accepted evidence content is never rewritten.
+- Interview records are integrated (`8c44620`, contract `0.11.0`): revisioned interviews pinned to
+  exact Application revisions with explicit schedule/complete/cancel commands; interviews never
+  create or imply Outcomes.
 - `W2-UI` remains incomplete because Today uses typed fallback and other primary views remain
   placeholders or lack product read projections.
 

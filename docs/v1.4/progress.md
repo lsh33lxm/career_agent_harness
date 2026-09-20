@@ -36,6 +36,7 @@
 | Today UI adapter | DONE | 2026-09-20 | `363e9ea` merged as `c986936`; Today page renders the Core projection; Vitest 22 passed, build passed. |
 | Capability inbox review | DONE | 2026-09-20 | `54e2c0d` merged as `3db621d`; contract `0.9.0` + D-019; USER-only acceptance through new graph releases; full 367 passed. |
 | Incremental project rescan | DONE | 2026-09-20 | `6b345ff`, `cc8cb43` merged as `693619c`; contract `0.10.0` + D-020; full 371 passed. |
+| Interview records | DONE | 2026-09-20 | `834b1fb` merged as `8c44620`; contract `0.11.0` + D-021; additive 0013; full 381 passed. |
 | Resume truth core | DONE | 2026-09-20 | `c6bfe66` merged as `df5f4d2`; additive 0011, exact reviewed patches and immutable content-hashed revisions. |
 | Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
 | Application/Outcome contract | DONE | 2026-09-20 | `d61af6c`; contract `0.7.0`, exact submission refs, user authority and no-ATS boundary. |

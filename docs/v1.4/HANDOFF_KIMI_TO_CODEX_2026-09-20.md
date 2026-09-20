@@ -9,7 +9,7 @@
 - Repository: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness`
 - Integration Worktree: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness-worktrees\integration`
 - Integration Branch: `refactor/v1.4-integration`
-- Verified Integration HEAD at handoff: `693619c` (`merge: integrate incremental project rescan`)
+- Verified Integration HEAD at handoff: `8c44620` (`merge: integrate interview records and lifecycle`)
 - Main HEAD: `63ca32f` (unchanged; do not merge or push without explicit approval)
 - Handoff ID: `ACH-V14-KIMI-CODEX-2026-09-20`
 - Prior handoff: `docs/v1.4/HANDOFF_CODEX_TO_KIMI_2026-09-20.md` (superseded by this file)
@@ -94,12 +94,8 @@ Do not define competing representations. Missing fields require a CONTRACT CHANG
 
 ## F. In Flight At Handoff
 
-- `kimi/v14-interview-core` (worktree `interview-core`, base `b2747c3`): Interview records per
-  contract `0.11.0` + D-021, additive migration 0013. Prompt:
-  `docs/v1.4/agents/interview-core.md`. If still running, wait for its
-  `feat: add interview records and lifecycle` commit, then review (Interview never creates an
-  Outcome, explicit lifecycle commands, dangling Application refs fail loud), merge with
-  `--no-ff`, run the full suite and update the status docs.
+None. `kimi/v14-interview-core` completed: reviewed (APPROVE, no P0/P1/P2), merged as `8c44620`,
+verified at `381 passed, 3 skipped` with migration rehearsal `0012→0013→0012→0013` passed.
 
 Completed in this session: `kimi/v14-today-ui-adapter` merged as `c986936`; `kimi/v14-capability-inbox-review` merged as `3db621d`; `kimi/v14-incremental-rescan` merged as `693619c` (Lead-implemented after the assigned coder stalled; reviewed APPROVE WITH FIXES, fixed, verified at `371 passed, 3 skipped`).
 

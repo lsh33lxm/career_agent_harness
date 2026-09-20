@@ -398,3 +398,24 @@ ontology and keeps every acceptance auditable.
 
 **Impact:** The review service must assemble the new graph version in one transaction (D-007
 ordering) and must never touch personal overlays, bindings, Match results or priorities.
+
+## D-020 - Incremental rescan records diffs; staleness changes are explicit commands
+
+**Decision:** ACCEPTED in contract `0.10.0` (docs-only freeze; implementation in a later workstream).
+
+**Context:** The scanner currently performs full scans per scope. Rescans after enhancement work
+must refresh Project Evidence freshness without silently rewriting accepted evidence.
+
+**Alternatives:** Auto-mark evidence stale inside the scan; full-rescan only (no diff); rewrite
+evidence rows in place.
+
+**Chosen:** A rescan produces a new manifest revision plus an auditable added/changed/removed diff
+record. Freshness transitions (`CURRENT` -> `STALE`) happen only through an explicit command with
+a typed event; accepted evidence content is never mutated.
+
+**Reason:** Keeps evidence immutable and auditable while letting the enhancement loop detect when
+previously accepted evidence no longer matches the project.
+
+**Impact:** The rescan service reuses the existing anchored readers and scope validation unchanged.
+Any freshness-change command must list affected evidence ids and the manifest revision that
+motivated the change.

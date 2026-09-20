@@ -1,13 +1,14 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.9.0`
-**Status:** FROZEN FOR CAPABILITY INBOX REVIEW
+**Version:** `v1.4-contract-0.10.0`
+**Status:** FROZEN FOR INCREMENTAL PROJECT RESCAN
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.9.0` retains all `0.8.0` guarantees and adds the Capability Inbox review contract below.
-`0.8.0` added the Today read model; earlier versions added Application/Outcome (`0.7.0`), the
-Resume write path (`0.6.0`), claim review and Fact promotion (`0.5.0`) and the Match/enhancement
-contracts (`0.4.x`). This document version does not rewrite historical records.
+`0.10.0` retains all `0.9.0` guarantees and adds the incremental project rescan contract below.
+`0.9.0` added Capability inbox review; earlier versions added the Today read model (`0.8.0`),
+Application/Outcome (`0.7.0`), the Resume write path (`0.6.0`), claim review and Fact promotion
+(`0.5.0`) and the Match/enhancement contracts (`0.4.x`). This document version does not rewrite
+historical records.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -208,6 +209,18 @@ joined into one read model.
   a task never mutates Gaps, Match results, Capability state or Evidence.
 - P0 executor is `ManualExecutor`/L1 plan generation. Executor output is a candidate; tests and
   rescan create Evidence, followed by explicit promotion where required.
+
+### Incremental project rescan
+
+- A rescan runs within an exact canonical `ProjectScanScope` revision and produces a new
+  `ProjectSourceManifest` revision for the project. The scanner compares content hashes against
+  the previous manifest and records an auditable diff (added/changed/removed paths); the diff is a
+  record, not a silent mutation.
+- Existing Project Evidence is never rewritten. Entries whose source content changed mark the
+  affected evidence `STALE` only through an explicit command with a typed event; unchanged evidence
+  keeps its freshness.
+- All scanner safety invariants (deny-wins paths, no-follow, containment, platform guards) apply
+  unchanged to rescans.
 
 ## Match and capability gap
 

@@ -94,7 +94,14 @@ Do not define competing representations. Missing fields require a CONTRACT CHANG
 
 ## F. In Flight At Handoff
 
-None. `kimi/v14-interview-core` completed: reviewed (APPROVE, no P0/P1/P2), merged as `8c44620`,
+- `kimi/v14-broad-market-trend` (worktree `broad-market-trend`, base `d710b0c`): Broad Market
+  Trend derived read model per contract `0.12.0` + D-022; read-only, no migration. Prompt:
+  `docs/v1.4/agents/broad-market-trend.md`. If still running, wait for its
+  `feat: add broad market trend read model` commit, then review (derived read model, never an
+  authority, deterministic, zero writes), merge with `--no-ff`, run the full suite and update the
+  status docs.
+
+`kimi/v14-interview-core` completed: reviewed (APPROVE, no P0/P1/P2), merged as `8c44620`,
 verified at `381 passed, 3 skipped` with migration rehearsal `0012→0013→0012→0013` passed.
 
 Completed in this session: `kimi/v14-today-ui-adapter` merged as `c986936`; `kimi/v14-capability-inbox-review` merged as `3db621d`; `kimi/v14-incremental-rescan` merged as `693619c` (Lead-implemented after the assigned coder stalled; reviewed APPROVE WITH FIXES, fixed, verified at `371 passed, 3 skipped`).

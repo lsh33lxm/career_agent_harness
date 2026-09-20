@@ -165,6 +165,17 @@ def test_file_metadata_change_during_read_fails_closed(tmp_path, monkeypatch):
         inventory.sha256_file(path)
 
 
+def test_verify_detects_mtime_only_change(tmp_path):
+    source = tmp_path / "legacy"
+    source.mkdir()
+    path = source / "a"
+    path.write_bytes(b"safe")
+    manifest = build_manifest(source)
+    previous = path.stat()
+    os.utime(path, ns=(previous.st_atime_ns, previous.st_mtime_ns + 1_000_000_000))
+    assert tuple(verify_manifest(manifest)) == ("mtime_changed:a",)
+
+
 @pytest.mark.parametrize("fault", ["xml_size", "zip_size", "members", "doctype_utf16"])
 def test_workbook_metadata_is_bounded_and_rejects_dtd(tmp_path, monkeypatch, fault):
     source = tmp_path / "legacy"

@@ -20,7 +20,7 @@ from importers.agent_radar.models import (
     WorkbookMetadata,
 )
 
-IMPORTER_VERSION = "0.1.0"
+IMPORTER_VERSION = "0.1.1"
 CHUNK_SIZE = 1024 * 1024
 MAX_WORKBOOK_BYTES = 128 * 1024 * 1024
 MAX_WORKBOOK_XML_BYTES = 2 * 1024 * 1024
@@ -362,6 +362,7 @@ def verify_manifest(manifest: LegacyImportManifest) -> Iterator[str]:
             continue
         try:
             with _safe_file(source_root / relative) as handle:
+                observed_mtime = datetime.fromtimestamp(os.fstat(handle.fileno()).st_mtime, UTC)
                 digest = hashlib.sha256()
                 length = 0
                 for chunk in iter(lambda: handle.read(CHUNK_SIZE), b""):
@@ -371,6 +372,8 @@ def verify_manifest(manifest: LegacyImportManifest) -> Iterator[str]:
                 yield f"size_changed:{source_file.relative_path}"
             elif digest.hexdigest() != source_file.sha256:
                 yield f"hash_changed:{source_file.relative_path}"
+            elif observed_mtime != source_file.modified_at:
+                yield f"mtime_changed:{source_file.relative_path}"
         except (OSError, ValueError):
             yield f"unsafe_or_changed_source:{source_file.relative_path}"
 

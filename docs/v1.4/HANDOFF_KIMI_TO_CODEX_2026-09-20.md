@@ -93,10 +93,15 @@ Do not define competing representations. Missing fields require a CONTRACT CHANG
 
 ## F. In Flight At Handoff
 
-None. `kimi/v14-today-ui-adapter` completed after the first version of this handoff: reviewed
-(APPROVE WITH FIXES; stray nested lockfile excluded via `.gitignore` in `52c0f15`), merged as
-`c986936`, and verified (Vitest 22 passed, build passed, backend 355 passed). Integration HEAD is
-now `bc1f07e`.
+- `kimi/v14-capability-inbox-review` (worktree `capability-inbox-review`, base `5432412`):
+  candidate capability review/promote write path per contract `0.9.0` + D-019. Prompt:
+  `docs/v1.4/agents/capability-inbox-review.md`. If still running, wait for its
+  `feat: add capability inbox review flow` commit, then review (USER-only accept, no self-review,
+  released graph immutability, merge-target validation), merge with `--no-ff`, run the full suite
+  and update `STATUS.md` / `docs/v1.4/progress.md` / `docs/v1.4/integration-log.md`.
+
+Completed earlier in this session: `kimi/v14-today-ui-adapter` merged as `c986936` (Vitest 22
+passed, build passed, backend 355 passed).
 
 ## G. Recorded Follow-ups (non-blocking)
 

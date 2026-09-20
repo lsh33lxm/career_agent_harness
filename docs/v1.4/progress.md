@@ -39,7 +39,7 @@
 | Interview records | DONE | 2026-09-20 | `834b1fb` merged as `8c44620`; contract `0.11.0` + D-021; additive 0013; full 381 passed. |
 | Broad Market Trend | DONE | 2026-09-20 | `f7cb3c6` merged as `c6efb8b`; contract `0.12.0` + D-022; independent review APPROVE with no P0/P1/P2; full 391 passed, 3 skipped; Ruff passed. |
 | Capability Workspace Visualization | DONE | 2026-09-20 | Implementation `ae39eb6` + consistency fix `e076daf`, merged as `62f1ce8`; contract `0.13.0`, D-023. Recovery independent review of `f2727cf..e076daf`: APPROVE, no P0/P1/P2/P3. Focused backend 13 passed; full backend 403 passed, 3 known Windows symlink skips; frontend 27 passed; production build, full Ruff, 11 changed Python format checks and diff checks passed. |
-| Today Interview schedule inputs | IN_PROGRESS | 2026-09-20 | Contract `0.14.1` / D-024 frozen; W2-TODAY-INTERVIEW selected only after Capability Visualization closeout `a77ca2c`. |
+| Today Interview schedule inputs | DONE | 2026-09-20 | `0b0fa6b`, `ae53689`, merge `dc85365`; contract `0.14.1` / D-024; final review APPROVE (P0-P3 none); focused 62 passed; full 440 passed, 3 skipped; Ruff/7-file format passed. |
 | Resume truth core | DONE | 2026-09-20 | `c6bfe66` merged as `df5f4d2`; additive 0011, exact reviewed patches and immutable content-hashed revisions. |
 | Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
 | Application/Outcome contract | DONE | 2026-09-20 | `d61af6c`; contract `0.7.0`, exact submission refs, user authority and no-ATS boundary. |
@@ -173,8 +173,9 @@
   timestamp instead (review P3).
 - Typed fact revision chains have no continuity check on the read path; unreachable via the
   service and guarded by the generic expected-revision check (review P3, defense in depth).
-- Today still lacks canonical Interview schedule wiring despite Interview records now existing;
-  this is dependency-ready P1 follow-up. A canonical deadline source remains absent (review P2).
+- Today Interview schedule wiring is complete in `dc85365`. A canonical deadline source remains
+  absent. General Interview reads retain historical SQLite wall-clock behavior; Today alone uses
+  exact offset-aware audit recovery. Global datetime normalization requires separate replay review.
 - TodayService reads pending reviews via raw read-only SELECTs; promote them to typed repository
   reads when the corresponding review list APIs exist (review P3).
 - `MarketTrendService` uses a direct read-only SELECT; add
@@ -189,7 +190,7 @@
 
 ## Latest handoff verification
 
-- Backend full suite at `62f1ce8`: `403 passed, 3 skipped`; skips are Windows symlink privilege limitations.
+- Backend full suite at `dc85365`: `440 passed, 3 skipped`; skips are Windows symlink privilege limitations.
 - Alembic head remains `0013_interview`; Capability Workspace required no migration.
 - Ruff lint: passed.
 - Ruff format check: baseline failure, 57 files would be reformatted and 97 were already formatted;
@@ -197,4 +198,4 @@
 - Frontend: `27 passed`; `tsc -b && vite build` passed.
 - Chromium populated/no-overlay synthetic fixtures: 320/390/1366 px, no horizontal page overflow.
   This is browser fixture validation, not a real-data or Tauri end-to-end test.
-- Changed Python format check: 11 files passed. Tauri/Rust was not re-run (no shell changes).
+- Latest changed Python format check: 7 files passed. Tauri/Rust was not re-run (no shell changes).

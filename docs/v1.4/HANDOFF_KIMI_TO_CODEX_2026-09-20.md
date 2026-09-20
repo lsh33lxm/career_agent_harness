@@ -9,7 +9,7 @@
 - Repository: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness`
 - Integration Worktree: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness-worktrees\integration`
 - Integration Branch: `refactor/v1.4-integration`
-- Verified feature integration HEAD after recovery: `62f1ce8` (`merge: integrate capability workspace visualization`)
+- Verified feature integration HEAD after recovery continuation: `dc85365` (`merge: integrate exact Today interview schedules`)
 - Main HEAD: `63ca32f` (unchanged; do not merge or push without explicit approval)
 - Handoff ID: `ACH-V14-KIMI-CODEX-2026-09-20`
 - Prior handoff: `docs/v1.4/HANDOFF_CODEX_TO_KIMI_2026-09-20.md` (superseded by this file)
@@ -42,7 +42,7 @@ never clean it incidentally.
 
 Verified during this session with the root `.venv`:
 
-- Backend full after Capability Visualization merge: `403 passed, 3 skipped` (3 known Windows symlink
+- Backend full after Today Interview merge: `440 passed, 3 skipped` (3 known Windows symlink
   privilege skips).
 - Ruff lint: PASS. `git diff --check`: PASS.
 - Repo-wide `ruff format --check` has a KNOWN pre-existing baseline failure (~40-57 files,
@@ -132,7 +132,7 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
 - Fact reads lack revision-chain continuity defense.
 - ProjectSourceManifest does not pin an exact Project revision.
 - Completed enhancement tasks do not orchestrate rescan/new Evidence/promotion.
-- Today: Interview records exist but schedule wiring is missing; deadline data is absent. Pending-review
+- Today: Interview schedules are integrated; deadline data is absent. Pending-review
   reads use raw SELECTs that should become typed repository reads.
 - Broad Market Trend P3: consider a repository list read, DB-level MarketBinding immutability if an
   update path appears, a Literal trend version and stronger write interception. None blocks the
@@ -140,9 +140,12 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
 
 ## H. Next READY Work
 
-1. ACTIVE: W2-TODAY-INTERVIEW. Contract `0.14.1` / D-024 is frozen after Capability
-   Visualization closeout `a77ca2c`; implement/review exact canonical schedule inputs for
-   existing interview-stage Today items in scoped branch `codex/v14-today-interview`.
+1. W2-TODAY-INTERVIEW is DONE: `0b0fa6b` + timezone fix `ae53689`, merge `dc85365`;
+   contract `0.14.1` / D-024, final review APPROVE, full 440 passed, 3 skipped.
+   Next READY: W2-L2-ANALYSIS; explicit-context CLI analysis contract and offline tests first.
+   Local Codex 0.155.1 / Claude 2.1.214 are installed and login checks succeeded; no inference run.
+   Claude tools-disabled mode is available; Codex read-only does not prove no-shell/scope-read
+   isolation. Do not use unsafe file reads to extract context from scanner hash manifests.
 2. The four long-term feedback loops (PRD section 32) and section 29 pluggability checks remain
    open; Today read model closes only the "next action" projection, not Career Reasoning.
 

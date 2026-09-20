@@ -1,9 +1,16 @@
 # Agent Career Harness v1.4 Architecture Map
 
-**Observed repository:** integration commit `62f1ce8` on 2026-09-20
+**Observed repository:** integration commit `dc85365` on 2026-09-20
 **Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
 **Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
-**Contract version:** `v1.4-contract-0.14.1` (Today Interview inputs frozen; implementation in flight)
+**Contract version:** `v1.4-contract-0.14.1` (Today Interview inputs integrated)
+
+## Integrated Today Interview inputs (2026-09-20)
+
+Merge `dc85365` adds exact canonical schedule inputs to existing interview-stage Today items.
+The typed repository recovers original offset-aware instants from exact immutable audit; missing
+or inconsistent audit fails loud. General Interview reads/writes and idempotency remain unchanged.
+No migration or canonical writes; full 440 passed, 3 skipped; final review APPROVE.
 
 ## Integrated capability workspace (2026-09-20)
 

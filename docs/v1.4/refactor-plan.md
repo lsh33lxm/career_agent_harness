@@ -44,8 +44,9 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-CAREER-READ | Authenticated Resume/Application/Outcome reads | W2-RESUME, W2-APP | Lead | integration | DONE | Medium | Exact/latest read-only projections pass auth, 404 and no-write-route tests. |
 | W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | DONE | Medium | Authenticated UI uses Core-owned IDs, preserves priority separation and passes responsive validation. |
 | W2-CAP-VIZ | Candidate-scoped Capability Workspace read API and visualization | W1-CAP-READ, Broad Market Trend | Subagent | capability-visualization | DONE | Medium | Merge `62f1ce8`; final recovery review APPROVE; full 403 passed, 3 skipped; frontend 27 passed/build and browser fixture checks passed. |
+| W2-TODAY-INTERVIEW | Exact Interview schedule inputs for existing Today interview-stage items | Today read model, Interview records | Subagent | today-interview | DONE | Medium | Merge `dc85365`; contract `0.14.1` / D-024; review APPROVE; full 440 passed, 3 skipped. |
 
-| W2-TODAY-INTERVIEW | Exact Interview schedule inputs for existing Today interview-stage items | Today read model, Interview records | Subagent | today-interview | IN_PROGRESS | Medium | Contract `0.14.1` / D-024; exact schedule provenance, deterministic selection and zero writes tested. |
+| W2-L2-ANALYSIS | Explicit-context, tools-disabled local CLI analysis adapter | Enhancement L1, exact project scope/manifest reads | Lead | integration (contract preparation) | READY | Medium | Offline transport tests and review; real inference requires exact context and budget authorization. |
 
 ## P1 and P2 status
 

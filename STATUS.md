@@ -13,8 +13,8 @@ state with contract-first, review-gated increments.
 
 # Last Verified Commit
 
-`62f1ce8` - `merge: integrate capability workspace visualization` (contract `0.13.0`; full suite
-403 passed, 3 skipped; Ruff passed; frontend 27 passed and production build passed)
+`dc85365` - `merge: integrate exact Today interview schedules` (contract `0.14.1`; full suite
+440 passed, 3 skipped; Ruff and 7-file format passed; prior unchanged frontend 27 passed/build)
 
 # Completed
 
@@ -179,8 +179,10 @@ state with contract-first, review-gated increments.
 
 # In Progress
 
-- ACTIVE: W2-TODAY-INTERVIEW, contract `0.14.1` / D-024 frozen; enrich the existing
-  interview-stage Today item from exact canonical Interview schedules, read-only.
+- W2-TODAY-INTERVIEW integrated as `dc85365` (`0b0fa6b`, `ae53689`), contract
+  `0.14.1` / D-024. Existing interview-stage Today items now select canonical schedules with
+  exact historical refs; UTC is recovered from exact immutable audit without changing replay.
+  Final review APPROVE, no P0/P1/P2/P3; focused 62 passed; full 440 passed, 3 skipped.
 
 - Codex-to-Kimi engineering handoff complete; Today read model contract `0.8.0` is frozen and the
   P0 vertical slice proof is integrated (`f132709`).
@@ -221,7 +223,8 @@ state with contract-first, review-gated increments.
 
 # Next Safe Tasks
 
-1. Complete W2-TODAY-INTERVIEW implementation, independent review, integration and regression.
+1. READY: constrained L2 CLI analysis adapter. Freeze explicit context/permission/result contract;
+   implement and review offline tests before any real provider inference.
 2. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.
 3. Continue awaiting user adjudication for destructive legacy cutover decisions.

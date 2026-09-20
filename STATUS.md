@@ -1,31 +1,34 @@
-# Current Phase
+# Agent Career Harness 当前状态
 
-Overnight A-H goal ACTIVE (2026-09-21). Guangfu visual baseline integrated at babf9c0;
-legacy safe-read/artifact-integrity safeguards at 875bedd; History read projection at 76fe21d.
-Shared contract 0.17.0 / D-027 freezes reversible archive/rehearsal, not canonical cutover.
-Full backend at babf9c0: 573 passed, 5 environment skips; Ruff passed. Frontend at 76fe21d:
-45 passed/build. Fresh legacy inventory: 2426 files / 377785991 bytes, unchanged metadata,
-zero hash failures. Archive implementation is under review; real archive/import not yet run.
-Current ledger: docs/v1.5/overnight-progress.md. Older counts below are historical.
+更新时间：2026-09-21；分支：`refactor/v1.4-integration`；最后功能 HEAD：`2e279ba`（文档收口后会产生新文档提交）。
 
-PRD v1.4 Wave 1, the implemented Wave 2 Core slices and the completed P1 read/review slices are
-integrated through Capability Workspace Visualization. The desktop Today page consumes the Core-owned deterministic
-read model; Capability Inbox review, incremental rescan and Interview records are also integrated.
+## 当前结论
 
-# Current Goal
+- 观复视觉基线：**DONE**（`babf9c0`，前端 56 tests/build，84 组浏览器检查历史证据）。
+- Career Core 与 Capability Visualization：**DONE**，真实读模型和用户 authority 边界保持。
+- Legacy inventory/archive/rehearsal/backup restore：**DONE for reversible subset**；2,426 files、2,205 preserved、17 deferred，未执行 canonical cutover。
+- Evidence provenance、History、Feishu offline projection：**DONE / offline only**。
+- 真实 legacy Job/Interview/Capability authority mapping：**BLOCKED / NEEDS USER AUTHORITY**。
+- Feishu external write：**BLOCKED_EXTERNAL_ACTION**（credentials、destination permission、sync contract）。
 
-Complete the PRD v1.4 stage rather than any single milestone: prove the P0 career/capability/L1
-enhancement slices end to end, implement the remaining P1 capabilities, validate section 29
-pluggability and close the four section 32 feedback loops. Continue from the verified integration
-state with contract-first, review-gated increments.
+## 最新验证
 
-# Last Verified Commit
+- Backend：`602 passed, 5 skipped`；跳过为 Windows symlink privilege/availability。
+- Frontend：`56 passed`，`npm run build` 通过。
+- Focused migration/evidence/Feishu：`27 passed`；Ruff 与 `git diff --check` 通过。
 
-`3626994` - `merge: integrate reviewed offline L1 acceptance` (contract remains `0.16.0`;
-full suite 552 passed, 3 skipped; Ruff and changed-file format passed; frontend 39 passed/build
-verified at unchanged production code `6ba054d`)
+## 下一阶段与授权依赖
 
-# Completed
+1. Projects 与 Resume 窄只读客户端已合入；下一步补真实 fixture 与 acceptance，不加写路径。
+2. 按 CANONICAL_CUTOVER_GATE 决定 source identity/authority/mapping，再实施结构化 Core 导入；当前只保存历史 evidence。
+3. 真实 rehearsal Evidence API 已验收2205条；真实职业闭环待用户数据/身份决定。L2 runner/result为下一阶段新契约。
+
+禁止 main merge、push、生产 Feishu 写入、canonical cutover、legacy 修改和破坏性迁移。
+
+详见 [v1.5 current-state PRD](docs/prd/Agent_Career_Harness_PRD_v1.5_现状与下一阶段.md) 与 [overnight ledger](docs/v1.5/overnight-progress.md)。
+
+## 历史完成记录（只作审计，不代表当前计数）
+
 
 - Confirmed the new repository path.
 - Read the authoritative PRD v1.2 in full.
@@ -185,94 +188,3 @@ verified at unchanged production code `6ba054d`)
   records fail with 404 and no Application write route/service is exposed. API regression passed
   `11`; full backend verification passed `334` tests with `3` known Windows symlink-permission
   skips.
-
-# In Progress
-
-- Section 29 item 7 offline L1 acceptance is complete: `aa08afa`, merge `3626994`;
-  independent APPROVE, P0-P3 none; focused 12 passed, full 552 passed, 3 skipped.
-  See docs/v1.4/pluggability-acceptance.md for the eight-item evidence matrix and limits.
-
-- Runtime wiring correction: the existing Today API is now injected by create_runtime_app;
-  the strengthened runtime test reproduced 404 before the fix, then runtime/Today API tests
-  passed 5/5. Independent review APPROVE, P0-P3 none (`c984efc`); included in full 551-test run.
-
-- W2-INBOX-CLIENT integrated as `6ba054d` (`6a18116`, historical-query fix `26c27f2`),
-  contract `0.16.0` / D-026; final independent APPROVE, P0-P3 none; full 551 passed, 3 skipped.
-  Frontend 39 passed/build; real localhost API + Chromium + disposable synthetic DB verified
-  acceptance, graph publication, receipt/history and preservation of the original historical pin.
-
-- W2-L2-PREP integrated as `9101085` (`56ae9d8`, privacy fix `1fac397`), contract
-  `0.15.0` / D-025. Exact-context previews grant no execution authority. Independent final
-  review APPROVE, P0-P3 none; focused 95 passed; full 534 passed, 3 skipped. No CLI launched.
-
-- W2-TODAY-INTERVIEW integrated as `dc85365` (`0b0fa6b`, `ae53689`), contract
-  `0.14.1` / D-024. Existing interview-stage Today items now select canonical schedules with
-  exact historical refs; UTC is recovered from exact immutable audit without changing replay.
-  Final review APPROVE, no P0/P1/P2/P3; focused 62 passed; full 440 passed, 3 skipped.
-
-- Codex-to-Kimi engineering handoff complete; Today read model contract `0.8.0` is frozen and the
-  P0 vertical slice proof is integrated (`f132709`).
-- Core Today read model is integrated (`1d86b65`): deterministic projection, closed item kinds,
-  authenticated `GET /today`, zero writes.
-- The desktop Today page now renders the Core projection (`c986936`); static fallback no longer
-  appears in the production path, and error/offline states are explicit.
-- Capability inbox review is integrated (`3db621d`, contract `0.9.0`): USER-only acceptance enters
-  the official ontology only through a new graph release or an explicit merge target.
-- Incremental project rescan is integrated (`693619c`, contract `0.10.0`): new immutable manifest
-  revisions with auditable diffs, and explicit staleness commands pinned to the motivating
-  manifest; accepted evidence content is never rewritten.
-- Interview records are integrated (`8c44620`, contract `0.11.0`): revisioned interviews pinned to
-  exact Application revisions with explicit schedule/complete/cancel commands; interviews never
-  create or imply Outcomes.
-- Broad Market Trend is integrated (`c6efb8b`, implementation `f7cb3c6`, contract `0.12.0`, D-022):
-  deterministic on-read aggregation over BROAD MarketBindings with exact binding/evidence refs and
-  zero canonical writes. Independent review approved it with no P0/P1/P2.
-- Capability Workspace Visualization is integrated (`62f1ce8`, implementation `ae39eb6` +
-  `e076daf`, contract `0.13.0`, D-023): candidate-scoped read-only API and desktop view,
-  exact graph selection, separated overlay/evidence/market/proposal fields. Recovery review
-  APPROVE with no P0/P1/P2/P3; focused 13 passed; full 403 passed, 3 skipped.
-- Real Chromium synthetic fixtures (populated and no overlay) passed 320/390/1366 px
-  page-overflow checks; frontend 27 passed and production build passed.
-- `W2-UI` remains incomplete because some remaining primary views (for example Projects) are placeholders or lack
-  product read projections.
-
-# Blocked
-
-- No engineering blocker. The full PRD v1.4 stage has not passed acceptance.
-
-# Needs User Approval
-
-- All ADR-013 through ADR-016 decisions remain PROPOSED.
-- Legacy source-of-truth reconciliation and canonical SQLite cutover.
-- PRD open questions including retention, encryption, backup medium, final opaque ID
-  format, and production integration choices.
-
-# Next Safe Tasks
-
-1. Next contract preparation: remaining P1 dynamic SuggestedPriority recalculation policy or
-   bounded L2 runner/result handling. Neither is implemented by completed preview/Inbox slices.
-   Preserve user authority and exact provenance; no live inference without explicit context/limits.
-2. L2 runner/result handling remains unimplemented; offline engineering requires its own contract,
-   and real inference additionally requires selected project context, provider/model and budget.
-3. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
-   expansion; current manifests already pin exact scope revision and immutable source entries.
-4. Continue awaiting user adjudication for destructive legacy cutover decisions.
-
-# Do Not Start Yet
-
-- P2 L3 executor/worktree automation, real ATS actions, final submission, or legal/identity
-  automation.
-- Production Feishu writes or canonical legacy cutover.
-- Multi-agent runtime, plugin marketplace, or external workflow engine.
-- Large global/system toolchain installation.
-
-# Verification Commands
-
-```powershell
-git status --short --branch
-python -m pytest
-npm --prefix apps/desktop test
-npm --prefix apps/desktop run build
-cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
-npm --prefix apps/desktop exec -- tauri build --debug --no-bundle
-```

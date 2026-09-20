@@ -2,7 +2,7 @@
 
 Feature branches are integrated only after contract and test review; `main` remains unchanged.
 
-## Overnight 2026-09-21 checkpoint
+## Historical overnight checkpoint before archive integration
 
 - 7168804 -> 875bedd: safe legacy reads and artifact hash verification. Lead review plus
   independent mtime-fix review APPROVE; 30 focused passed/3 environment skips.
@@ -67,3 +67,20 @@ Feature branches are integrated only after contract and test review; `main` rema
 
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.
+
+## Final overnight checkpoint — 2026-09-21
+
+- `b13d0f3` archive/rehearsal and `f760053` evidence projection are integrated after review; `64dba1e` data baseline is an ancestor.
+- Fresh inventory: 2,426 files / 377,785,991 bytes; archive 2,205 preserved, 204 excluded, 17 deferred; rehearsal and restore hashes verified.
+- Feishu is offline-only deterministic projection; credentials and external writes remain blocked.
+- Backend full regression: 602 passed / 5 skipped; frontend: 56 passed/build; Ruff and diff checks passed.
+- Current-state PRD v1.5 is generated at `docs/prd/Agent_Career_Harness_PRD_v1.5_现状与下一阶段.md`.
+
+### Projects/Resume and final audit
+
+`05913cb` → `12315f4`: Projects metadata API (root locator excluded), exact Base/ResumeRevision clients.
+Independent review APPROVE, P0–P3 none; reviewer 12 Project + 2 Career API passed; UI 4 focused/build,
+320px synthetic visual verified. No schema or canonical writes. Full integration 602 passed/5 skipped;
+frontend 56 passed/build. `2e279ba` labels Context/Settings unavailable, replacing false zero counts;
+frontend 56/build rechecked. Ruff backend/tests/migrations/importers/logo tool and diff check passed.
+PRD independent review APPROVE; three P3 wording issues corrected (states, test scope, trend UI).

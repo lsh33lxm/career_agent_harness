@@ -40,7 +40,7 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-RESUME | Resume Base/Patch/Revision integration | W1-PROJ, W2-MATCH, W2-FACT | Subagent | resume-core | DONE | High | Exact qualified provenance, USER review and immutable content-hashed revisions tested. |
 | W2-APP-CONTRACT | Freeze Application submission and Outcome authority contract | W1-OPP, W2-RESUME | Lead | integration | DONE | High | Contract `0.7.0`; exact refs, user authority, sensitive-data and no-ATS boundaries explicit. |
 | W2-APP | Application/Outcome/history completion | W2-APP-CONTRACT | Lead | integration | DONE | High | Prepared/submitted separation, exact refs, receipt/user authority, immutable Outcome and atomic persistence tested. |
-| W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | Lead | integration | IN_PROGRESS | Medium | Today, Opportunity and Capability views consume Core APIs; remaining primary views still need projections. |
+| W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | Lead | integration | IN_PROGRESS | Medium | Today, Opportunity, Capability, and narrow Project/Resume reads consume Core APIs; richer fixtures and Context remain. |
 | W2-CAREER-READ | Authenticated Resume/Application/Outcome reads | W2-RESUME, W2-APP | Lead | integration | DONE | Medium | Exact/latest read-only projections pass auth, 404 and no-write-route tests. |
 | W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | DONE | Medium | Authenticated UI uses Core-owned IDs, preserves priority separation and passes responsive validation. |
 | W2-CAP-VIZ | Candidate-scoped Capability Workspace read API and visualization | W1-CAP-READ, Broad Market Trend | Subagent | capability-visualization | DONE | Medium | Merge `62f1ce8`; final recovery review APPROVE; full 403 passed, 3 skipped; frontend 27 passed/build and browser fixture checks passed. |
@@ -60,3 +60,7 @@ READY slice must be selected from the remaining dependency graph and receive a c
 
 L3 executor/worktree automation, advanced graph versioning and outcome-driven recommendation are
 P2 and remain deferred.
+
+## Overnight closeout reconciliation — 2026-09-21
+
+Historical task rows remain for traceability. Projects/Resume narrow read clients are integrated at `12315f4`. Structured canonical mapping still needs user authority; optional next-stage engineering is not implemented. Reversible archive/rehearsal is DONE; canonical cutover is NEEDS USER AUTHORITY; external Feishu sync is BLOCKED_EXTERNAL_ACTION. Current regression: backend 600 passed/5 skipped, frontend 52 passed/build.

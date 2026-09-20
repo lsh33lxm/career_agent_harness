@@ -1,9 +1,10 @@
 # v1.4 Progress
 
-Overnight continuation: visual baseline DONE (babf9c0), migration safeguards DONE (875bedd),
-History projection DONE (76fe21d); all independently reviewed. Backend 573 passed/5 skipped;
-frontend 45 passed/build. Reversible archive/rehearsal ACTIVE under contract 0.17.0/D-027.
-See ../v1.5/overnight-progress.md for fresh inventory and remaining A-H gates.
+Current overnight checkpoint: visual baseline `babf9c0`, safeguards `875bedd`, History `76fe21d`,
+Feishu offline `48ac171`, archive/rehearsal `b13d0f3`, data baseline `b6aa0ae`, Evidence `f760053`
+are integrated. Backend at f760053: 600 passed/5 skipped; frontend 52 passed/build.
+Contract 0.17.0/D-027; preserved subset/restore verified; no canonical cutover or external write.
+Projects/Resume `05913cb` merged as `12315f4` after independent APPROVE; latest 602/5 backend and 56 frontend/build passed. See ../v1.5/overnight-progress.md.
 
 | Work item | Status | Last update | Evidence |
 | --- | --- | --- | --- |
@@ -225,7 +226,7 @@ path validation, not OS isolation or real executor replacement; see pluggability
 - The zero-write service test compares all table row counts before and after reads; stronger SQL
   write interception is optional defense in depth (Broad Market Trend review P3).
 
-## Latest handoff verification
+## Historical handoff verification at 3626994
 
 - Backend full suite at `3626994`: `552 passed, 3 skipped`; skips are Windows symlink privilege limitations.
 - Alembic head remains `0013_interview`; Capability Workspace required no migration.
@@ -236,3 +237,7 @@ path validation, not OS isolation or real executor replacement; see pluggability
 - Chromium populated/no-overlay synthetic fixtures: 320/390/1366 px, no horizontal page overflow.
   This is browser fixture validation, not a real-data or Tauri end-to-end test.
 - Latest changed Python format check: new L1 acceptance file passed; prior 5 Inbox/runtime files passed. Tauri/Rust was not re-run (no shell changes).
+
+## 2026-09-21 current-state reconciliation
+
+The historical entries above are retained for audit. Current integration is `f760053` and the following supersede older counts: visual baseline `babf9c0`; archive/rehearsal `b13d0f3`; evidence projection `f760053`; data baseline `64dba1e`. Backend regression is 602 passed / 5 Windows symlink skips; frontend is 56 passed/build. Legacy preservation is complete for the reversible subset, while canonical authority mapping and cutover remain user-gated. Projects and Resume narrow desktop clients are integrated (`12315f4`); Feishu external write is BLOCKED_EXTERNAL_ACTION.

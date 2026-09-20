@@ -93,3 +93,11 @@ Local-first；Evidence != Fact != Signal != Decision != Outcome；ExtractedClaim
 5. Feishu schema/export 和外部写入状态分别记录；新 UI/服务集成后更新实现矩阵，不提前写成 DONE。
 
 本文是可审查的现状修正与候选 delta。它不修改 PRD v1.4、不执行 schema migration、不选择用户身份/优先级，不合并 main、不推送，也不授权生产操作。
+
+## 6. 后续验收回填（2026-09-21）
+
+上文 cee9162 是历史观察点。后续 archive/rehearsal `b13d0f3` 已完成，详见
+[reconciliation](../migration/LEGACY_RECONCILIATION_REPORT.md)。Feishu offline `48ac171`、
+Evidence projection `f760053`、Projects/Resume narrow read clients `12315f4` 已合入。
+最终后端 602 passed/5 skipped，前端56 passed/build。authority冲突、canonical cutover、
+外部写入仍未解决或执行；最新完整矩阵见 v1.5 现状 PRD。

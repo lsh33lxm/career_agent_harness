@@ -195,3 +195,10 @@ Lead 的 `workbook-audit.json` 检查了 **6 个 unique hash 的只读工作簿�
 偏差包括非随机采集、公开分享者偏差、来源包重复、历史窗口混合、缺失实际面试日期、官网聚合未逐页扫描、CN/overseas 数据结构与覆盖不对称。不能把 source 数当独立受访人数、把 topic 出现率当招聘总体需求率，或把旧榜单当当前优先级。
 
 未决项：来源等级定义与变换政策、35 URL 身份/版本冲突、82 question mapping 版本选择、完整 provenance closure、credential/混合容器分类、Excel 公式/占位/版本族、归档与恢复验收、结构化映射测试、canonical authority 选择。本文只冻结观察，未替用户决定权威，也未把完成代码测试等同于真实数据验收。
+
+## 8. Preservation 验收回填
+
+本文 source 统计和业务映射边界不变。后续归档与恢复已由
+[LEGACY_RECONCILIATION_REPORT](../migration/LEGACY_RECONCILIATION_REPORT.md) 验收：
+2205 paths preserved / 204 excluded / 17 deferred，1141 artifacts，2205 provenance chains。
+本文旧段落中的“归档待验收”仅对应 cee9162 观察点；业务 authority、结构化实体导入仍未批准。

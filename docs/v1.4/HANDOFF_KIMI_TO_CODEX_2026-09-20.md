@@ -184,3 +184,7 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
 - AI output never self-promotes; SuggestedPriority never overwrites UserPriority; Project presence
   is not personal mastery; coding-agent output never becomes Resume Fact directly; historical
   replay uses exact frozen refs and fails loud on dangling provenance.
+
+## Handoff closure — 2026-09-21
+
+The overnight goal reached its safe documentation and regression checkpoint. See `docs/prd/Agent_Career_Harness_PRD_v1.5_现状与下一阶段.md`. No canonical legacy cutover, external Feishu write, main merge, push, or legacy mutation was performed. Projects/Resume narrow read clients merged as 12315f4; final backend 602 passed/5 skipped, frontend 56 passed/build. Next dependency is reviewed canonical authority/mapping before real career data promotion.

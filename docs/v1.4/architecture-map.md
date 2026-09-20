@@ -1,179 +1,62 @@
-# Agent Career Harness v1.4 Architecture Map
+# Agent Career Harness 当前架构
 
-**Observed repository:** integration commit `3626994` on 2026-09-21
-**Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
-**Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
-**Contract version:** `v1.4-contract-0.16.0` (Capability Inbox client integrated)
+观察基点：integration `2e279ba`，2026-09-21。Shared contract：`0.17.0` / D-027。
+历史基线与各阶段变更见 Git 历史和 `integration-log.md`；以下描述当前实现。
 
-## Verified offline L1 boundary (2026-09-21)
-
-Test-only merge `3626994` proves PRD 29.7 with real L1 generation, canonical task commands,
-exact reads/replay and protected-state checks. Final independent APPROVE; full 552 passed,
-3 skipped. See pluggability-acceptance.md; this does not implement other adapter lifecycles.
-
-## Integrated Capability Inbox client (2026-09-21)
-
-Merge `6ba054d` exposes existing Core review via authenticated list/detail/review routes and
-`/capabilities/inbox`. Read DTO validates typed candidate against generic revision; server fixes
-USER authority and reuses atomic review/replay. Client explicit accept publishes a graph; ignore
-preserves history. Router state retains historical workspace selection. No schema or personal
-state changes. Final independent review APPROVE; full 551 passed, 3 skipped; frontend 39 passed.
-Runtime also retains `c984efc`, wiring the previously unmounted Today API.
-
-## Integrated L2 preparation (2026-09-21)
-
-Merge `9101085` adds exact canonical task/project/scope/manifest resolution plus caller-supplied
-in-memory UTF-8 context verification and deterministic invocation previews. Claude fixed no-tool
-arguments are prepared, never launched; Codex is explicitly unsupported for this capability.
-Preview grants no consent and performs no content reads, network, subprocess or canonical writes.
-Root locators in automatically introduced task text fail closed. Contract 0.15.0 / D-025; final
-independent review APPROVE; full 534 passed, 3 skipped. Runner/results remain unimplemented.
-
-## Integrated Today Interview inputs (2026-09-20)
-
-Merge `dc85365` adds exact canonical schedule inputs to existing interview-stage Today items.
-The typed repository recovers original offset-aware instants from exact immutable audit; missing
-or inconsistent audit fails loud. General Interview reads/writes and idempotency remain unchanged.
-No migration or canonical writes; full 440 passed, 3 skipped; final review APPROVE.
-
-## Integrated capability workspace (2026-09-20)
-
-Contract `0.13.0` / D-023 is implemented by `ae39eb6` + `e076daf`, merge `62f1ce8`.
-`CapabilityRepository` -> pure Core workspace assembler -> read-only service -> authenticated
-`GET /api/v1/capabilities/{candidate_id}` -> desktop `/capabilities`. Explicit candidate identity
-and exact optional graph version preserve official/personal/evidence/TARGET/BROAD/proposal boundaries.
-No migration, canonical write or client business ranking was added. Full backend: 403 passed,
-3 skipped; frontend: 27 passed/build; recovery review APPROVE with no P0/P1/P2/P3.
-
-The foundation diagrams and gap inventory below describe the original reconnaissance baseline;
-`progress.md` and `refactor-plan.md` track subsequent completed slices.
-
-## Foundation architecture (historical reconnaissance)
+## Runtime
 
 ```text
-React/Vite UI (mostly placeholders)
-        |
-        | authenticated REST/JSON; only GET /health exists
-        v
-FastAPI local service
-        |
-        +-- CommandService -> generic entity_state/entity_revision/domain_event/outbox
-        +-- Evidence Pydantic contracts (not persisted)
-        +-- lifecycle skeletons (not persisted through domain repositories)
-        +-- ArtifactStore / backup / AppPaths (not wired into app startup)
-        `-- LocalStepRunner (sequential execution contract)
-
-Tauri shell: window only; no sidecar lifecycle/config injection
-Legacy Agent Radar: read-only inventory/reconciliation importer only
+React 19 / TypeScript / Vite → localhost FastAPI
+                                   ├─ TodayService (pure policy + exact repositories)
+                                   ├─ Opportunity commands/read + USER priority
+                                   ├─ CapabilityWorkspace + Capability Inbox review
+                                   ├─ Evidence metadata/provenance reads + Project metadata read
+                                   └─ Resume/Application/Outcome read repositories
+Career services → typed domain repositories → SQLite migrations 0001–0013
+                → generic revisions / DomainEvent / idempotency / outbox
+AppPaths → career_harness.db + content-addressed artifacts + backups + logs
+Legacy read-only → inventory → archive index → disposable provenance DB → restore rehearsal
+TodayQueue → Feishu offline JSON preview (no transport)
+Project/Gap → L1 ManualExecutor → proposed task (no project file write)
+Exact context → L2 preview (no subprocess/provider inference)
 ```
 
-The current repository is a sound P0 foundation, not a completed career product. SQLite is
-canonical for newly created Harness records only. It is not canonical for legacy Agent Radar
-history before approved reconciliation and cutover.
+Tauri 2 shell 存在；本轮没有重建 sidecar 生命周期、原生打包或自动 token 注入。
+Web 通过 typed API，不能直接 SELECT DB。测试环境的 synthetic records 不等于真实用户履历。
 
-## Runtime ownership map
+## Ownership and implementation map
 
-| Area | Current implementation | v1.4 target owner |
+| Area | 当前实现 | 尚未实现/限制 |
 | --- | --- | --- |
-| Frontend | React routes, health/offline state | Client/projection through typed Local API |
-| Desktop shell | Minimal Tauri builder | Process/window/sidecar lifecycle only |
-| Backend | FastAPI health endpoint | Application services and typed command/query API |
-| Career Core | Evidence types, lifecycle skeletons, command substrate | Canonical business truth and policy |
-| Database | Generic revision/event substrate | Relational domain records plus revision/audit substrate |
-| Services | `CommandService` only | Use-case orchestration; no truth owned by adapters |
-| Repositories | Protocol/implementation contract being aligned | Typed per-domain repositories |
-| Adapters/workers | Empty packages | Replaceable capability providers and side-effect executors |
-| Browser/LLM/Feishu | Not implemented | Explicit adapters; proposal/projection only |
-| Resume | Empty entity skeleton | Base -> Patch proposal -> review -> Revision -> Render |
-| Evidence | Typed in memory; ArtifactStore on disk | Persisted provenance and explicit promotion |
-| Opportunity/Application | Lifecycle skeletons | Separate funnel records and user-gated transitions |
-| Project/Context/Capability | Missing | New P0 domain slices described below |
-| Audit | Domain event rows only | Queryable event/decision/approval/context manifests |
+| Core | Evidence、Opportunity、Job/Requirement、Capability、Project、Match/Gap、Fact、Resume、Application/Interview/Outcome 服务和存储 | 不代表所有实体都有完整 Web command UX |
+| Context | 五类资产 compiler、immutable exact manifest、atomic audit | Me/Context 完整个性化配置与编辑尚缺 |
+| Today | deterministic queue、精确面试时间恢复、frontend | canonical deadline 来源和 Investment 输入尚缺；快速收集/周回看未接入 |
+| Capability | official release/personal overlay 分层、Inbox USER review、workspace | 不自动初始化真实官方图谱或认证个人 mastery |
+| Market | BROAD on-read aggregation、TARGET bindings | legacy skill/topic authority mapping 未批准 |
+| Resume | base/patch/revision、provenance-qualified user review、read API | PDF renderer/全流程编辑未实现 |
+| History/Evidence | current Application 与 exact Outcome refs；Evidence metadata pagination/detail | 不下载 raw artifact，不把市场面经变成用户 Interview |
+| Migration | no-link inventory、pinned safe reads、ArtifactStore integrity、archive/rehearsal/restore | 仅 preservation subset；structured business mapping/cutover 未完成 |
+| Feishu | deterministic offline projection/schema/mapping | transport、credentials、sync/cursors/inbound commands 未实现 |
+| Executor | L1 plan + canonical task lifecycle、L2 context preview | live CLI runner/results/L3 未实现 |
 
-## Target architecture
+## Truth and storage
 
-```text
-Desktop / future Feishu projection
-              |
-              v
-Typed Local API (commands + read models)
-              |
-              v
-Small Stable Career Core
-  Personal Context | Career State | Project Evidence
-  Target/Broad Market Evidence | Career History/Outcomes
-  Evidence promotion | Capability graph/overlay | Resume truth
-              |
-              +--> Context Compiler --> Context Manifest --> model adapter
-              +--> Career Reasoning --> proposals/actions (never silent truth)
-              +--> Enhancement Task --> Manual Executor (P0 L1)
-              |
-              v
-SQLite relational domain tables + revision/event/idempotency/outbox
-              |
-              v
-Local Artifact Store and isolated session/extension/reference directories
-```
+Career Core owns approved/new Harness business truth. Legacy remains historical evidence until
+approved reconciliation and cutover. Artifact Store owns immutable bytes; Web/Feishu project.
+Inference, scanning, archive, task completion and frequent appearances never grant fact/mastery authority.
 
-## PRD to repository gap map
+AppPaths Windows default is `%LOCALAPPDATA%/AgentCareerHarness`; `ACH_DATA_DIR` overrides it.
+One existing Data Root is reused. `career_harness.db` production database was not populated from
+Legacy. Disposable rehearsal databases and their restore copies remain in the existing backups area.
+No `LegacyJob`, `LegacyEvidence` or alternative Career Core was introduced.
 
-| v1.4 capability | Status | Repository evidence / required change |
-| --- | --- | --- |
-| Personal Context | MISSING | Candidate skeleton has no context facts/preferences/goals. |
-| Career State | PARTIAL | Opportunity/Application/Outcome skeletons only. |
-| Project Evidence | PARTIAL | Core/schema, exact reads and scope-safe scanner exist; write service/API remain. |
-| Target Market Evidence | PARTIAL | Target MarketBinding exists; canonical versioned JobRequirement is the next prerequisite. |
-| Broad Market Trend | EXISTS | Deterministic on-read aggregation over BROAD MarketBindings; merge `c6efb8b`, zero canonical writes. |
-| Career History / Outcomes | PARTIAL | Outcome skeleton only; no history/query/provenance. |
-| Context Compiler | EXISTS | Deterministic five-asset compiler and atomic audit write/read exist; advanced compression remains deferred. |
-| Context Manifest | EXISTS | Immutable metadata-only 0005 schema and atomic service are integrated. |
-| Discover | STUB | UI route and legacy enum value only. |
-| Watchlist | PARTIAL | Separate typed/persisted record exists; compatibility `WATCHING` enum remains. |
-| Opportunity | PARTIAL | User-gated admission, persistence/API and priority exist; canonical Job content is missing. |
-| Application | PARTIAL | Separation/submission authority enforced; no repository/API. |
-| Suggested Priority | EXISTS | Typed independent persisted projection with frozen input refs. |
-| User Priority | EXISTS | User-only typed persistence is independent from Suggested Priority. |
-| Today Action Queue | STUB | Static zero-count UI; no compiler/read model. |
-| Official Capability Graph | EXISTS | Versioned immutable relational graph and exact/latest reads exist. |
-| Personal Capability Overlay | EXISTS | Revisioned personal state is separate and identity-stable. |
-| Capability Ontology | PARTIAL | Official graph/candidate inbox exist; publishing service remains. |
-| Personal Capability State | EXISTS | Multidimensional state, evidence binding and derived status exist. |
-| Evidence Binding | EXISTS | Capability bindings pin exact personal and Project Evidence revisions. |
-| Market Binding | PARTIAL | Target/broad separation exists; target requirement revisions are not yet canonical. |
-| Investment State | PARTIAL | Explainable stored factors exist, but canonical factor derivation is not implemented. |
-| Capability Inbox | PARTIAL | Candidate/status contract and reads exist; review write service remains. |
-| Capability Investment Planning | PARTIAL | Deterministic scoring exists; trustworthy target-input derivation remains. |
-| Match / Gap | MISSING | Contract 0.3.0 frozen; canonical JobRequirement/persistence is the blocking prerequisite. |
-| Project Capability State | PARTIAL | Typed relational state/basis exist; exact read repository is next. |
-| Project Enhancement Loop | PARTIAL | L1 task contract/schema exist; canonical Gap and orchestration remain. |
-| Project Enhancement Task | PARTIAL | P0 L1 contract/schema exist; repository/service remain. |
-| Project Enhancement Executor | STUB | LocalStepRunner is not the executor abstraction. |
-| Resume Base | MISSING | Existing `Resume` is an empty skeleton. |
-| Resume Patch | MISSING | No evidence-linked proposal/review contract. |
-| Resume Revision | MISSING | Generic revision substrate only. |
-| Career Reasoning | MISSING | No decision record or recommendation service. |
+## Current gaps and dependency order
 
-## Legacy to v1.4 mapping
+1. Projects/Resume read clients `05913cb` are independently approved and merged at `12315f4`; richer workflows remain planned.
+2. Resolve source identity/grades/question mapping/candidate gates before canonical structured data.
+3. Broaden real-user read-model acceptance after approved records exist.
+4. Feishu transport requires credential/destination permission and reviewed sync policy.
+5. L2 execution requires separate runner/result contract plus explicit context/provider/budget.
 
-| Legacy/current concept | v1.4 treatment |
-| --- | --- |
-| Generic `entity_state` JSON | Compatibility substrate; do not add new domain blobs indefinitely. |
-| `OpportunityState.WATCHING` | Preserve for compatibility, migrate to `WatchlistItem` before removal. |
-| Candidate skeleton | Split into Personal Context and evidence-backed Career Facts. |
-| Market skeleton | Split Target Market Evidence from Broad Market Trend. |
-| Generic `Resume` | Replace incrementally with ResumeBase/Patch/Revision/Render. |
-| DomainEvent row | Retain shared audit/event envelope; add domain-specific payload contracts. |
-| Agent Radar files | Read-only source evidence; never direct Core truth. |
-| Static Today page | Replace with read-only Dynamic Career Action Queue projection after core slices. |
-
-## Dependency order
-
-```text
-shared IDs/evidence/event/ownership contracts
-    -> relational migration policy
-    -> capability + opportunity + project + context cores
-    -> match/gap and L1 enhancement
-    -> resume/application/outcome vertical slice
-    -> Today/read APIs and UI
-    -> optional adapters/executors
-```
+Historical source documents are not changed into approval records. This map and v1.5 PRD report
+implementation; neither grants production permission nor claims v1.4 product acceptance complete.

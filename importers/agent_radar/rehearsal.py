@@ -101,6 +101,25 @@ def logical_rows(database: Path) -> dict[str, list[list[object]]]:
         }
 
 
+def _validate_transaction(session: Session) -> None:
+    """Validate the same connection that owns pending writes, before commit."""
+    session.flush()
+    connection = session.connection()
+    if connection.exec_driver_sql("PRAGMA integrity_check").fetchone() != ("ok",):
+        raise ValueError("database integrity failure")
+    if connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall():
+        raise ValueError("database foreign key failure")
+    for ref in session.scalars(select(EvidenceRefRow)):
+        snapshot = session.get(SourceSnapshotRow, ref.snapshot_id)
+        if snapshot is None or snapshot.artifact_id != ref.artifact_id:
+            raise ValueError("missing or inconsistent evidence snapshot provenance")
+        if (
+            session.get(EvidenceSourceRow, snapshot.source_id) is None
+            or session.get(EvidenceArtifactRow, snapshot.artifact_id) is None
+        ):
+            raise ValueError("missing evidence source or artifact provenance")
+
+
 def import_archive(database: Path, store: ArtifactStore, index_sha: str) -> RehearsalReport:
     _check_marker(database)
     index = load_verified_index(store, index_sha)
@@ -112,6 +131,7 @@ def import_archive(database: Path, store: ArtifactStore, index_sha: str) -> Rehe
     engine = create_sqlite_engine(sqlite_url(database))
     try:
         with Session(engine) as session, session.begin():
+            _validate_transaction(session)
             for entry in index.entries:
                 if entry.disposition != "preserved":
                     continue
@@ -157,15 +177,7 @@ def import_archive(database: Path, store: ArtifactStore, index_sha: str) -> Rehe
                         selector=f"archive-index:{index_sha};inventory:{index.inventory_sha256}",
                     ),
                 )
-        # Check exact reference chain through the existing read repository.
-        from career_harness.db.evidence_repository import EvidenceRepository
-
-        repository = EvidenceRepository(engine)
-        with Session(engine) as session:
-            refs = session.scalars(select(EvidenceRefRow.evidence_ref_id)).all()
-        for ref_id in refs:
-            if repository.get(ref_id) is None:
-                raise ValueError("missing evidence provenance")
+            _validate_transaction(session)
     finally:
         engine.dispose()
     rows = logical_rows(database)

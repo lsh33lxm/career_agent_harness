@@ -236,3 +236,54 @@ def test_reconciliation_retains_duplicates_conflicts_and_version_candidates(tmp_
     )
     assert summary.archive_member_inspection == "not_performed"
     assert all(g.authority == "unresolved_candidate" for g in summary.same_key_different_hash)
+
+
+def test_existing_dangling_ref_rejected_without_importing_rows(tmp_path: Path):
+    import sqlite3
+
+    source, inventory, store, selections = fixture(tmp_path)
+    _, index_sha = archive_inventory(inventory, source, store, selections)
+    db = tmp_path / "dangling.rehearsal.db"
+    create_rehearsal_database(db)
+    with sqlite3.connect(db) as connection:
+        connection.execute(
+            "INSERT INTO evidence_ref(evidence_ref_id,snapshot_id,artifact_id) "
+            "VALUES ('dangling-ref','missing-snapshot','missing-artifact')"
+        )
+    with sqlite3.connect(db) as connection:
+        before = tuple(connection.iterdump())
+    with pytest.raises(ValueError, match="foreign key"):
+        import_archive(db, store, index_sha)
+    with sqlite3.connect(db) as connection:
+        assert tuple(connection.iterdump()) == before
+        assert connection.execute("SELECT COUNT(*) FROM evidence_source").fetchone() == (0,)
+
+
+def test_pending_dangling_ref_rolls_back_entire_import(tmp_path: Path, monkeypatch):
+    from career_harness.db.models import EvidenceSourceRow
+    from importers.agent_radar import rehearsal
+
+    source, inventory, store, selections = fixture(tmp_path)
+    _, index_sha = archive_inventory(inventory, source, store, selections)
+    db = tmp_path / "pending.rehearsal.db"
+    create_rehearsal_database(db)
+    before = logical_rows(db)
+    original_upsert = rehearsal._upsert_exact
+    injected = False
+
+    def inject_invalid_pending_ref(session, row):
+        nonlocal injected
+        original_upsert(session, row)
+        if isinstance(row, EvidenceSourceRow) and not injected:
+            injected = True
+            session.connection().exec_driver_sql("PRAGMA defer_foreign_keys=ON")
+            session.connection().exec_driver_sql(
+                "INSERT INTO evidence_ref(evidence_ref_id,snapshot_id,artifact_id) "
+                "VALUES ('pending-ref','missing-snapshot','missing-artifact')"
+            )
+
+    monkeypatch.setattr(rehearsal, "_upsert_exact", inject_invalid_pending_ref)
+    with pytest.raises(ValueError, match="foreign key"):
+        import_archive(db, store, index_sha)
+    assert injected
+    assert logical_rows(db) == before

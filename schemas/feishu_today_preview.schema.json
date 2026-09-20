@@ -1,0 +1,286 @@
+{
+  "$defs": {
+    "EntityKind": {
+      "enum": [
+        "evidence",
+        "extracted_claim",
+        "fact",
+        "candidate",
+        "capability_candidate",
+        "market",
+        "project",
+        "project_evidence",
+        "project_source_manifest",
+        "job",
+        "job_requirement",
+        "match_assessment",
+        "opportunity",
+        "project_enhancement_task",
+        "resume",
+        "resume_patch",
+        "resume_revision",
+        "application",
+        "interview",
+        "prep",
+        "outcome",
+        "approval",
+        "run",
+        "snapshot",
+        "context_manifest"
+      ],
+      "title": "EntityKind",
+      "type": "string"
+    },
+    "FeishuTodayRow": {
+      "additionalProperties": false,
+      "properties": {
+        "ordinal": {
+          "minimum": 1,
+          "title": "Ordinal",
+          "type": "integer"
+        },
+        "item": {
+          "$ref": "#/$defs/TodayItem"
+        }
+      },
+      "required": [
+        "ordinal",
+        "item"
+      ],
+      "title": "FeishuTodayRow",
+      "type": "object"
+    },
+    "PriorityLevel": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "urgent"
+      ],
+      "title": "PriorityLevel",
+      "type": "string"
+    },
+    "TodayItem": {
+      "additionalProperties": false,
+      "properties": {
+        "item_id": {
+          "maxLength": 192,
+          "minLength": 1,
+          "pattern": "^today:[a-z_]+:[a-z][a-z0-9_-]+$",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/TodayItemKind"
+        },
+        "source_refs": {
+          "items": {
+            "$ref": "#/$defs/TodaySourceRef"
+          },
+          "minItems": 1,
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "reasons": {
+          "items": {
+            "$ref": "#/$defs/TodayReason"
+          },
+          "minItems": 1,
+          "title": "Reasons",
+          "type": "array"
+        },
+        "user_priority": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PriorityLevel"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "suggested_priority": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PriorityLevel"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "deadline_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadline At"
+        },
+        "interview_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interview At"
+        }
+      },
+      "required": [
+        "item_id",
+        "kind",
+        "source_refs",
+        "reasons"
+      ],
+      "title": "TodayItem",
+      "type": "object"
+    },
+    "TodayItemKind": {
+      "description": "Closed item-kind set for v1; new kinds require a contract change.",
+      "enum": [
+        "opportunity_action",
+        "application_step",
+        "interview_prep",
+        "enhancement_task",
+        "review_request"
+      ],
+      "title": "TodayItemKind",
+      "type": "string"
+    },
+    "TodayReason": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/TodayReasonCode"
+        },
+        "explanation": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "explanation"
+      ],
+      "title": "TodayReason",
+      "type": "object"
+    },
+    "TodayReasonCode": {
+      "enum": [
+        "user_priority_urgent",
+        "user_priority_high",
+        "user_priority_medium",
+        "user_priority_low",
+        "suggested_priority_urgent",
+        "suggested_priority_high",
+        "suggested_priority_medium",
+        "suggested_priority_low",
+        "missing_user_priority",
+        "missing_suggested_priority",
+        "deadline_approaching",
+        "interview_upcoming",
+        "opportunity_active",
+        "application_step_pending",
+        "interview_prep_due",
+        "gap_linked_task",
+        "pending_user_review"
+      ],
+      "title": "TodayReasonCode",
+      "type": "string"
+    },
+    "TodaySourceRef": {
+      "additionalProperties": false,
+      "description": "An exact source entity plus revision used to compute the queue.",
+      "properties": {
+        "entity_id": {
+          "maxLength": 128,
+          "minLength": 3,
+          "pattern": "^[a-z][a-z0-9_-]+$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EntityKind"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "entity_id",
+        "kind",
+        "revision"
+      ],
+      "title": "TodaySourceRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "feishu-today-preview-v1",
+      "default": "feishu-today-preview-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "mode": {
+      "const": "dry_run",
+      "default": "dry_run",
+      "title": "Mode",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "policy_version": {
+      "title": "Policy Version",
+      "type": "string"
+    },
+    "input_revisions": {
+      "items": {
+        "$ref": "#/$defs/TodaySourceRef"
+      },
+      "title": "Input Revisions",
+      "type": "array"
+    },
+    "rows": {
+      "items": {
+        "$ref": "#/$defs/FeishuTodayRow"
+      },
+      "title": "Rows",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_sha256",
+    "generated_at",
+    "policy_version",
+    "input_revisions",
+    "rows"
+  ],
+  "title": "FeishuTodayPreview",
+  "type": "object"
+}

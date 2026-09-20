@@ -180,6 +180,9 @@ full suite 534 passed, 3 skipped; Ruff and 5-file format passed; unchanged front
 
 # In Progress
 
+- ACTIVE: W2-INBOX-CLIENT, contract `0.16.0` / D-026; authenticated proposal reads and explicit
+  accept/ignore UI over the existing Core service; synthetic validation only.
+
 - W2-L2-PREP integrated as `9101085` (`56ae9d8`, privacy fix `1fac397`), contract
   `0.15.0` / D-025. Exact-context previews grant no execution authority. Independent final
   review APPROVE, P0-P3 none; focused 95 passed; full 534 passed, 3 skipped. No CLI launched.

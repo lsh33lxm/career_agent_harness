@@ -1,9 +1,10 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.15.0`
-**Status:** FROZEN FOR L2 ANALYSIS INVOCATION PREPARATION
+**Version:** `v1.4-contract-0.16.0`
+**Status:** FROZEN FOR CAPABILITY INBOX CLIENT ENTRY
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
+`0.16.0` exposes existing Capability Inbox review semantics through an authenticated client entry.
 `0.15.0` adds L2 invocation preparation only; it does not authorize provider inference.
 `0.14.1` adds the exact schedule-time recovery boundary below; no data rewrite.
 `0.14.0` retains all `0.13.0` guarantees and adds exact Today Interview schedule inputs below.
@@ -213,6 +214,38 @@ joined into one read model.
 - Reviewed candidates stay immutable history; rejection is auditable and never silently deletes
   the proposal or its source evidence refs.
 - Reviewing candidates never mutates personal overlays, bindings, Match results or priorities.
+
+### Capability inbox client entry
+
+- Inbox proposals are global ontology candidates identified by `candidate_node_id`, distinct from
+  the personal `candidate_id` used by Capability Workspace. No personal mastery is inferred.
+- Authenticated `GET /api/v1/capability-inbox` and `GET /api/v1/capability-inbox/{id}` expose
+  current proposals and review history as `{candidate, revision}`. Stable order is candidate ID.
+  Revision comes from the existing generic command state, not a guessed status-to-revision rule.
+  Validate entity kind/ID and typed candidate equality against the generic state; missing or
+  inconsistent audit fails loud with a sanitized conflict. GET performs zero writes.
+- Authenticated `POST /api/v1/capability-inbox/{id}/review` accepts only command_id,
+  expected_revision, decision (`accept` or `reject`), nonblank reason, and X-Idempotency-Key.
+  Server fixes actor to `user` and calls existing CapabilityReviewService; clients cannot supply
+  actor/authority, graph IDs or merge targets. No proposal-creation or bulk-review route is added.
+- Accept means publish a new official graph using Core's current-parent selection and transactional
+  concurrency check. Reject means auditable IGNORED. The UI explains these effects before an
+  explicit user submit. Existing self-review prohibition remains: proposals discovered by `user`
+  cannot be reviewed by the same actor; never fabricate another actor to bypass it.
+- One submitted operation retains its exact command ID, idempotency key, revision, decision and
+  reason across uncertain network outcomes. Retry sends that same request. Changed intent gets
+  a new operation; a stale/conflicting review requires refresh and another user decision, never
+  silent revision substitution. Do not pre-reject terminal proposals in a way that blocks replay.
+- Return the existing CandidateReviewCommit receipt. Conflict/replay/concurrent-release errors
+  are sanitized HTTP 409, nonexistent ID is 404, invalid body is 422. No raw SQL is exposed.
+  UI displays the returned graph/capability IDs and receipt, then refreshes reads separately:
+  refresh failure must not turn a confirmed successful mutation into a failed review to resubmit.
+- Desktop `/capabilities/inbox` links from Capability Workspace; preserves explicit historical
+  graph selection. It has loading/empty/error/retry states, safe text rendering, provenance refs,
+  clear pending vs reviewed states and disables review while in flight or forbidden by self-review.
+  It does not insert proposed nodes into the workspace or modify personal state/priorities.
+- This is an adapter/client slice over contract 0.9.0. No schema, domain review/promotion behavior,
+  real-data reviews, L2 execution or external service calls are part of implementation validation.
 
 ### Capability workspace read model
 

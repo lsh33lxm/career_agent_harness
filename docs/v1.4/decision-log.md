@@ -542,3 +542,21 @@ or sending real code implicitly. Keeps the future runner and provider authorizat
 network. Actual execution/result handling remains NOT IMPLEMENTED until its own contract/review.
 CLI versions inspected: Codex 0.155.1, Claude 2.1.214. Official Codex parameter reference:
 https://developers.openai.com/codex/cli/reference . No inference was run during preflight.
+
+## D-026 - Expose the existing Capability Inbox review through a user client
+
+**Decision:** ACCEPTED in contract `0.16.0`.
+
+**Context:** Core proposal/review and graph-release logic is integrated, but no API or desktop
+entry lets the user inspect and decide proposals. Typed candidates omit command revisions.
+
+**Chosen:** A small authenticated list/detail/review adapter, an explicit current-revision DTO
+validated against generic audit, and a desktop Inbox. Reuse CapabilityReviewService and its
+transaction/idempotency/authority rules. Initial actions are accept/new release and ignore only.
+
+**Alternatives:** Infer revision 1 for pending records; write typed rows from API; allow caller
+actor overrides; expose merge and batch actions immediately. These create unnecessary risk.
+
+**Impact:** No migration or new truth owner. USER-only HTTP review preserves self-review rules;
+uncertain outcomes retry exact commands, while conflicts require refreshed user decisions.
+Acceptance explicitly publishes a graph; clients never promote proposals on their own.

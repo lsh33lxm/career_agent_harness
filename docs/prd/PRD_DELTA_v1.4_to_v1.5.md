@@ -61,6 +61,21 @@ Local-first；Evidence != Fact != Signal != Decision != Outcome；ExtractedClaim
 
 上述多数建议是把既有不变量落到数据呈现，不能绕过 [archive contract](../migration/ARCHIVE_REHEARSAL_CONTRACT.md) 对额外结构化映射的测试要求。需要新增 shared semantics 的条目应先由 Lead 冻结契约，worker 不自行定义。
 
+### 变更影响与兼容性
+
+下列“旧假设”包括旧迁移方案中的设想及需要防止的读数方式，不表示 v1.4 已授权自动 promotion。
+
+| 旧假设 / old assumption | 建议变化 / proposed change | 原因 / reason | 迁移影响 / migration impact | 兼容性 / compatibility |
+| --- | --- | --- | --- | --- |
+| normalized 或统一 CSV 行可直接代表独立业务实体 | 显式保留粒度、命名空间和 duplicate/conflict 状态 | 492 JD 含 72 聚合；35 URL 重复 | 先 staging/reconciliation；不得按总行数批量创建 Job | 不改现有 JobRevision；待映射契约验证后追加适配 |
+| legacy Evidence/A/S/accepted 可直接等价 Core authority | literal grade 与 Core authority 分栏 | B→A、D→C、S/C冲突 | 保留旧值，不重写历史；Fact/Graph 仍走已有批准入口 | 兼容 Evidence/Fact 分离，无自动数据升级 |
+| new_* 是尚未进入主表的增量 | 按 ID、内容、映射版本联合比较 | 121 question IDs 已存在，82 mapping 不同 | 幂等候选导入保留差异，不覆盖 canonical | exact references 和历史重放边界保持 |
+| 文件采集日可代表事件发生日 | 保留 date source/precision/unknown | 实际面试日期多数缺失，JD发布日期全空子集存在 | 不补伪日期；后续权重规则需显式处理缺失 | 既有日期字段不迁移，新增读模型可标注未知 |
+| registry 公司/岗位数等于样本覆盖，行频次等于独立观察频次 | 单列观察 coverage、dictionary coverage、父ID去重频次 | 海外词表14公司但岗位仅2 company_id；topic行/事件频次不同 | 统计可重算，不生成 MarketBinding/InvestmentState | 仅增加 companion/staging 元数据，不变更评分契约 |
+| 题单存在可作个人能力证据 | 练习计划与完成证据分离 | 270 行均未开始且次数0 | 仅保留个人来源；掌握状态不填真 | PersonalCapabilityState 的 user/rule authority 不变 |
+| 最新工作簿及缓存是可直接导入统计真值 | 原文件归档，缓存缺失与未重算状态明确 | 主表2316公式缺缓存；Staging全缺 | 不补零，不依赖Excel运行时；统计需可追溯重算 | 不改工作簿，不新增平行truth数据库 |
+| PRD示例 `core.db` 就是当前默认库名 | 文档对齐 AppPaths 的 `career_harness.db` | 已实现路径规则明确 | 无数据库改名、搬迁或 schema 操作 | 保留 `ACH_DATA_DIR` 与现有数据路径兼容 |
+
 ## 4. 支持与未验证的产品假设
 
 - 市场材料确实提供岗位文本、技能与问题出现的候选输入，但不证明推荐有效、市场代表性或投资收益。

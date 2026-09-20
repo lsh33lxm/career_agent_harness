@@ -28,6 +28,7 @@ JSONL 按非空记录行解析，CSV 按 header 后记录解析，JSON 数组按
 - `audit-mapping.json`：嵌套数组、literal classes、关联校验、个人数据汇总。
 - `audit-conflicts.json`：稳定 ID / URL 交叉比较及变更字段计数。
 - `audit-dates.json`：字段级日期范围与缺失/精度计数。
+- `audit-coverage-frequency.json`：Company/Role literal coverage、skill/topic/coding 的行与父记录去重频次；匿名 top 分布。
 - `workbook-audit.json`：Lead 只读副本审计的 sheet、公式与缓存计数；本文不复制其示例单元格内容。
 - `STRUCTURED_MAPPING_AUDIT.md`：审计摘要。
 
@@ -63,6 +64,52 @@ JSONL 按非空记录行解析，CSV 按 header 后记录解析，JSON 数组按
 | `work/clean/review_queue.json` | 42 个待审对象 |
 
 `verified_jds` 是旧字段名，不是本文重新验证官网、职位仍开放或 Core authority 的结论。`work/clean/stats.json` 是聚合结果对象，不是独立市场事件表；不能将统计表与原始事件相加。
+
+### Company / Role 覆盖
+
+下述是同一 manifest 下 source 字段的 distinct **literal** 值，不合并别名，不跨包累计为唯一公司/岗位总数。unknown 计数严格匹配 `null`、空字符串、`unknown/Unknown/UNKNOWN`、`未知`、`不详`、`未明确`、`未标注`、`N/A/n/a`；其他未识别占位词可能仍计作标签。“unknown 0”不保证语义完整。只报告计数，不复制公司名称。
+
+| source | 行数 | 公司字段：distinct / unknown行 | 岗位字段：distinct / unknown行 |
+| --- | ---: | --- | --- |
+| `data/cn/normalized/interview_events.jsonl` | 248 | company：39 / 19 | role：31 / 0 |
+| `data/cn/normalized/jd_events.jsonl` | 35 | company：21 / 0 | job_title：35 / 0（职位标题，不是岗位族） |
+| `data/overseas/normalized/overseas_jd_events.jsonl` | 72 | company：4 / 0 | role_family：60 / 0 |
+| `codex/data/cn/normalized/job_postings.jsonl` | 227 | company_id：22 / 0 | role_id：11 / 0；normalized_role_family：7 / 0 |
+| `codex/data/overseas/normalized/job_postings.jsonl` | 158 | company_id：2 / 0 | role_id：6 / 0；normalized_role_family：6 / 0 |
+
+codex `cn/normalized/companies.jsonl` / `overseas/normalized/companies.jsonl` 分别登记 29 / 14 个 distinct canonical_name；两区 `roles.jsonl` 均登记 17 个 distinct canonical_name，以上 registry 字段 unknown 均为 0。**词表覆盖不同于本批岗位观察覆盖**，尤其不能用海外 registry 的 14 个公司替代实际岗位的 2 个 company_id 来描述样本广度。
+
+### JD skill、面经 topic 与 coding frequency
+
+均从 source 记录直接计算，不使用 Excel 缓存/旧排名，不新建 MarketBinding。数组字段在每行内去重；scalar 字段保留完整原值，不按逗号拆分。`父ID` 是 source 内 job_id/jd_id/event_id/interview_id，不是已核实跨包唯一事件。下面同时给出标签出现次数与 `(父ID,标签)` 去重对数，unknown 使用上节严格集合。
+
+| source / 字段形状 | 原行数 | distinct标签 | 空/unknown行 | 标签出现次数 → 去重父ID-标签对 | distinct父ID（含空标签行） |
+| --- | ---: | ---: | ---: | --- | ---: |
+| `codex/data/cn/normalized/jd_skill_occurrences.jsonl` / skill_id scalar | 1609 | 27 | 0 | 1609 → 1609 | 227 job_id |
+| `codex/data/overseas/normalized/jd_skill_occurrences.jsonl` / skill_id scalar | 1035 | 23 | 0 | 1035 → 1035 | 158 job_id |
+| `data/cn/normalized/jd_events.jsonl` / skills list | 35 | 29 | 0 | 362 → 362 | 35 jd_id |
+| `data/cn/normalized/question_occurrences.jsonl` / topic scalar | 2371 | 57 | 0 | 2371 → 1471 | 186 event_id |
+| 上一文件仅 `frequency_eligible=true` | 2205 | 57 | 0 | 2205 → 1369 | 172 event_id |
+| `codex/data/cn/normalized/question_occurrences.jsonl` / topic_ids list | 74 | 12 | 25 | 67 → 26 | 6 interview_id |
+| `codex/data/overseas/normalized/question_occurrences.jsonl` / 空文件 | 0 | 0 | 0 | 0 → 0 | 0 |
+| `data/cn/normalized/coding_occurrences.jsonl` / leetcode_id（43 int / 11空str） | 54 | 29 | 11 | 43 → 43 | 47 event_id |
+| 上一文件仅 `frequency_eligible=true` | 31 | 21 | 0 | 31 → 31 | 26 event_id |
+| `codex/data/cn/normalized/coding_occurrences.jsonl` / leetcode_canonical_id（2 int / 1 null） | 3 | 2 | 1 | 2 → 2 | 3 interview_id |
+
+匿名频次分布（每个 source 独立按 distinct 父ID 降序；不是共享标签排名）：
+
+| source 子集 | 前五标签对应的 distinct 父ID 数 | 解释 |
+| --- | --- | --- |
+| codex CN JD skill | 211、181、99、98、90 | 分母为该表关联的 227 个 job_id；一个岗位可出现多个技能 |
+| codex overseas JD skill | 158、143、125、97、94 | 分母 158；只有 2 个 company_id，不能推广为海外市场总体需求 |
+| data CN JD skills | 31、29、22、19、17 | 分母 35；与 codex 存在 §3 的重复 URL，不能跨表合并频次 |
+| data CN topic，全部 | 148、93、86、76、66 | 对应问题行数分别 400、129、150、107、155；行频次与事件频次不同 |
+| data CN topic，legacy eligible | 135、89、77、70、59 | 分母为含问题的 172 event_id，不是全部 248 面经；eligible 是原标签，不是新批准 |
+| codex CN topic | 5、4、2、2、2 | 分母为含问题的 6 interview_id；原面经表有 7 行，不可悄悄替换分母 |
+| data CN coding，全部 | 3、3、3、3、3 | 按非空 leetcode_id；未映射题不能补为某个题号 |
+| data CN coding，legacy eligible | 3、3、3、2、2 | 只描述 31 条 eligible 行；不代表用户练习频次 |
+
+本文匿名 top 仅刻画频次集中度，不用于给用户推荐具体技能。不同 schema 的 29 个 skill 字符串、27/23 个 skill_id、57 个 topic 字符串与 12 个 topic_id 不能当作同一官方本体节点集合。以上统计没有决定 canonical source、能力映射、时间权重或用户优先级。
 
 ## 3. 已复现的重复与冲突
 

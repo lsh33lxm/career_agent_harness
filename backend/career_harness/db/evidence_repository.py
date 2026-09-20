@@ -21,9 +21,35 @@ class EvidenceProvenanceRead(FrozenModel):
     artifact: Artifact
 
 
+class EvidencePage(FrozenModel):
+    items: tuple[EvidenceProvenanceRead, ...]
+    next_cursor: str | None = None
+
+
 class EvidenceRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
+
+    def page(self, *, after: str | None = None, limit: int = 25) -> EvidencePage:
+        if not 1 <= limit <= 100:
+            raise ValueError("page limit must be between 1 and 100")
+        if after is not None and (not after or len(after) > 128):
+            raise ValueError("invalid evidence cursor")
+        query = select(EvidenceRefRow.evidence_ref_id).order_by(EvidenceRefRow.evidence_ref_id)
+        if after is not None:
+            query = query.where(EvidenceRefRow.evidence_ref_id > after)
+        with Session(self.engine) as session:
+            ids = session.scalars(query.limit(limit + 1)).all()
+        items: list[EvidenceProvenanceRead] = []
+        for ref_id in ids[:limit]:
+            item = self.get(ref_id)
+            if item is None:
+                raise RuntimeError("persisted EvidenceRef disappeared during page read")
+            items.append(item)
+        return EvidencePage(
+            items=tuple(items),
+            next_cursor=ids[limit - 1] if len(ids) > limit else None,
+        )
 
     def get(self, evidence_ref_id: str) -> EvidenceProvenanceRead | None:
         with Session(self.engine) as session:

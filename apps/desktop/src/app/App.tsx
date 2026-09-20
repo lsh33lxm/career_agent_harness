@@ -5,6 +5,7 @@ import { OpportunitiesPage } from "../pages/OpportunitiesPage";
 import { TodayPage } from "../pages/TodayPage";
 import { CapabilitiesPage } from "../pages/CapabilitiesPage";
 import { CapabilityInboxPage } from "../pages/CapabilityInboxPage";
+import { EvidencePage } from "../pages/EvidencePage";
 import { HistoryPage } from "../pages/HistoryPage";
 import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -27,6 +28,7 @@ export function App() {
             <Route path="capabilities" element={<CapabilitiesPage />} />
             <Route path="capabilities/inbox" element={<CapabilityInboxPage />} />
             <Route path="history" element={<HistoryPage />} />
+            <Route path="history/evidence" element={<EvidencePage />} />
             {sections.map(([path, title, emptyLabel]) => (
               <Route
                 key={path}

@@ -28,7 +28,11 @@ class ArtifactStore:
         destination = self.root / digest[:2] / digest[2:4] / digest
         destination.parent.mkdir(parents=True, exist_ok=True)
 
-        if not destination.exists():
+        if destination.exists():
+            existing = self.read(digest)
+            if len(existing) != len(content):
+                raise ValueError("stored artifact length does not match its content address")
+        else:
             temporary_path: Path | None = None
             try:
                 with tempfile.NamedTemporaryFile(
@@ -48,5 +52,7 @@ class ArtifactStore:
     def read(self, sha256: str) -> bytes:
         if len(sha256) != 64 or any(character not in "0123456789abcdef" for character in sha256):
             raise ValueError("invalid SHA-256 digest")
-        return (self.root / sha256[:2] / sha256[2:4] / sha256).read_bytes()
-
+        content = (self.root / sha256[:2] / sha256[2:4] / sha256).read_bytes()
+        if hashlib.sha256(content).hexdigest() != sha256:
+            raise ValueError("stored artifact hash does not match its content address")
+        return content

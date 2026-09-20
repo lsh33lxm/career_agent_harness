@@ -125,7 +125,7 @@ def archive_inventory(
             # Inspection is explicit; obvious embedded credential material still fails closed.
             if re.search(
                 rb"(?i)(-----BEGIN [A-Z ]*PRIVATE KEY|"
-                rb"(?:api[_-]?key|password|access_token)\s*[=:]\s*[^\s])",
+                rb"(?:api[_-]?key|password|access_token)[\"']?\s*[=:]\s*[^\s])",
                 content,
             ):
                 disposition, reason = "excluded", "credential content marker"

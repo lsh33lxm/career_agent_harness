@@ -133,9 +133,10 @@ def test_refuses_production_unknown_db_and_conflicting_rows(tmp_path: Path, monk
         create_rehearsal_database(db)
 
 
-def test_embedded_credentials_excluded_and_exact_bytes_bound(tmp_path: Path):
+@pytest.mark.parametrize("content", ["api_key = synthetic-placeholder", '{"api_key":"sample"}'])
+def test_embedded_credentials_excluded_and_exact_bytes_bound(tmp_path: Path, content: str):
     source, _, store, _ = fixture(tmp_path)
-    (source / "plain.txt").write_text("api_key = synthetic-placeholder")
+    (source / "plain.txt").write_text(content)
     inventory = build_manifest(source).model_dump_json().encode()
     selections = (ArchiveSelection(relative_path="plain.txt", inspected=True, reason="reviewed"),)
     index, index_sha = archive_inventory(inventory, source, store, selections)

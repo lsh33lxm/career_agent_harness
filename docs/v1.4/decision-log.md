@@ -419,3 +419,24 @@ previously accepted evidence no longer matches the project.
 **Impact:** The rescan service reuses the existing anchored readers and scope validation unchanged.
 Any freshness-change command must list affected evidence ids and the manifest revision that
 motivated the change.
+
+## D-021 - Interviews are revisioned records that never create Outcomes
+
+**Decision:** ACCEPTED in contract `0.11.0` (docs-only freeze; implementation in a later
+workstream).
+
+**Context:** The Interview entity was a bare skeleton, yet the vertical loop needs scheduled
+interviews to feed Today ordering and interview outcomes must not silently become Outcomes.
+
+**Alternatives:** Fold interview state into the Application state machine; let an interview result
+auto-record an Outcome; keep interviews as free-form notes.
+
+**Chosen:** An Interview is its own revisioned record pinned to an exact Application revision with
+a typed round and explicit schedule/complete/cancel commands. Outcomes stay on their own
+user/receipt-gated path.
+
+**Reason:** Keeps workflow state separate from business results and keeps every transition
+auditable.
+
+**Impact:** A later workstream adds additive persistence for interviews; Today ordering can then
+consume scheduled times as a real input.

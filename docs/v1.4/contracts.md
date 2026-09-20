@@ -1,14 +1,14 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.10.0`
-**Status:** FROZEN FOR INCREMENTAL PROJECT RESCAN
+**Version:** `v1.4-contract-0.11.0`
+**Status:** FROZEN FOR INTERVIEW RECORDS
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.10.0` retains all `0.9.0` guarantees and adds the incremental project rescan contract below.
-`0.9.0` added Capability inbox review; earlier versions added the Today read model (`0.8.0`),
-Application/Outcome (`0.7.0`), the Resume write path (`0.6.0`), claim review and Fact promotion
-(`0.5.0`) and the Match/enhancement contracts (`0.4.x`). This document version does not rewrite
-historical records.
+`0.11.0` retains all `0.10.0` guarantees and adds the Interview record contract below. `0.10.0`
+added incremental project rescan; earlier versions added Capability inbox review (`0.9.0`), the
+Today read model (`0.8.0`), Application/Outcome (`0.7.0`), the Resume write path (`0.6.0`), claim
+review and Fact promotion (`0.5.0`) and the Match/enhancement contracts (`0.4.x`). This document
+version does not rewrite historical records.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -111,6 +111,18 @@ Job/Capture -> DiscoverRecord -> WatchlistItem -> Opportunity -> Application
   in Application state, DomainEvents or audit logs. P0 does not execute real ATS submission.
 - Application transitions are explicit, expected-revision commands with idempotent replay. A
   transition never mutates the Opportunity, ResumeRevision, Facts, Match assessment or priorities.
+
+### Interview records
+
+- An `Interview` is a revisioned record pinned to one exact Application revision and a typed round
+  (for example `screen`, `technical`, `loop`, `offer_talk`). Scheduling, completion and
+  cancellation are separate explicit commands.
+- An Interview carries its scheduled time, status and optional exact EvidenceRefs; it never
+  creates, implies or replaces an `Outcome`. An interview result becomes an Outcome only through
+  the Outcome write path.
+- Interview preparation material is compiled through the Context Compiler or written by the user;
+  AI-drafted prep content is a proposal and never canonical truth.
+- Interview writes never mutate the Application, Resume, Facts, Match results or priorities.
 
 ### Outcome and career history truth
 

@@ -8,7 +8,7 @@ import { HistoryPage } from "./HistoryPage";
 vi.mock("../api/history", () => ({ listApplications: vi.fn(), listOutcomes: vi.fn() }));
 const application = (id: string): ApplicationRead => ({
   entity_id: id, revision: 4, opportunity_id: "opportunity_a", opportunity_revision: 2,
-  state: "interview", resume_revision_id: null, submission_authority: "user_confirmed",
+  state: "interview", resume_revision_id: "resume_revision_a", submission_authority: "user_confirmed",
   submission_evidence_ref_id: null, submitted_at: "2026-09-20T10:00:00",
 });
 const outcome = (id: string): OutcomeRead => ({

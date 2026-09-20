@@ -440,3 +440,25 @@ auditable.
 
 **Impact:** A later workstream adds additive persistence for interviews; Today ordering can then
 consume scheduled times as a real input.
+
+## D-022 - Broad Market Trend is a derived read model, never an authority
+
+**Decision:** ACCEPTED in contract `0.12.0` (docs-only freeze; implementation in a later
+workstream).
+
+**Context:** Market Evidence separates Target from Broad. Investment planning must not let generic
+market noise outweigh target-scope evidence, and AI-discovered trends must not silently reshape the
+capability ontology or priorities.
+
+**Alternatives:** Persist computed trend tables; let trend frequency directly rank investment;
+merge broad and target signals into one score.
+
+**Chosen:** Broad Market Trend is computed on read from broad-scope MarketBinding records with the
+input revision set recorded. It never writes, never reweights target inputs and never mutates
+priorities, overlays or the ontology.
+
+**Reason:** Keeps market signals explainable and replayable while preventing broad trends from
+deciding what the user should become.
+
+**Impact:** A later workstream adds a trend read service and optional API projection; no migration
+is needed.

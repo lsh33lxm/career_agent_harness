@@ -1,14 +1,14 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.11.0`
-**Status:** FROZEN FOR INTERVIEW RECORDS
+**Version:** `v1.4-contract-0.12.0`
+**Status:** FROZEN FOR BROAD MARKET TREND
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
-`0.11.0` retains all `0.10.0` guarantees and adds the Interview record contract below. `0.10.0`
-added incremental project rescan; earlier versions added Capability inbox review (`0.9.0`), the
-Today read model (`0.8.0`), Application/Outcome (`0.7.0`), the Resume write path (`0.6.0`), claim
-review and Fact promotion (`0.5.0`) and the Match/enhancement contracts (`0.4.x`). This document
-version does not rewrite historical records.
+`0.12.0` retains all `0.11.0` guarantees and adds the Broad Market Trend contract below. Earlier
+versions added Interview records (`0.11.0`), incremental project rescan (`0.10.0`), Capability
+inbox review (`0.9.0`), the Today read model (`0.8.0`), Application/Outcome (`0.7.0`), the Resume
+write path (`0.6.0`), claim review and Fact promotion (`0.5.0`) and the Match/enhancement contracts
+(`0.4.x`). This document version does not rewrite historical records.
 
 No workstream may define a competing representation. Missing fields or behavior require a
 `CONTRACT CHANGE REQUEST` before implementation.
@@ -180,6 +180,17 @@ user interfaces must not infer user intent from it.
   field may exist without the other.
 - `MarketBinding`: links a capability to a target opportunity/job requirement; target and broad
   market sources are explicitly distinguished.
+
+### Broad market trend
+
+- A Broad Market Trend is a derived read model aggregating broad-scope `MarketBinding` records per
+  capability: counts, exact source refs and the binding revision set used. It is computed on read
+  and never persisted as truth.
+- Trends inform exploration, discovery and validation. Capability investment decisions are driven
+  by Target Market Evidence; broad trends never outweigh or overwrite target-scope inputs, and a
+  trend never changes UserPriority or personal capability state.
+- Trend output is deterministic for the same inputs and carries the input revision set so clients
+  can detect staleness.
 - `InvestmentState`: explainable factors, recommendation, reasons and calculation inputs. It is a
   proposal, not UserPriority or proof of ability.
 

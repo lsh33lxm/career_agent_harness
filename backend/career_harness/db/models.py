@@ -1788,3 +1788,76 @@ class OutcomeEvidenceRefRow(Base):
         ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"), nullable=False
     )
 
+
+class InterviewIdentityRow(Base):
+    __tablename__ = "interview_identity"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["application_id", "application_revision"],
+            ["application_revision_record.application_id", "application_revision_record.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    interview_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    application_id: Mapped[str] = mapped_column(
+        ForeignKey("application_identity.application_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    application_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class InterviewRevisionRow(Base):
+    __tablename__ = "interview_revision_record"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_interview_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_interview_schema_version"),
+        CheckConstraint(
+            "round IN ('screen', 'technical', 'loop', 'offer_talk')", name="ck_interview_round"
+        ),
+        CheckConstraint(
+            "status IN ('scheduled', 'completed', 'cancelled')", name="ck_interview_status"
+        ),
+        CheckConstraint("evidence_count >= 0", name="ck_interview_evidence_count"),
+        CheckConstraint(
+            "revision > 1 OR status = 'scheduled'", name="ck_interview_first_revision_scheduled"
+        ),
+    )
+
+    interview_id: Mapped[str] = mapped_column(
+        ForeignKey("interview_identity.interview_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    round: Mapped[str] = mapped_column(String(32), nullable=False)
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class InterviewEvidenceRefRow(Base):
+    __tablename__ = "interview_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint(
+            "interview_id", "revision", "evidence_ref_id", name="uq_interview_evidence_ref"
+        ),
+        CheckConstraint("revision >= 1", name="ck_interview_evidence_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_interview_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["interview_id", "revision"],
+            ["interview_revision_record.interview_id", "interview_revision_record.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    interview_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"), nullable=False
+    )

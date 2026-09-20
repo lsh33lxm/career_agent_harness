@@ -106,8 +106,36 @@ class FormPreparation(FrozenModel):
     ready_for_review: bool = False
 
 
+class InterviewRound(StrEnum):
+    SCREEN = "screen"
+    TECHNICAL = "technical"
+    LOOP = "loop"
+    OFFER_TALK = "offer_talk"
+
+
+class InterviewStatus(StrEnum):
+    SCHEDULED = "scheduled"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
 class Interview(DomainEntity):
     application_id: OpaqueId
+    application_revision: int = Field(ge=1)
+    round: InterviewRound
+    scheduled_at: datetime
+    status: InterviewStatus = InterviewStatus.SCHEDULED
+    evidence_refs: tuple[OpaqueId, ...] = ()
+    created_at: datetime = Field(default_factory=utc_now)
+    created_by: str = Field(min_length=1, max_length=255)
+
+    @model_validator(mode="after")
+    def evidence_refs_are_unique(self) -> Interview:
+        if len(set(self.evidence_refs)) != len(self.evidence_refs):
+            raise ValueError("Interview evidence refs must be unique")
+        if self.revision == 1 and self.status is not InterviewStatus.SCHEDULED:
+            raise ValueError("the first Interview revision must be scheduled")
+        return self
 
 
 class Prep(DomainEntity):

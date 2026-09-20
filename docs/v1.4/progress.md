@@ -38,6 +38,7 @@
 | Incremental project rescan | DONE | 2026-09-20 | `6b345ff`, `cc8cb43` merged as `693619c`; contract `0.10.0` + D-020; full 371 passed. |
 | Interview records | DONE | 2026-09-20 | `834b1fb` merged as `8c44620`; contract `0.11.0` + D-021; additive 0013; full 381 passed. |
 | Broad Market Trend | DONE | 2026-09-20 | `f7cb3c6` merged as `c6efb8b`; contract `0.12.0` + D-022; independent review APPROVE with no P0/P1/P2; full 391 passed, 3 skipped; Ruff passed. |
+| Capability Workspace Visualization | DONE | 2026-09-20 | Implementation `ae39eb6` + consistency fix `e076daf`, merged as `62f1ce8`; contract `0.13.0`, D-023. Recovery independent review of `f2727cf..e076daf`: APPROVE, no P0/P1/P2/P3. Focused backend 13 passed; full backend 403 passed, 3 known Windows symlink skips; frontend 27 passed; production build, full Ruff, 11 changed Python format checks and diff checks passed. |
 | Resume truth core | DONE | 2026-09-20 | `c6bfe66` merged as `df5f4d2`; additive 0011, exact reviewed patches and immutable content-hashed revisions. |
 | Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
 | Application/Outcome contract | DONE | 2026-09-20 | `d61af6c`; contract `0.7.0`, exact submission refs, user authority and no-ATS boundary. |
@@ -139,6 +140,12 @@
   set, and performs zero canonical writes. Independent review returned APPROVE with no P0/P1/P2;
   full integration passed `391 passed, 3 skipped`, and Ruff passed.
 
+- Capability Workspace Visualization: Implementation `ae39eb6` + consistency fix `e076daf`, merged as `62f1ce8`; contract `0.13.0`, D-023. Recovery independent review of `f2727cf..e076daf`: APPROVE, no P0/P1/P2/P3. Focused backend 13 passed; full backend 403 passed, 3 known Windows symlink skips; frontend 27 passed; production build, full Ruff, 11 changed Python format checks and diff checks passed.
+  Real Chromium synthetic populated/no-overlay fixtures passed 320/390/1366 px page-overflow checks.
+  Recovery found both integration and feature clean and already merged; no reimplementation or
+  duplicate merge was performed. Prior pre-merge review transcript was not present in repository;
+  this recovery performed an independent final review rather than inferring an approval.
+
 ## Recorded follow-ups (non-blocking)
 
 - `MatchAssessmentWrite.stage()` converges duplicate manifest requirement refs to the last entry
@@ -165,8 +172,8 @@
   timestamp instead (review P3).
 - Typed fact revision chains have no continuity check on the read path; unreachable via the
   service and guarded by the generic expected-revision check (review P3, defense in depth).
-- Today items never carry deadline/interview inputs yet: no canonical deadline/interview data
-  source exists, so that total-order dimension is dormant until those entities land (review P2).
+- Today still lacks canonical Interview schedule wiring despite Interview records now existing;
+  this is dependency-ready P1 follow-up. A canonical deadline source remains absent (review P2).
 - TodayService reads pending reviews via raw read-only SELECTs; promote them to typed repository
   reads when the corresponding review list APIs exist (review P3).
 - `MarketTrendService` uses a direct read-only SELECT; add
@@ -181,12 +188,12 @@
 
 ## Latest handoff verification
 
-- Backend full suite: `391 passed, 3 skipped`; skips are Windows symlink privilege limitations.
-- Alembic head remains `0013_interview`; Broad Market Trend required no migration.
+- Backend full suite at `62f1ce8`: `403 passed, 3 skipped`; skips are Windows symlink privilege limitations.
+- Alembic head remains `0013_interview`; Capability Workspace required no migration.
 - Ruff lint: passed.
 - Ruff format check: baseline failure, 57 files would be reformatted and 97 were already formatted;
   no broad formatting change was made during handoff.
-- Frontend was not re-run for the backend-only Broad Market Trend slice; the prior verified Today UI
-  baseline remains `22 passed` with `tsc -b && vite build` passed.
-- Browser responsive and Tauri/Rust checks were not re-run during handoff; prior results remain in
-  the integration log and handoff file.
+- Frontend: `27 passed`; `tsc -b && vite build` passed.
+- Chromium populated/no-overlay synthetic fixtures: 320/390/1366 px, no horizontal page overflow.
+  This is browser fixture validation, not a real-data or Tauri end-to-end test.
+- Changed Python format check: 11 files passed. Tauri/Rust was not re-run (no shell changes).

@@ -9,7 +9,7 @@
 - Repository: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness`
 - Integration Worktree: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness-worktrees\integration`
 - Integration Branch: `refactor/v1.4-integration`
-- Verified Integration HEAD after closeout: `c6efb8b` (`merge: integrate broad market trend read model`)
+- Verified feature integration HEAD after recovery: `62f1ce8` (`merge: integrate capability workspace visualization`)
 - Main HEAD: `63ca32f` (unchanged; do not merge or push without explicit approval)
 - Handoff ID: `ACH-V14-KIMI-CODEX-2026-09-20`
 - Prior handoff: `docs/v1.4/HANDOFF_CODEX_TO_KIMI_2026-09-20.md` (superseded by this file)
@@ -18,8 +18,10 @@ The Goal remains ACTIVE. A completed milestone is not the complete PRD v1.4 stag
 
 ## B. Git State
 
-Integration was clean at `c6efb8b` when Codex resumed this handoff (`git status --short --branch`
-returned only the branch line). Broad Market Trend is merged; no feature is in flight.
+Recovery found integration clean at `62f1ce8` and feature worktree clean at `e076daf`. The
+interrupted docs were already committed (`ef3485e`, `709c2dd`, `f2727cf`, `1dbba22`);
+implementation `ae39eb6` and fix `e076daf` were already merged. No changes were discarded.
+Capability Visualization is complete after recovery review/regression and documentation closeout.
 
 New worktrees/branches added during this Kimi session (all merged unless noted):
 
@@ -40,13 +42,15 @@ never clean it incidentally.
 
 Verified during this session with the root `.venv`:
 
-- Backend full after Broad Market Trend merge: `391 passed, 3 skipped` (3 known Windows symlink
+- Backend full after Capability Visualization merge: `403 passed, 3 skipped` (3 known Windows symlink
   privilege skips).
 - Ruff lint: PASS. `git diff --check`: PASS.
 - Repo-wide `ruff format --check` has a KNOWN pre-existing baseline failure (~40-57 files,
   line-ending churn); only check files you touched.
-- Frontend (pre-handoff): Vitest 16 passed, `tsc -b && vite build` PASS (Codex-verified earlier).
-- Alembic head: `0012_application_outcome`; chain 0001..0012 linear; recent migrations additive
+- Frontend recovery verification: Vitest 27 passed, `tsc -b && vite build` PASS.
+- Chromium synthetic populated/no-overlay fixtures passed 320/390/1366 px page-overflow checks;
+  these do not constitute real-data or Tauri verification.
+- Alembic head: `0013_interview`; chain 0001..0013 linear; recent migrations additive
   with disposable downgrade rehearsals.
 
 Verification commands:
@@ -85,7 +89,7 @@ decision is D-018. An earlier Kimi commit briefly misnumbered it; fixed in `196a
 
 ## E. Contracts
 
-`docs/v1.4/contracts.md` is `v1.4-contract-0.12.0`. Frozen sections include: Evidence/Fact
+`docs/v1.4/contracts.md` is `v1.4-contract-0.13.0` (Capability Workspace, D-023). Frozen sections include: Evidence/Fact
 authority, claim review + Fact promotion, Job/Requirement, Opportunity/Priority, Match/Gap
 persistence+resolver+replay, Capability graph/overlay, Capability inbox review (`0.9.0`), Project
 evidence/enhancement, incremental project rescan (`0.10.0`), Context manifest, Resume write path,
@@ -94,6 +98,11 @@ Application/Outcome, and the Today read model.
 Do not define competing representations. Missing fields require a CONTRACT CHANGE REQUEST.
 
 ## F. Completed After Handoff
+
+- Capability Workspace Visualization: Implementation `ae39eb6` + consistency fix `e076daf`, merged as `62f1ce8`; contract `0.13.0`, D-023. Recovery independent review of `f2727cf..e076daf`: APPROVE, no P0/P1/P2/P3. Focused backend 13 passed; full backend 403 passed, 3 known Windows symlink skips; frontend 27 passed; production build, full Ruff, 11 changed Python format checks and diff checks passed.
+  The recovery verified the existing merge and independently reviewed the final implementation;
+  it did not assume that the old reviewer prompt itself proved approval.
+
 
 - `kimi/v14-broad-market-trend` completed as `f7cb3c6` and merged into integration as `c6efb8b`.
   Contract `0.12.0` + D-022 remain unchanged: the deterministic derived read model aggregates
@@ -122,7 +131,7 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
 - Fact reads lack revision-chain continuity defense.
 - ProjectSourceManifest does not pin an exact Project revision.
 - Completed enhancement tasks do not orchestrate rescan/new Evidence/promotion.
-- Today: deadline/interview ordering dimension is dormant (no data source yet); pending-review
+- Today: Interview records exist but schedule wiring is missing; deadline data is absent. Pending-review
   reads use raw SELECTs that should become typed repository reads.
 - Broad Market Trend P3: consider a repository list read, DB-level MarketBinding immutability if an
   update path appears, a Literal trend version and stronger write interception. None blocks the
@@ -130,9 +139,9 @@ From independent reviews this session; all in `docs/v1.4/progress.md` "Recorded 
 
 ## H. Next READY Work
 
-1. Re-evaluate the remaining P1 work: Capability graph visualization and optional CLI executor
-   adapters, plus the smallest serviceable Career Reasoning slice. Freeze the chosen contract and
-   record a decision before implementation.
+1. Capability Visualization is complete. Next dependency-ready P1 candidate: wire canonical
+   Interview schedule revisions into Today. Existing Interview records remove the former data
+   dependency; exact schedule provenance and deterministic selection must be frozen before coding.
 2. The four long-term feedback loops (PRD section 32) and section 29 pluggability checks remain
    open; Today read model closes only the "next action" projection, not Career Reasoning.
 

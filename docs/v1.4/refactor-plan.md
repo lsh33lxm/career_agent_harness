@@ -43,12 +43,12 @@ Statuses: `NOT_STARTED`, `READY`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, `DONE`.
 | W2-UI | Read APIs plus Opportunity/Project/Capability views | Integrated cores | Lead | integration | IN_PROGRESS | Medium | Today composition is integrated over typed fallback; real read models replace selected placeholders. |
 | W2-CAREER-READ | Authenticated Resume/Application/Outcome reads | W2-RESUME, W2-APP | Lead | integration | DONE | Medium | Exact/latest read-only projections pass auth, 404 and no-write-route tests. |
 | W2-OPP-UI | Opportunity API client and desktop page | Opportunity API | Subagent | opportunity-ui | DONE | Medium | Authenticated UI uses Core-owned IDs, preserves priority separation and passes responsive validation. |
-| W2-CAP-VIZ | Candidate-scoped Capability Workspace read API and visualization | W1-CAP-READ, Broad Market Trend | Subagent | capability-visualization | READY | Medium | Core composes exact separated inputs; desktop renders responsive graph/overlay without client business logic. |
+| W2-CAP-VIZ | Candidate-scoped Capability Workspace read API and visualization | W1-CAP-READ, Broad Market Trend | Subagent | capability-visualization | DONE | Medium | Merge `62f1ce8`; final recovery review APPROVE; full 403 passed, 3 skipped; frontend 27 passed/build and browser fixture checks passed. |
 
 ## P1 and P2 status
 
 Today dynamic queue and UI adapter, Capability Inbox review, broad market trends and incremental
-scanning are implemented. Capability Inbox UI, Capability Graph visualization and optional
+scanning and Capability Workspace visualization are implemented. Capability Inbox UI and optional
 Claude/Codex CLI adapters remain P1. The P0 end-to-end acceptance fixture is integrated; the next
 READY slice must be selected from the remaining dependency graph and receive a contract freeze.
 

@@ -1,7 +1,7 @@
 # Current Phase
 
 PRD v1.4 Wave 1, the implemented Wave 2 Core slices and the completed P1 read/review slices are
-integrated through Broad Market Trend. The desktop Today page consumes the Core-owned deterministic
+integrated through Capability Workspace Visualization. The desktop Today page consumes the Core-owned deterministic
 read model; Capability Inbox review, incremental rescan and Interview records are also integrated.
 
 # Current Goal
@@ -13,8 +13,8 @@ state with contract-first, review-gated increments.
 
 # Last Verified Commit
 
-`c6efb8b` - `merge: integrate broad market trend read model` (contract `0.12.0`; full suite
-391 passed, 3 skipped; Ruff passed)
+`62f1ce8` - `merge: integrate capability workspace visualization` (contract `0.13.0`; full suite
+403 passed, 3 skipped; Ruff passed; frontend 27 passed and production build passed)
 
 # Completed
 
@@ -196,6 +196,12 @@ state with contract-first, review-gated increments.
 - Broad Market Trend is integrated (`c6efb8b`, implementation `f7cb3c6`, contract `0.12.0`, D-022):
   deterministic on-read aggregation over BROAD MarketBindings with exact binding/evidence refs and
   zero canonical writes. Independent review approved it with no P0/P1/P2.
+- Capability Workspace Visualization is integrated (`62f1ce8`, implementation `ae39eb6` +
+  `e076daf`, contract `0.13.0`, D-023): candidate-scoped read-only API and desktop view,
+  exact graph selection, separated overlay/evidence/market/proposal fields. Recovery review
+  APPROVE with no P0/P1/P2/P3; focused 13 passed; full 403 passed, 3 skipped.
+- Real Chromium synthetic fixtures (populated and no overlay) passed 320/390/1366 px
+  page-overflow checks; frontend 27 passed and production build passed.
 - `W2-UI` remains incomplete because primary views other than Today remain placeholders or lack
   product read projections.
 
@@ -212,9 +218,9 @@ state with contract-first, review-gated increments.
 
 # Next Safe Tasks
 
-1. Re-evaluate Capability Visualization, the L2 CLI/Coding Executor adapter boundary and the
-   smallest Career Reasoning service slice against the dependency graph; freeze the selected
-   shared contract before implementation.
+1. Select the next dependency-ready P1 slice now that Capability Visualization is complete.
+   Canonical Interview records exist, but Today still does not consume their schedule; this
+   bounded read-only follow-up can reuse the existing Today ordering and Interview contracts.
 2. Review whether `ProjectSourceManifest` should also pin an exact Project revision before schema
    expansion; current manifests already pin exact scope revision and immutable source entries.
 3. Continue awaiting user adjudication for destructive legacy cutover decisions.

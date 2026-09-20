@@ -1,11 +1,23 @@
 # Agent Career Harness v1.4 Architecture Map
 
-**Observed repository:** integration commit `c6efb8b` on 2026-09-20
+**Observed repository:** integration commit `62f1ce8` on 2026-09-20
 **Authoritative product direction:** `docs/prd/Agent_Career_Harness_PRD_v1.4_中文版.md`  
 **Hard-constraint baseline:** `AGENT_CAREER_HARNESS_PRD_v1.2.md`  
-**Contract version:** `v1.4-contract-0.12.0`
+**Contract version:** `v1.4-contract-0.13.0`
 
-## Current architecture
+## Integrated capability workspace (2026-09-20)
+
+Contract `0.13.0` / D-023 is implemented by `ae39eb6` + `e076daf`, merge `62f1ce8`.
+`CapabilityRepository` -> pure Core workspace assembler -> read-only service -> authenticated
+`GET /api/v1/capabilities/{candidate_id}` -> desktop `/capabilities`. Explicit candidate identity
+and exact optional graph version preserve official/personal/evidence/TARGET/BROAD/proposal boundaries.
+No migration, canonical write or client business ranking was added. Full backend: 403 passed,
+3 skipped; frontend: 27 passed/build; recovery review APPROVE with no P0/P1/P2/P3.
+
+The foundation diagrams and gap inventory below describe the original reconnaissance baseline;
+`progress.md` and `refactor-plan.md` track subsequent completed slices.
+
+## Foundation architecture (historical reconnaissance)
 
 ```text
 React/Vite UI (mostly placeholders)

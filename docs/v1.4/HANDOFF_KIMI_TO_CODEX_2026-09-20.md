@@ -94,12 +94,11 @@ Do not define competing representations. Missing fields require a CONTRACT CHANG
 
 ## F. In Flight At Handoff
 
-- `kimi/v14-incremental-rescan` (worktree `incremental-rescan`, base `42afb75`): incremental
-  project rescan per contract `0.10.0` + D-020. Prompt:
-  `docs/v1.4/agents/incremental-rescan.md`. If still running, wait for its
-  `feat: add incremental project rescan` commit, then review (diff is a record not a mutation,
-  explicit staleness commands only, scanner safety invariants unchanged), merge with `--no-ff`,
-  run the full suite and update the status docs.
+- `kimi/v14-incremental-rescan` (worktree `incremental-rescan`, base `42afb75`): contract `0.10.0`
+  + D-020 are frozen and the prompt is ready at `docs/v1.4/agents/incremental-rescan.md`. The Kimi
+  coder stalled twice with zero output and was stopped; the worktree is clean with no partial work.
+  Pick this up fresh: a Codex agent can execute the prompt as-is, or it can wait for a later Kimi
+  session.
 
 ## G. Recorded Follow-ups (non-blocking)
 

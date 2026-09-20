@@ -1,9 +1,11 @@
 # Agent Career Harness v1.4 Shared Contracts
 
-**Version:** `v1.4-contract-0.16.0`
-**Status:** FROZEN FOR CAPABILITY INBOX CLIENT ENTRY
+**Version:** `v1.4-contract-0.17.0`
+**Status:** FROZEN FOR REVERSIBLE LEGACY ARCHIVE AND REHEARSAL
 **Scope:** semantic and cross-module contracts; physical schema remains Lead-owned.
 
+`0.17.0` adds the boundary in `../migration/ARCHIVE_REHEARSAL_CONTRACT.md`;
+existing Core semantics remain unchanged.
 `0.16.0` exposes existing Capability Inbox review semantics through an authenticated client entry.
 `0.15.0` adds L2 invocation preparation only; it does not authorize provider inference.
 `0.14.1` adds the exact schedule-time recovery boundary below; no data rewrite.

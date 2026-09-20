@@ -560,3 +560,23 @@ actor overrides; expose merge and batch actions immediately. These create unnece
 **Impact:** No migration or new truth owner. USER-only HTTP review preserves self-review rules;
 uncertain outcomes retry exact commands, while conflicts require refreshed user decisions.
 Acceptance explicitly publishes a graph; clients never promote proposals on their own.
+
+## D-027 - Preserve legacy independently before deciding canonical authority
+
+**Decision:** ACCEPTED in contract `0.17.0` for reversible archive and disposable rehearsal.
+
+**Context:** Inventory v1 exists, Core now has typed evidence provenance, and the
+overnight goal authorizes preservation/dry-run. Historical migration plans predate
+these tables and would leave bytes dependent on the legacy directory.
+
+**Chosen:** Reuse AppPaths, content-addressed ArtifactStore and existing provenance
+tables. Bind archive indices to exact inventory hashes; retain each original path
+and distinct content version. Separate preservation, staging mappings and authority.
+See `../migration/ARCHIVE_REHEARSAL_CONTRACT.md` for validation and restore gates.
+
+**Alternatives:** Copy everything indiscriminately; treat newest Excel as truth;
+create permanent LegacyJob/LegacyEvidence tables; wait for cutover before preservation.
+
+**Impact:** No production database migration or automatic promotion. Fixtures and
+credentials excluded; mixed unresolved content explicitly deferred. Canonical cutover
+and external writes remain gated while safe preparation continues.

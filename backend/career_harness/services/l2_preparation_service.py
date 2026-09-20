@@ -1,6 +1,7 @@
 """Resolve exact canonical inputs; prepare an in-memory, non-authorizing preview."""
 
 import hashlib
+from pathlib import PureWindowsPath
 
 from career_harness.adapters.cli_analysis import canonical_json, digest, prepare_claude_invocation
 from career_harness.core.project.l2 import (
@@ -51,6 +52,8 @@ class L2PreparationService:
             not in {ProjectEnhancementTaskStatus.READY, ProjectEnhancementTaskStatus.IN_PROGRESS}
         ):
             raise PreparationError("canonical input identity or lifecycle mismatch")
+        if _task_contains_root_locator(task, project.root_locator):
+            raise PreparationError("L2 task content contains the canonical project locator")
         entries = {entry.relative_path: entry for entry in manifest.entries}
         if len({path.casefold() for path in entries}) != len(manifest.entries):
             raise PreparationError("manifest paths have case collisions")
@@ -104,3 +107,24 @@ class L2PreparationService:
         return prepare_claude_invocation(
             request, prompt=canonical_json(payload), context_digest=digest(files)
         )
+
+
+def _task_contains_root_locator(task: object, root_locator: str) -> bool:
+    """Reject accidental project locator disclosure in task text only."""
+    root = root_locator.strip().replace("\\", "/").casefold().rstrip("/")
+    windows_root = str(PureWindowsPath(root_locator)).replace("\\", "/").casefold().rstrip("/")
+    variants = {root, windows_root}
+    fields = (
+        "learning_plan",
+        "files_to_review",
+        "change_plan",
+        "experiment_plan",
+        "validation_plan",
+        "expected_evidence",
+    )
+    for field in fields:
+        for value in getattr(task, field, ()):
+            normalized = value.replace("\\", "/").casefold()
+            if any(variant and variant in normalized for variant in variants):
+                return True
+    return False

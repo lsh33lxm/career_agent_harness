@@ -414,3 +414,32 @@ def test_nested_validation_and_oversized_prompt_hide_content():
     with pytest.raises(PreparationError) as error:
         L2PreparationService(repo).prepare(request)
     assert SECRET not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "learning_plan",
+        "files_to_review",
+        "change_plan",
+        "experiment_plan",
+        "validation_plan",
+        "expected_evidence",
+    ],
+)
+@pytest.mark.parametrize("locator", ["Z:/private-root", "z:\\private-root", "Z:\\PRIVATE-ROOT"])
+def test_task_locator_variants_are_rejected_without_leaking_locator(field, locator):
+    request, repo = inputs()
+    task = repo.get_enhancement_task.return_value
+    repo.get_enhancement_task.return_value = task.model_copy(
+        update={field: (f"review {locator} now",)}
+    )
+    with pytest.raises(PreparationError) as error:
+        L2PreparationService(repo).prepare(request)
+    assert "private-root" not in str(error.value).casefold()
+
+
+def test_task_without_project_locator_still_prepares():
+    request, repo = inputs()
+    preview = L2PreparationService(repo).prepare(request)
+    assert preview.permissions.execution_authorized is False

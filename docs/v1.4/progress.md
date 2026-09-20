@@ -34,6 +34,7 @@
 | P0 vertical slice proof | DONE | 2026-09-20 | `615bd4d` merged as `f132709`; one fixture walks Job→Opportunity→Match→Fact→Resume→Application→Outcome→replay; full 336 passed. |
 | Today read model | DONE | 2026-09-20 | `d36fd00` merged as `1d86b65`; contract `0.8.0`; deterministic projection + authenticated API; full 355 passed. |
 | Today UI adapter | DONE | 2026-09-20 | `363e9ea` merged as `c986936`; Today page renders the Core projection; Vitest 22 passed, build passed. |
+| Capability inbox review | DONE | 2026-09-20 | `54e2c0d` merged as `3db621d`; contract `0.9.0` + D-019; USER-only acceptance through new graph releases; full 367 passed. |
 | Resume truth core | DONE | 2026-09-20 | `c6bfe66` merged as `df5f4d2`; additive 0011, exact reviewed patches and immutable content-hashed revisions. |
 | Today desktop composition | DONE | 2026-09-20 | `7ebd4be` merged as `989b47e`; typed fallback boundary, responsive Today layout, 16 frontend tests/build and visual checks. |
 | Application/Outcome contract | DONE | 2026-09-20 | `d61af6c`; contract `0.7.0`, exact submission refs, user authority and no-ATS boundary. |

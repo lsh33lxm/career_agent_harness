@@ -9,7 +9,7 @@
 - Repository: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness`
 - Integration Worktree: `D:\0.小红书投稿\小红书稿\9.15 三期\projects\agent-career-harness-worktrees\integration`
 - Integration Branch: `refactor/v1.4-integration`
-- Verified Integration HEAD at handoff: `bc1f07e` (`docs: record today ui adapter integration`)
+- Verified Integration HEAD at handoff: `3db621d` (`merge: integrate capability inbox review flow`)
 - Main HEAD: `63ca32f` (unchanged; do not merge or push without explicit approval)
 - Handoff ID: `ACH-V14-KIMI-CODEX-2026-09-20`
 - Prior handoff: `docs/v1.4/HANDOFF_CODEX_TO_KIMI_2026-09-20.md` (superseded by this file)
@@ -93,12 +93,9 @@ Do not define competing representations. Missing fields require a CONTRACT CHANG
 
 ## F. In Flight At Handoff
 
-- `kimi/v14-capability-inbox-review` (worktree `capability-inbox-review`, base `5432412`):
-  candidate capability review/promote write path per contract `0.9.0` + D-019. Prompt:
-  `docs/v1.4/agents/capability-inbox-review.md`. If still running, wait for its
-  `feat: add capability inbox review flow` commit, then review (USER-only accept, no self-review,
-  released graph immutability, merge-target validation), merge with `--no-ff`, run the full suite
-  and update `STATUS.md` / `docs/v1.4/progress.md` / `docs/v1.4/integration-log.md`.
+None. `kimi/v14-capability-inbox-review` completed after the previous edit: reviewed (APPROVE, no
+P0/P1/P2), merged as `3db621d`, verified at `367 passed, 3 skipped`. Integration HEAD is now
+`3db621d` plus the docs commits that follow it.
 
 Completed earlier in this session: `kimi/v14-today-ui-adapter` merged as `c986936` (Vitest 22
 passed, build passed, backend 355 passed).

@@ -13,8 +13,8 @@ new feature; transfer the verified integration state to Kimi.
 
 # Last Verified Commit
 
-`c986936` - `merge: integrate today ui core api adapter` (Today contract `0.8.0`; Core read model
-`1d86b65`; P0 vertical slice proof `f132709`; full suite 355 passed, 3 skipped; Vitest 22 passed)
+`3db621d` - `merge: integrate capability inbox review flow` (contract `0.9.0`; full suite
+367 passed, 3 skipped; Vitest 22 passed)
 
 # Completed
 
@@ -185,6 +185,8 @@ new feature; transfer the verified integration state to Kimi.
   authenticated `GET /today`, zero writes.
 - The desktop Today page now renders the Core projection (`c986936`); static fallback no longer
   appears in the production path, and error/offline states are explicit.
+- Capability inbox review is integrated (`3db621d`, contract `0.9.0`): USER-only acceptance enters
+  the official ontology only through a new graph release or an explicit merge target.
 - `W2-UI` remains incomplete because Today uses typed fallback and other primary views remain
   placeholders or lack product read projections.
 

@@ -11,6 +11,7 @@ from career_harness.api.knowledge import KnowledgeApi
 from career_harness.api.opportunities import OpportunityApi
 from career_harness.api.plugins import PluginApi
 from career_harness.api.project_reads import ProjectReadApi
+from career_harness.api.resume_studio import ResumeStudioApi
 from career_harness.api.today import TodayApi
 from career_harness.config import Settings
 from career_harness.db.application_repository import ApplicationRepository
@@ -21,6 +22,7 @@ from career_harness.db.migrations import upgrade_to_head
 from career_harness.db.opportunity_repository import OpportunityRepository
 from career_harness.db.project_repository import ProjectRepository
 from career_harness.db.resume_repository import ResumeRepository
+from career_harness.db.resume_studio_repository import ResumeStudioRepository
 from career_harness.db.session import create_sqlite_engine, sqlite_url
 from career_harness.platform import AppPaths
 from career_harness.services.capability_review_service import CapabilityReviewService
@@ -28,6 +30,7 @@ from career_harness.services.capability_workspace_service import CapabilityWorks
 from career_harness.services.command_service import CommandService
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.plugin_service import PluginLifecycleManager
+from career_harness.services.resume_studio_service import ResumeStudioService
 from career_harness.services.today_service import TodayService
 from career_harness.storage import ArtifactStore
 
@@ -39,6 +42,11 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
     upgrade_to_head(database_url)
     engine = create_sqlite_engine(database_url)
     knowledge_repository = KnowledgeRepository(engine, ArtifactStore(active_paths.artifacts))
+    resume_studio_repository = ResumeStudioRepository(
+        engine,
+        ArtifactStore(active_paths.artifacts),
+    )
+    resume_studio_service = ResumeStudioService(CommandService(engine), resume_studio_repository)
     plugin_service = PluginLifecycleManager(
         engine,
         knowledge_search=knowledge_repository.search_for_plugin,
@@ -66,4 +74,5 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         ),
         plugin_api=PluginApi(plugin_service),
         knowledge_api=KnowledgeApi(knowledge_repository),
+        resume_studio_api=ResumeStudioApi(resume_studio_service),
     )

@@ -16,6 +16,7 @@ from career_harness.api.knowledge import KnowledgeApi, create_knowledge_router
 from career_harness.api.opportunities import OpportunityApi, create_opportunity_router
 from career_harness.api.plugins import PluginApi, create_plugin_router
 from career_harness.api.project_reads import ProjectReadApi, create_project_read_router
+from career_harness.api.resume_studio import ResumeStudioApi, create_resume_studio_router
 from career_harness.api.today import TodayApi, create_today_router
 from career_harness.config import Settings
 
@@ -41,6 +42,7 @@ def create_app(
     capability_inbox_api: CapabilityInboxApi | None = None,
     plugin_api: PluginApi | None = None,
     knowledge_api: KnowledgeApi | None = None,
+    resume_studio_api: ResumeStudioApi | None = None,
 ) -> FastAPI:
     active_settings = settings or Settings()
     app = FastAPI(title="Agent Career Harness Local API", version=__version__)
@@ -98,5 +100,7 @@ def create_app(
         app.include_router(create_plugin_router(plugin_api))
     if knowledge_api is not None:
         app.include_router(create_knowledge_router(knowledge_api))
+    if resume_studio_api is not None:
+        app.include_router(create_resume_studio_router(resume_studio_api))
 
     return app

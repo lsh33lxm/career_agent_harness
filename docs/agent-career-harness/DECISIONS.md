@@ -51,3 +51,19 @@
 - 决定：首期 `career-kb-local` 使用可重建的 SQLite chunk 索引和确定性关键词评分；向量/图检索保留为后续 adapter，不引入运行时网络或不可复现模型依赖。
 - 原因：保持 local-first、离线可验收和结果可重放，同时不改变知识的 canonical/provenance 语义。
 - 影响：当前搜索能力是轻量 lexical baseline；WeKnora 的远程 hybrid search 仍需单独配置与授权。
+
+## D-2.0-008 — Resume Studio extends the existing Resume Core
+
+- 状态：ACCEPTED
+- 日期：2026-09-21
+- 决定：TargetProfile、模板、RenderRun 和 ATS report 通过 additive migration 关联既有 immutable ResumeBase/Patch/Revision；不新建平行 Resume truth。
+- 原因：现有 Resume Core 已具备 exact patch provenance 与 USER review gate，Studio 应承担编辑、预览、渲染和检查投影。
+- 影响：生成结果进入 Artifact Store；渲染不能创建 Resume Fact，申请提交仍由用户单独确认。
+
+## D-2.0-009 — First PDF renderer is dependency-free and repository-owned
+
+- 状态：ACCEPTED FOR IMPLEMENTATION
+- 日期：2026-09-21
+- 决定：首个 `resume-render-html` 使用项目自有暖纸 HTML/CSS 模板和确定性本地 PDF writer，支持可提取文字层与页数检查；非 Latin 字符完整保留在 HTML preview，PDF baseline 会替换字体不支持的 glyph。
+- 原因：不复制 Magic Resume 受限资产，不增加运行时外部依赖或网络，同时提供可重放的离线验收基线。
+- 影响：高级 CJK 字体嵌入和隔离 LaTeX/Typst worker 是后续增强，不阻塞当前 Core-backed workflow。

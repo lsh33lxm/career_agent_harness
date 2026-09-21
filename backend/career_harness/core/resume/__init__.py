@@ -11,6 +11,18 @@ from career_harness.core.resume.models import (
     ResumeRevision,
     RevisionRef,
 )
+from career_harness.core.resume.studio_models import (
+    AtsReportStatus,
+    RenderRunStatus,
+    ResumeAtsReport,
+    ResumeRenderRun,
+    ResumeStudioDiff,
+    ResumeTargetPatchRef,
+    ResumeTargetProfile,
+    ResumeTemplateRegistration,
+    TargetProfileStatus,
+    TemplateRenderer,
+)
 
 ENTITY_KIND = EntityKind.RESUME
 
@@ -24,4 +36,14 @@ __all__ = [
     "ResumePatchStatus",
     "ResumeRevision",
     "RevisionRef",
+    "AtsReportStatus",
+    "RenderRunStatus",
+    "ResumeAtsReport",
+    "ResumeRenderRun",
+    "ResumeStudioDiff",
+    "ResumeTargetPatchRef",
+    "ResumeTargetProfile",
+    "ResumeTemplateRegistration",
+    "TargetProfileStatus",
+    "TemplateRenderer",
 ]

@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | A Plugin Foundation | DONE (local/offline) | Slice A commit `e2f2807` |
 | B Career Knowledge | DONE (local/offline) | Slice C entry: ResumeBase → proposal-only render chain |
-| C Resume Studio | IN PROGRESS | 先冻结 Core-backed contract、fixture 和测试 |
-| D Opportunity Radar | NOT STARTED | 等待 Slice C DoD |
+| C Resume Studio | DONE (local/offline) | Migration `0016_resume_studio` |
+| D Opportunity Radar | IN PROGRESS | 先建立 job-source contract 与 staging fixture |
 | E Lifecycle / Replacement | NOT STARTED | 等待 Slice D DoD |
 
 ## Slice A checklist
@@ -59,6 +59,16 @@
 - Acceptance：document import → Artifact/Evidence provenance → local search/citation → proposal review → revision diff/rollback/index rebuild passed
 - External adapter：`career-kb-weknora` is read-only and blocked until endpoint, credentials, license and terms are verified
 - Next slice：Slice C — Resume Studio，starting with Core-backed Base/Target/Revision proposal chain
+
+## Slice C checkpoint
+
+- 状态：DONE — local/offline Resume Studio vertical slice
+- Migration：`0016_resume_studio`，TargetProfile/template/render/ATS records immutable and additive
+- Flow：approved ResumeBase/Revision → user TargetProfile → evidence-constrained Patch proposal/review → immutable revision → HTML preview/PDF Artifact → ATS report
+- Renderer：repository-owned `resume-render-html` template；未复制 Magic Resume 源码、模板、字体或资产
+- Verification：focused backend/API/migration/restore 59 passed；backend full 622 passed, 5 skipped；frontend 57 passed；Vite build passed；Ruff/diff check passed
+- External actions：ATS submit and third-party template execution remain blocked/proposal-only
+- Next slice：Slice D — Opportunity Radar，manual/offline sources first
 
 ## Recovery entry
 

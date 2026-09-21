@@ -11,3 +11,6 @@
 - 完成 Slice B Career Knowledge / Wiki：`0015_knowledge_foundation`、Artifact/Evidence provenance、Markdown/HTML/DOCX/PDF 文本导入、确定性 local search、proposal review、diff/rollback/index rebuild、WeKnora read-only blocked adapter、知识 API 与 `/knowledge` 页面。
 - Slice B 验证：focused knowledge `6 passed`；migration/backup `50 passed`；backend `619 passed, 5 skipped`；frontend `56 passed`；Vite build、Ruff、diff check 通过。
 - 下一入口切换为 Slice C Resume Studio；Resume 外部模板与真实 ATS/投递写入仍保持 proposal-only/blocked。
+- 完成 Slice C Resume Studio：`0016_resume_studio`、TargetProfile、target/patch refs、自有 HTML/CSS 模板、确定性 PDF、Artifact、ATS report、diff/provenance、authenticated API 与前端 Studio panel。
+- Slice C focused backend/API/migration/restore `59 passed`；backend full `622 passed, 5 skipped`；frontend `57 passed`；Vite build、Ruff、diff check 通过。
+- 下一入口切换为 Slice D Opportunity Radar；真实抓取器和自动投递保持 blocked。

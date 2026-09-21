@@ -150,6 +150,22 @@ export async function apiRequest<T>(
   return (await response.json()) as T;
 }
 
+export async function apiRequestBlob(path: string, init: RequestInit = {}): Promise<Blob> {
+  const config = runtimeConfig();
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${config.launchToken}`);
+  let response: Response;
+  try {
+    response = await fetch(`${config.apiBaseUrl}${path}`, { ...init, headers });
+  } catch {
+    throw new ApiError("Local API is unavailable");
+  }
+  if (!response.ok) {
+    throw new ApiError(`Local API request failed (${response.status})`, response.status);
+  }
+  return response.blob();
+}
+
 export function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
   return apiRequest<HealthResponse>("/health", { signal });
 }

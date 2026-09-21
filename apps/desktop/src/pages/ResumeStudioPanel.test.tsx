@@ -1,0 +1,64 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
+
+import { ResumeStudioPanel } from "./ResumeStudioPanel";
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  delete window.__ACH_CONFIG__;
+});
+
+const response = (body: unknown, mediaType = "application/json") => new Response(
+  mediaType === "application/json" ? JSON.stringify(body) : body as BodyInit,
+  { status: 200, headers: { "Content-Type": mediaType } },
+);
+
+it("creates a user target profile, renders preview, shows ATS gaps and authenticates download", async () => {
+  window.__ACH_CONFIG__ = {
+    apiBaseUrl: "http://127.0.0.1:8765",
+    launchToken: "resume-ui-token",
+  };
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce(response({
+      target_profile_id: "target_profile_001", resume_id: "resume_001",
+      title: "Platform Engineer", company: null, opportunity_id: null,
+      opportunity_revision: null, requirement_refs: [], keyword_gaps: [],
+      status: "approved", created_by: "user", created_at: "now",
+    }))
+    .mockResolvedValueOnce(response({
+      render_run_id: "render_001", resume_revision_id: "resume_revision_001",
+      target_profile_id: "target_profile_001", template_id: "resume-render-html",
+      status: "completed", output_artifact_id: "artifact_001",
+      output_sha256: "a".repeat(64), output_media_type: "application/pdf",
+      page_count: 1, preview_html: "<article class=\"resume\"><h1>Minnn</h1></article>",
+      checks: { text_layer: true }, created_by: "user", created_at: "now",
+    }))
+    .mockResolvedValueOnce(response({
+      render_run_id: "render_001", status: "warnings", page_count: 1,
+      checks: { text_layer: true }, keyword_gaps: ["Kubernetes"], created_at: "now",
+    }))
+    .mockResolvedValueOnce(response(new Blob(["%PDF"]), "application/pdf"));
+  vi.stubGlobal("fetch", fetcher);
+  const createObjectURL = vi.fn(() => "blob:resume");
+  const revokeObjectURL = vi.fn();
+  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectURL });
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+
+  render(<ResumeStudioPanel />);
+  fireEvent.change(screen.getByLabelText("Studio Resume Base ID"), { target: { value: "resume_001" } });
+  fireEvent.change(screen.getByLabelText("Studio Resume Revision ID"), { target: { value: "resume_revision_001" } });
+  fireEvent.change(screen.getByLabelText("Target Profile ID"), { target: { value: "target_profile_001" } });
+  fireEvent.change(screen.getByLabelText("目标岗位"), { target: { value: "Platform Engineer" } });
+  fireEvent.click(screen.getByRole("button", { name: "保存目标岗位" }));
+  expect(await screen.findByText(/目标岗位已保存/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "生成预览与 PDF" }));
+  expect(await screen.findByText("Minnn")).toBeTruthy();
+  expect(screen.getByText(/Kubernetes/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "下载 PDF" }));
+  await screen.findByText(/生成完成/);
+  expect(fetcher.mock.calls[3][1].headers.get("Authorization")).toBe("Bearer resume-ui-token");
+  expect(createObjectURL).toHaveBeenCalled();
+});

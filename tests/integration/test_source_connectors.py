@@ -313,6 +313,12 @@ def test_source_connector_migration_is_reversible(tmp_path: Path) -> None:
         display_name="可逆迁移", root_path=str(tmp_path / "legacy")
     )
     repository.start_run(legacy, SyncMode.FULL)
+    github = repository.create_github(
+        display_name="GitHub 可逆迁移",
+        repository_url="https://github.com/example/career-tool",
+        use_private_token=False,
+    )
+    repository.start_run(github, SyncMode.INCREMENTAL)
     command.downgrade(config, "0028_source_connectors")
     with engine.connect() as connection:
         assert connection.execute(

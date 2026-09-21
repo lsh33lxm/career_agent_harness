@@ -8,18 +8,29 @@ from httpx import ASGITransport, AsyncClient
 from career_harness.api.app import create_app
 from career_harness.api.github_projects import GitHubProjectApi
 from career_harness.api.project_reads import ProjectReadApi
+from career_harness.api.source_connectors import SourceConnectorApi
 from career_harness.config import Settings
+from career_harness.core.connectors.models import SyncMode
 from career_harness.db.migrations import upgrade_to_head
 from career_harness.db.project_repository import ProjectRepository
 from career_harness.db.session import create_sqlite_engine, sqlite_url
+from career_harness.db.source_connector_repository import SourceConnectorRepository
+from career_harness.db.task_repository import TaskRepository
 from career_harness.platform.secure_store import MemorySecretStore
 from career_harness.services.github_project_service import FetchedRepository, GitHubProjectService
+from career_harness.services.source_connector_service import (
+    GitHubConnectorService,
+    LocalFolderConnectorService,
+)
+from career_harness.services.task_service import RegisteredTaskHandler, TaskService
+from career_harness.storage import ArtifactStore
 
 
 class _Fetcher:
     def __init__(self, root: Path) -> None:
         self.root = root
         self.tokens: list[str | None] = []
+        self.commit_sha = "a" * 40
 
     def fetch(self, url: str, cache_root: Path, token: str | None) -> FetchedRepository:
         assert url == "https://github.com/example/career-tool"
@@ -27,7 +38,7 @@ class _Fetcher:
         files = [item for item in self.root.rglob("*") if item.is_file()]
         return FetchedRepository(
             self.root,
-            "a" * 40,
+            self.commit_sha,
             len(files),
             sum(item.stat().st_size for item in files),
         )
@@ -134,3 +145,127 @@ async def test_private_token_is_stored_outside_database_and_never_returned(tmp_p
         assert result.status_code == 200
         assert fetcher.tokens == ["synthetic-github-token-value"]
         assert "synthetic-github-token-value" not in result.text
+
+
+@pytest.mark.asyncio
+async def test_github_analysis_uses_governed_connector_cursor_and_task_sync(
+    tmp_path: Path,
+) -> None:
+    repository_root = tmp_path / "repository"
+    repository_root.mkdir()
+    (repository_root / "README.md").write_text("# 可追溯项目", encoding="utf-8")
+    database_url = sqlite_url(tmp_path / "core.db")
+    upgrade_to_head(database_url)
+    engine = create_sqlite_engine(database_url)
+    connector_repository = SourceConnectorRepository(engine)
+    artifacts = ArtifactStore(tmp_path / "artifacts")
+    fetcher = _Fetcher(repository_root)
+    github_projects = GitHubProjectService(
+        engine, tmp_path / "cache", MemorySecretStore(), fetcher
+    )
+    github_connector = GitHubConnectorService(connector_repository, github_projects)
+    tasks = TaskService(
+        TaskRepository(engine),
+        handlers=(
+            RegisteredTaskHandler(
+                task_type="source.github_sync",
+                stage="source_sync",
+                handler=lambda payload: github_connector.sync(
+                    str(payload["connector_id"]), SyncMode(str(payload["mode"]))
+                ).model_dump(mode="json"),
+            ),
+        ),
+        stage_limits={"source_sync": 1},
+    )
+    app = create_app(
+        Settings.for_test("github-connector-test-token"),
+        github_project_api=GitHubProjectApi(github_projects, github_connector),
+        source_connector_api=SourceConnectorApi(
+            LocalFolderConnectorService(connector_repository, artifacts),
+            connector_repository,
+            tasks,
+            None,
+            github_connector,
+        ),
+    )
+    headers = {"Authorization": "Bearer github-connector-test-token"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        denied = await client.post(
+            "/api/v1/source-connectors/github",
+            headers=headers,
+            json={
+                "display_name": "项目资料",
+                "repository_url": "https://github.com/example/career-tool",
+                "confirm_read_only_network": False,
+            },
+        )
+        assert denied.status_code == 422
+        assert fetcher.tokens == []
+
+        created = await client.post(
+            "/api/v1/source-connectors/github",
+            headers=headers,
+            json={
+                "display_name": "项目资料",
+                "repository_url": "https://github.com/example/career-tool",
+                "confirm_read_only_network": True,
+            },
+        )
+        assert created.status_code == 200
+        connector_id = created.json()["connector_id"]
+        unverified = await client.post(
+            f"/api/v1/source-connectors/{connector_id}/test", headers=headers
+        )
+        assert unverified.json()["network_verified"] is False
+        assert fetcher.tokens == []
+
+        first = await client.post(
+            "/api/v1/github/analyze",
+            headers=headers,
+            json={
+                "repository_url": "https://github.com/example/career-tool",
+                "confirm_read_only_network": True,
+            },
+        )
+        assert first.status_code == 200
+        connectors = await client.get("/api/v1/source-connectors", headers=headers)
+        assert len(connectors.json()) == 1
+        assert connectors.json()[0]["connector_id"] == connector_id
+        tested = await client.post(
+            f"/api/v1/source-connectors/{connector_id}/test", headers=headers
+        )
+        assert tested.json()["network_verified"] is True
+        assert tested.json()["last_verified_commit"] == "a" * 40
+        runs = await client.get(
+            f"/api/v1/source-connectors/{connector_id}/runs", headers=headers
+        )
+        assert runs.json()[0]["stats"]["created"] == 1
+
+        repeated = await client.post(
+            f"/api/v1/source-connectors/{connector_id}/sync",
+            headers=headers,
+            json={"mode": "incremental"},
+        )
+        assert repeated.status_code == 200
+        runs = await client.get(
+            f"/api/v1/source-connectors/{connector_id}/runs", headers=headers
+        )
+        assert runs.json()[0]["stats"]["skipped"] == 1
+
+        fetcher.commit_sha = "b" * 40
+        updated = await client.post(
+            "/api/v1/github/analyze",
+            headers=headers,
+            json={
+                "repository_url": "https://github.com/example/career-tool.git",
+                "confirm_read_only_network": True,
+            },
+        )
+        assert updated.status_code == 200
+        assert updated.json()["commit_sha"] == "b" * 40
+        connectors = await client.get("/api/v1/source-connectors", headers=headers)
+        assert len(connectors.json()) == 1
+        runs = await client.get(
+            f"/api/v1/source-connectors/{connector_id}/runs", headers=headers
+        )
+        assert runs.json()[0]["stats"]["updated"] == 1

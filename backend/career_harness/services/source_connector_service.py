@@ -16,6 +16,10 @@ from career_harness.core.connectors.models import (
 )
 from career_harness.core.evidence.models import ArtifactClass
 from career_harness.db.source_connector_repository import SourceConnectorRepository
+from career_harness.services.github_project_service import (
+    GitHubProjectService,
+    normalize_github_url,
+)
 from career_harness.services.legacy_import_service import LegacyImportService
 from career_harness.storage import ArtifactStore
 
@@ -256,4 +260,129 @@ class LegacyAgentRadarConnectorService:
         connector = self.repository.get(connector_id)
         if connector.connector_type != "legacy_agent_radar":
             raise ValueError("source connector is not Legacy Agent Radar")
+        return connector
+
+
+class GitHubConnectorService:
+    def __init__(
+        self,
+        repository: SourceConnectorRepository,
+        github_projects: GitHubProjectService,
+    ) -> None:
+        self.repository = repository
+        self.github_projects = github_projects
+
+    def create(
+        self,
+        *,
+        display_name: str,
+        repository_url: str,
+        use_private_token: bool,
+        confirm_read_only_network: bool,
+    ) -> SourceConnector:
+        cleaned_name = display_name.strip()
+        if not cleaned_name:
+            raise ValueError("connector display name is required")
+        if not confirm_read_only_network:
+            raise ValueError("必须确认只读 GitHub 网络请求")
+        normalized_url, _owner, _repository = normalize_github_url(repository_url)
+        self._require_token(use_private_token)
+        return self.repository.create_github(
+            display_name=cleaned_name,
+            repository_url=normalized_url,
+            use_private_token=use_private_token,
+        )
+
+    def get_or_create(
+        self,
+        *,
+        display_name: str,
+        repository_url: str,
+        use_private_token: bool,
+        confirm_read_only_network: bool,
+    ) -> SourceConnector:
+        cleaned_name = display_name.strip()
+        if not cleaned_name:
+            raise ValueError("connector display name is required")
+        if not confirm_read_only_network:
+            raise ValueError("必须确认只读 GitHub 网络请求")
+        normalized_url, _owner, _repository = normalize_github_url(repository_url)
+        self._require_token(use_private_token)
+        for connector in self.repository.list():
+            if connector.connector_type != "github":
+                continue
+            if (
+                connector.config.get("repository_url") == normalized_url
+                and bool(connector.config.get("use_private_token")) == use_private_token
+            ):
+                return connector
+        return self.repository.create_github(
+            display_name=cleaned_name,
+            repository_url=normalized_url,
+            use_private_token=use_private_token,
+        )
+
+    def test_connection(self, connector_id: str) -> dict[str, Any]:
+        connector = self._connector(connector_id)
+        repository_url = str(connector.config["repository_url"])
+        normalize_github_url(repository_url)
+        use_private_token = bool(connector.config.get("use_private_token"))
+        self._require_token(use_private_token)
+        return {
+            "ok": True,
+            "connector_type": connector.connector_type,
+            "repository_url": repository_url,
+            "credential_ready": not use_private_token
+            or self.github_projects.token_status()["configured"],
+            "network_verified": bool(
+                connector.sync_cursor and connector.sync_cursor.get("commit_sha")
+            ),
+            "last_verified_commit": (
+                connector.sync_cursor.get("commit_sha") if connector.sync_cursor else None
+            ),
+        }
+
+    def sync(self, connector_id: str, mode: SyncMode = SyncMode.INCREMENTAL) -> SyncRun:
+        connector = self._connector(connector_id)
+        if connector.status is ConnectorStatus.PAUSED:
+            raise ValueError("paused source connector cannot sync")
+        run = self.repository.start_run(connector, mode)
+        try:
+            analysis = self.github_projects.analyze(
+                str(connector.config["repository_url"]),
+                bool(connector.config.get("use_private_token")),
+            )
+            previous_commit = (
+                str(connector.sync_cursor.get("commit_sha"))
+                if connector.sync_cursor and connector.sync_cursor.get("commit_sha")
+                else None
+            )
+            commit_sha = str(analysis["commit_sha"])
+            stats = SyncStats(
+                created=1 if previous_commit is None else 0,
+                updated=1 if previous_commit not in (None, commit_sha) else 0,
+                skipped=1 if previous_commit == commit_sha else 0,
+            )
+            cursor = {
+                "completed_at": datetime.now(UTC).isoformat(),
+                "repository_url": analysis["repository_url"],
+                "commit_sha": commit_sha,
+                "analysis_id": analysis["analysis_id"],
+                "project_id": analysis["project_id"],
+            }
+            return self.repository.complete_run(run.sync_run_id, cursor, stats)
+        except Exception as error:
+            self.repository.fail_run(run.sync_run_id, str(error))
+            raise
+
+    def _require_token(self, use_private_token: bool) -> None:
+        if use_private_token and not self.github_projects.token_status()["configured"]:
+            raise ValueError("尚未配置 GitHub 只读令牌")
+
+    def _connector(self, connector_id: str) -> SourceConnector:
+        connector = self.repository.get(connector_id)
+        if connector.connector_type != "github":
+            raise ValueError("source connector is not GitHub")
+        if not connector.config.get("read_only_network_confirmed"):
+            raise ValueError("GitHub connector lacks read-only network confirmation")
         return connector

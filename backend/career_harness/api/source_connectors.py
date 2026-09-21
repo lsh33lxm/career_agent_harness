@@ -10,6 +10,7 @@ from career_harness.core.common import FrozenModel
 from career_harness.core.connectors.models import ConnectorStatus, SyncMode
 from career_harness.db.source_connector_repository import SourceConnectorRepository
 from career_harness.services.source_connector_service import (
+    GitHubConnectorService,
     LegacyAgentRadarConnectorService,
     LocalFolderConnectorService,
 )
@@ -26,6 +27,13 @@ class LegacyAgentRadarConnectorRequest(FrozenModel):
     root_path: str = Field(min_length=3, max_length=4096)
 
 
+class GitHubConnectorRequest(FrozenModel):
+    display_name: str = Field(min_length=1, max_length=255)
+    repository_url: str = Field(min_length=20, max_length=512)
+    use_private_token: bool = False
+    confirm_read_only_network: bool
+
+
 class SyncRequest(FrozenModel):
     mode: SyncMode = SyncMode.INCREMENTAL
 
@@ -36,12 +44,15 @@ class SourceConnectorApi:
     repository: SourceConnectorRepository
     tasks: TaskService
     legacy_service: LegacyAgentRadarConnectorService | None = None
+    github_service: GitHubConnectorService | None = None
 
     def service_for(self, connector_type: str) -> Any:
         if connector_type == "local_folder":
             return self.service
         if connector_type == "legacy_agent_radar" and self.legacy_service is not None:
             return self.legacy_service
+        if connector_type == "github" and self.github_service is not None:
+            return self.github_service
         raise ValueError(f"unsupported source connector type: {connector_type}")
 
 
@@ -69,6 +80,15 @@ def create_source_connector_router(api: SourceConnectorApi) -> APIRouter:
             raise HTTPException(409, "Legacy Agent Radar connector is unavailable")
         try:
             return api.legacy_service.create(**request.model_dump())
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/github")
+    def create_github(request: GitHubConnectorRequest) -> Any:
+        if api.github_service is None:
+            raise HTTPException(409, "GitHub connector is unavailable")
+        try:
+            return api.github_service.create(**request.model_dump())
         except Exception as error:
             raise _error(error) from error
 

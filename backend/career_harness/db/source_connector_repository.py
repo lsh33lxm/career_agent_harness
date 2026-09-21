@@ -80,6 +80,25 @@ class SourceConnectorRepository:
             delete_policy=DeletePolicy.KEEP,
         )
 
+    def create_github(
+        self,
+        *,
+        display_name: str,
+        repository_url: str,
+        use_private_token: bool,
+    ) -> SourceConnector:
+        return self._create(
+            connector_type="github",
+            display_name=display_name,
+            config={
+                "repository_url": repository_url,
+                "use_private_token": use_private_token,
+                "read_only_network_confirmed": True,
+            },
+            conflict_policy=ConflictPolicy.DEFER,
+            delete_policy=DeletePolicy.KEEP,
+        )
+
     def _create(
         self,
         *,

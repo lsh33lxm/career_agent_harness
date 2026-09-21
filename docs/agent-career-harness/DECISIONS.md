@@ -141,3 +141,11 @@
 - 决定：只接受标准 GitHub HTTPS owner/repository URL；仓库浅克隆到 Data Root 受控缓存并禁用 hooks，设置 120 秒、5,000 文件和 100 MiB（含 `.git`）上限。只执行静态读取和只读 git metadata 命令。分析结果形成 immutable profile 并关联 Project，但保持 `document/code evidence`，不自动提升为个人 Capability、Resume Fact 或 Outcome。
 - 原因：第三方仓库内容不可信，项目存在与个人掌握/贡献不是同一事实；安全缓存和 exact commit/provenance 支持重放而不污染 Git 仓库。
 - 影响：私有 token 仅在 Windows Credential Manager 和子进程环境中出现，不进入 argv/日志/SQLite/API。网络失败必须 fail-loud，不创建 synthetic profile。
+
+## D-2.0-020 — Default Data Root uses the existing read-only Legacy connector for first-run history
+
+- 状态：`ACCEPTED`
+- 日期：2026-09-22
+- 决定：默认 Windows Data Root `%LOCALAPPDATA%\\AgentCareerHarness` 首次需要历史内容时，复用已审计的 Legacy Agent Radar `SourceConnector` 增量同步；导入只写本地 Core/Artifact 数据，保留 source path、hash、batch、row provenance 与 duplicate state，不执行 canonical cutover，也不修改 Legacy。
+- 原因：桌面首次启动应能直接看到真实岗位与知识投影，同时保持现有幂等、可审计和只读边界；单独复制临时验收库会破坏可重放性。
+- 影响：默认目录当前有 1,028 条岗位 staging、6,547 条历史投影；User Priority、Career Fact、Capability 和 Application 仍不会由历史导入自动创建或提升。

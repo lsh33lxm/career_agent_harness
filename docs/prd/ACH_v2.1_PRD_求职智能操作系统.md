@@ -3,7 +3,7 @@
 版本：v2.1
 
 日期：2026-09-22
-实现基线：`31f32ea`（integration worktree；后续文档提交仅更新本文件）
+实现基线：`82a5948`（integration worktree；`fix(desktop): restore Today action contrast`；后续文档提交不改变实现基线）
 
 ## 1. 本次目标与结论
 
@@ -106,7 +106,7 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 
 ## 10. 测试与构建结果
 
-本轮可审计实现提交：`4e8e944`（Memory）、`0caa294`（Task Queue）、`e14d795`（local-folder SourceConnector）、`64374d0`（知识页资料源 UI）、`58c4b3a`（scoped Tool Registry/API）、`9bae9f1`（Legacy SourceConnector）、`34ef3d8`（GitHub SourceConnector）、`eee4776`（Feishu Today dry-run）、`09f4674`（资料源类型 UI）、`4b2613d`/`924c482`（任务恢复 UI 与执行）、`31f32ea`（review-gated Wiki 编辑）。
+本轮可审计实现提交：`4e8e944`（Memory）、`0caa294`（Task Queue）、`e14d795`（local-folder SourceConnector）、`64374d0`（知识页资料源 UI）、`58c4b3a`（scoped Tool Registry/API）、`9bae9f1`（Legacy SourceConnector）、`34ef3d8`（GitHub SourceConnector）、`eee4776`（Feishu Today dry-run）、`09f4674`（资料源类型 UI）、`4b2613d`/`924c482`（任务恢复 UI 与执行）、`31f32ea`（review-gated Wiki 编辑）、`82a5948`（Today 操作按钮对比度修复）。
 
 - Backend：`681 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制。
 - Frontend：`23 test files, 64 passed`。
@@ -114,9 +114,9 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 - TypeScript/Vite：production build 通过。
 - Legacy/SourceConnector focused：`10 passed`；GitHub/SourceConnector focused：`11 passed`；Feishu/Today focused：`11 passed`；Tool/API focused：`6 passed`。
 - 数据库 migration head：`0030_github_source_connector`；Legacy/GitHub connector 的升级、带 sync run 的降级清理及再次升级均通过。
-- Desktop：PyInstaller sidecar、`cargo check --locked` 与 Tauri NSIS release 构建通过；sidecar SHA-256 `692fd89ab87bd7c1936f3af50febe39d0a9a6c6002ab2c9f16fd05e479fe8091`，NSIS SHA-256 `669ac86ec82d679ac2f38d388515ae27838f15b89466be998aa2a189a90ead96`。
+- Desktop：PyInstaller sidecar、`cargo check --locked` 与 Tauri NSIS release 构建通过；桌面 EXE SHA-256 `87341a58b39af57651ef1840e3b3f0003ac4ade035c45abf3cf6a2d3a1471392`，sidecar SHA-256 `692fd89ab87bd7c1936f3af50febe39d0a9a6c6002ab2c9f16fd05e479fe8091`，NSIS SHA-256 `dfa35e19f71adbad8462918bc1a04e3ea67ce4cdd87fcb20d577862a1d8dc886`。
 - 安装包：`apps/desktop/src-tauri/target/release/bundle/nsis/Agent Career Harness_0.1.0_x64-setup.exe`。
-- 干净数据目录验收：首次只读导入 7,575 条（新增 7,575、重复标记 684、失败 0）；同源重跑新增 0、未变化 7,575，导入前后 Legacy 签名一致。新 sidecar 将该库从 `0028_source_connectors` 原地升级到 `0030_github_source_connector`；重启后 `Python` 岗位检索与详情 provenance 仍可用，岗位 1,028、面试 503、问题 4,816、刷题 324；SQLite `integrity_check=ok`、外键违规 0。Feishu preview 返回 `dry_run`；GitHub 未确认网络时返回 422 且不执行 fetch。
+- 干净数据目录验收：首次只读导入 7,575 条（新增 7,575、重复标记 684、失败 0）；同源重跑新增 0、未变化 7,575，导入前后 Legacy 签名一致。新 sidecar 将该库从 `0028_source_connectors` 原地升级到 `0030_github_source_connector`；重启后 `Python` 岗位检索与详情 provenance 仍可用，岗位 1,028、面试 503、问题 4,816、刷题 324；SQLite `integrity_check=ok`、外键违规 0。默认 Windows Data Root `%LOCALAPPDATA%\AgentCareerHarness` 已通过同一 Legacy SourceConnector 完成首轮导入，当前与干净验收库一样保留历史投影而未执行 canonical cutover。Feishu preview 返回 `dry_run`；GitHub 未确认网络时返回 422 且不执行 fetch。
 
 ## 11. 未完成与阻塞
 

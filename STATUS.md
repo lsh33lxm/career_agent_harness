@@ -1,6 +1,6 @@
 # Agent Career Harness 当前状态
 
-更新时间：2026-09-22；分支：`refactor/v1.4-integration`；最新 Windows 桌面打包基线：`95236fb`。
+更新时间：2026-09-22；分支：`refactor/v1.4-integration`；当前集成基线：`82a5948`（Today 操作按钮对比度修复）。
 
 ## 当前结论
 
@@ -20,11 +20,11 @@
 
 ## 最新验证
 
-- Backend：`657 passed, 5 skipped`；GitHub/Project/migration subset：`52 passed`。
-- Frontend：`19 test files, 53 passed`，`npm run build` 通过；旧内部 ID 输入用例已由列表/选择流程用例替代。
+- Backend：`681 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；GitHub/Project/migration subset：`52 passed`。
+- Frontend：`23 test files, 64 passed`，`npm run build` 通过；旧内部 ID 输入用例已由列表/选择流程用例替代。
 - Knowledge/Today focused：backend `2 passed`；frontend `7 passed`；真实 overview API 返回岗位 1,028、面试 503、问题 4,816、刷题 324、待复核 709。
 - Legacy preview：读取 7,575、新增 0、更新 0、未变化 7,575、重复 684、失败 0；FK errors 0，源 metadata signature 不变。
-- Clean-install migration：首轮读取 7,575、新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575，导入前后源签名一致；`Python` 查询返回 10 条并抽样核对源文件、SHA-256、行号、批次与 JD。
+- Clean-install migration：首轮读取 7,575、新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575，导入前后源签名一致；`Python` 查询返回 10 条并抽样核对源文件、SHA-256、行号、批次与 JD。默认 `%LOCALAPPDATA%\AgentCareerHarness` 也已完成一次同样的幂等导入，岗位 staging 1,028、历史投影 6,547、失败 0。
 - Desktop packaging：PyInstaller one-file smoke、Cargo check、Vite production build、Tauri debug no-bundle 与 release NSIS bundle 均通过；隔离安装版首次建库后监听随机端口，窗口关闭后 sidecar 进程数归零。
 - v2.0 hardening focused：backend `32 passed`、Plugins UI `1 passed`；Ruff `backend tests migrations` 与 `git diff --check` 通过。
 
@@ -36,7 +36,7 @@
 
 禁止 main merge、push、生产 Feishu 写入、canonical cutover、legacy 修改和破坏性迁移。
 
-详见 [v1.5 current-state PRD](docs/prd/Agent_Career_Harness_PRD_v1.5_现状与下一阶段.md) 与 [overnight ledger](docs/v1.5/overnight-progress.md)。
+详见 [v2.1 求职智能操作系统 PRD](docs/prd/ACH_v2.1_PRD_求职智能操作系统.md)。
 
 ## 历史完成记录（只作审计，不代表当前计数）
 

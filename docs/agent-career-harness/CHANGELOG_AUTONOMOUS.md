@@ -7,6 +7,8 @@
 - 在干净安装数据库执行真实 Legacy 只读导入：首轮读取/新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575；导入前后源签名一致，Python 岗位查询与 provenance 抽样通过。
 - 新增只读 Legacy 知识概览 API 与知识页真实内容：展示岗位/面试/问题/刷题计数、技能/公司/地点趋势、近期问题和面试 provenance；历史内容保持未确认投影。
 - Today 在 Core 队列为空时读取真实历史岗位数量并提供“机会”入口，不自动创建 Opportunity 或修改用户优先级。局部验证 backend `2 passed`、frontend `7 passed`，frontend full `55 passed`，Vite build/Ruff/diff check 通过。
+- 以 `82a5948` 为当前集成基线，修复 Today 操作按钮文字对比度并完成默认 `%LOCALAPPDATA%\\AgentCareerHarness` 的 Legacy SourceConnector 首轮导入：岗位 staging `1,028`、历史投影 `6,547`、导入读取 `7,575`、重复 `684`、失败 `0`，源签名保持不变，SQLite 完整性与外键检查通过。
+- 最终回归复核：backend `681 passed, 5 skipped`，frontend `23 files / 64 passed`，TypeScript/Vite build、Ruff、Cargo check 与 `git diff --check` 通过；桌面 EXE、sidecar 和 NSIS 产物 SHA-256 已同步到 v2.1 PRD。
 
 ## 2026-09-21
 

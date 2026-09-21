@@ -23,8 +23,8 @@
 ## Final audit
 
 - 状态：DONE — Slice A–E 均已完成 local/offline Definition of Done；当前没有阻塞本地继续工作的 P0/P1。
-- Backend：`650 passed, 5 skipped`；跳过项均是 Windows symlink 创建权限/能力限制。
-- Frontend：`18 test files, 59 passed`；Vite production build passed。
+- Backend：`681 passed, 5 skipped`；跳过项均是 Windows symlink 创建权限/能力限制。
+- Frontend：`23 test files, 64 passed`；Vite production build passed。
 - Quality：Ruff `backend tests migrations` passed；`git diff --check` passed。
 - Recovery：migration upgrade/downgrade、backup/restore、plugin lifecycle rehearsal 均通过；Legacy Agent Radar 仍只读。
 - External boundary：真实 marketplace 下载、第三方 crawler/portal、Typst compiler、Feishu/Gmail/Notion/ATS 写入仍按 blocker ledger 保持隔离或 proposal-only。
@@ -38,8 +38,9 @@
 - 首次安装等待窗口按 one-file 解包/安全扫描延长到 90 秒；sidecar stdout/stderr 保存到 Data Root `logs/desktop-sidecar.log`，不记录 token。
 - 关闭桌面窗口会回收 PyInstaller bootloader 与 Python 子进程；重复验收确认监听端口释放。
 - 干净安装数据库 Legacy 导入首轮 `7,575 new / 684 duplicate / 0 failed`，第二轮 `0 new / 7,575 unchanged`，源签名前后一致；未修改 Legacy。
+- 默认 `%LOCALAPPDATA%\AgentCareerHarness` 已通过同一 Legacy SourceConnector 完成首轮幂等导入，当前岗位 staging `1,028`、历史投影 `6,547`、失败 `0`，仍保持 historical projection 而未执行 canonical cutover。
 - 构建：PyInstaller sidecar、Cargo check、Vite production、Tauri debug no-bundle、release NSIS 全部通过。
-- 回归：backend `657 passed, 5 skipped`；frontend `19 files / 53 passed`；Ruff、Cargo check、Vite build 与 diff check 通过。
+- 回归：backend `681 passed, 5 skipped`；frontend `23 files / 64 passed`；Ruff、Cargo check、Vite build 与 diff check 通过。
 
 ## Legacy knowledge projection checkpoint (2026-09-22)
 
@@ -56,7 +57,7 @@
 - 非 `builtin://` release 即使声明已知 SPDX license，也会因人工 license/NOTICE 与 install-script/vulnerability scan 未完成而保持 quarantined；不会被离线声明自动信任。
 - Plugin knowledge search 默认脱敏 email、phone 与 credential-shaped text，并可限定 knowledge category；WeKnora blocked adapter 覆盖声明的 `search/read/ask/list` 能力。
 - Migration `0022_job_source_terms_provenance` 将每次 source run 的 terms/robots/ToS note 与检查时间作为 immutable provenance 保存，并通过 upgrade/downgrade 验证。
-- Focused：backend `32 passed`，Plugins UI `1 passed`；full：backend `650 passed, 5 skipped`，frontend `18 files / 59 passed`；Vite build、Ruff、diff check 通过。
+- Focused：backend `32 passed`，Plugins UI `1 passed`；full：backend `681 passed, 5 skipped`，frontend `23 files / 64 passed`；Vite build、Ruff、diff check 通过。
 - Independent review：APPROVE；历史 scan report、rollback、enable、healthcheck 与 invoke 的 quarantine bypass 已回归验证，P0/P1/P2/P3 均无未解决项。
 
 ## Slice A checklist

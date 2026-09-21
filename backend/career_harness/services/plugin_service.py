@@ -13,6 +13,7 @@ from typing import Any
 
 from sqlalchemy import Engine, text
 
+from career_harness import __version__
 from career_harness.adapters.career_kb_weknora import CareerKbWeknoraAdapter
 from career_harness.core.plugin.contracts import (
     PluginEnvelope,
@@ -186,24 +187,43 @@ class PluginRegistry:
                 career_kb_weknora,
             ),
         )
-        self._plugins = {item.manifest.id: item for item in defaults}
+        self._plugins = {(item.manifest.id, item.manifest.version): item for item in defaults}
 
     def register(self, manifest: PluginManifest, handler: PluginHandler) -> None:
-        existing = self._plugins.get(manifest.id)
+        key = (manifest.id, manifest.version)
+        existing = self._plugins.get(key)
         if existing is not None:
             if existing.manifest.content_hash() != manifest.content_hash():
                 raise ValueError(f"plugin id already registered: {manifest.id}")
             return
-        self._plugins[manifest.id] = RegisteredPlugin(manifest, handler)
+        self._plugins[key] = RegisteredPlugin(manifest, handler)
 
-    def get(self, plugin_id: str) -> RegisteredPlugin:
-        try:
-            return self._plugins[plugin_id]
-        except KeyError as exc:
-            raise PluginNotFound(plugin_id) from exc
+    def get(self, plugin_id: str, version: str | None = None) -> RegisteredPlugin:
+        matches = [item for key, item in self._plugins.items() if key[0] == plugin_id]
+        if not matches:
+            raise PluginNotFound(plugin_id)
+        if version is not None:
+            for item in matches:
+                if item.manifest.version == version:
+                    return item
+            raise PluginNotFound(f"{plugin_id}@{version}")
+        return max(matches, key=lambda item: _version_key(item.manifest.version))
 
     def list(self) -> tuple[RegisteredPlugin, ...]:
-        return tuple(self._plugins.values())
+        plugin_ids = sorted({key[0] for key in self._plugins})
+        return tuple(self.get(plugin_id) for plugin_id in plugin_ids)
+
+    def versions(self, plugin_id: str) -> tuple[RegisteredPlugin, ...]:
+        matches = [item for key, item in self._plugins.items() if key[0] == plugin_id]
+        if not matches:
+            raise PluginNotFound(plugin_id)
+        return tuple(sorted(matches, key=lambda item: _version_key(item.manifest.version)))
+
+
+def _version_key(version: str) -> tuple[int, int, int, str]:
+    core, _, suffix = version.partition("-")
+    numbers = tuple(int(item) for item in core.split("."))
+    return numbers[0], numbers[1], numbers[2], suffix
 
 
 class PermissionGate:
@@ -427,8 +447,8 @@ class PluginLifecycleManager:
         self.runner = runner or PluginRunner()
         self.knowledge_search = knowledge_search
 
-    def _registered(self, plugin_id: str) -> RegisteredPlugin:
-        return self.registry.get(plugin_id)
+    def _registered(self, plugin_id: str, version: str | None = None) -> RegisteredPlugin:
+        return self.registry.get(plugin_id, version)
 
     def _audit(
         self,
@@ -508,7 +528,7 @@ class PluginLifecycleManager:
         return result
 
     def install_preview(self, manifest: PluginManifest) -> dict[str, Any]:
-        registered = self._registered(manifest.id)
+        registered = self._registered(manifest.id, manifest.version)
         if registered.manifest.content_hash() != manifest.content_hash():
             raise PluginStateError("manifest does not match registered plugin")
         return {
@@ -531,6 +551,8 @@ class PluginLifecycleManager:
     ) -> dict[str, Any]:
         preview = self.install_preview(manifest)
         now = datetime.now(UTC)
+        audit_action = "install"
+        result: dict[str, Any]
         with self.engine.begin() as connection:
             existing = connection.execute(
                 text(
@@ -541,38 +563,31 @@ class PluginLifecycleManager:
             ).mappings().first()
             if existing is not None:
                 if existing["current_version"] == manifest.version:
-                    self._audit(manifest.id, "install", actor, preview, idempotency_key)
-                    return {
+                    result = {
                         **preview,
                         "status": existing["status"],
                         "idempotent": True,
                     }
-                previous = existing["current_version"]
-                connection.execute(
-                    text(
-                        "INSERT OR REPLACE INTO plugin_releases "
-                        "(plugin_id, version, release_commit, dependencies, "
-                        "compatibility, scan_report, "
-                        "content_hash, created_at) VALUES "
-                        "(:plugin_id, :version, :commit, :dependencies, :compatibility, "
-                        ":scan_report, :content_hash, :created_at)"
-                    ),
-                    self._release_values(manifest, now),
-                )
-                connection.execute(
-                    text(
-                        "UPDATE plugin_installations SET previous_version=:previous, "
-                        "current_version=:version, pinned_release=:version, status='disabled', "
-                        "enabled=0, updated_at=:now WHERE plugin_id=:plugin_id"
-                    ),
-                    {
-                        "previous": previous,
-                        "version": manifest.version,
-                        "now": now,
-                        "plugin_id": manifest.id,
-                    },
-                )
+                else:
+                    connection.execute(
+                        text(
+                            "INSERT OR IGNORE INTO plugin_releases "
+                            "(plugin_id, version, release_commit, dependencies, "
+                            "compatibility, scan_report, "
+                            "content_hash, created_at) VALUES "
+                            "(:plugin_id, :version, :commit, :dependencies, :compatibility, "
+                            ":scan_report, :content_hash, :created_at)"
+                        ),
+                        self._release_values(manifest, now),
+                    )
+                    result = {
+                        **preview,
+                        "status": "candidate_staged",
+                        "idempotent": False,
+                    }
+                    audit_action = "candidate_stage"
             else:
+                initial_status = "installed" if preview["safe_to_install"] else "quarantined"
                 connection.execute(
                     text(
                         "INSERT INTO plugin_packages "
@@ -599,11 +614,13 @@ class PluginLifecycleManager:
                         "INSERT INTO plugin_installations "
                         "(plugin_id, current_version, previous_version, status, config, enabled, "
                         "pinned_release, installed_at, updated_at) VALUES "
-                        "(:plugin_id, :version, NULL, 'installed', '{}', 0, :version, :now, :now)"
+                        "(:plugin_id, :version, NULL, :status, :config, 0, :version, :now, :now)"
                     ),
                     {
                         "plugin_id": manifest.id,
                         "version": manifest.version,
+                        "status": initial_status,
+                        "config": json.dumps({"update_policy": "notify"}),
                         "now": now,
                     },
                 )
@@ -622,8 +639,9 @@ class PluginLifecycleManager:
                             "now": now,
                         },
                     )
-        self._audit(manifest.id, "install", actor, preview, idempotency_key)
-        return {**preview, "status": "installed", "idempotent": False}
+                result = {**preview, "status": initial_status, "idempotent": False}
+        self._audit(manifest.id, audit_action, actor, result, idempotency_key)
+        return result
 
     @staticmethod
     def _package_values(manifest: PluginManifest, now: datetime) -> dict[str, Any]:
@@ -692,6 +710,8 @@ class PluginLifecycleManager:
             ).mappings().first()
             if row is None:
                 raise PluginStateError("plugin is not installed")
+            if enabled and row["status"] == "quarantined":
+                raise PluginStateError("quarantined plugin cannot be enabled")
             status = "enabled" if enabled else "disabled"
             connection.execute(
                 text(
@@ -720,7 +740,14 @@ class PluginLifecycleManager:
         return self._set_enabled(plugin_id, False, actor, "disable")
 
     def healthcheck(self, plugin_id: str, *, actor: str = "user") -> PluginEnvelope:
-        registration = self._registered(plugin_id)
+        with self.engine.connect() as connection:
+            version = connection.execute(
+                text("SELECT current_version FROM plugin_installations WHERE plugin_id=:id"),
+                {"id": plugin_id},
+            ).scalar_one_or_none()
+        if version is None:
+            raise PluginStateError("plugin is not installed")
+        registration = self._registered(plugin_id, version)
         result = self.runner.invoke(
             registration,
             request_id=f"health_{uuid.uuid4().hex}",
@@ -759,8 +786,19 @@ class PluginLifecycleManager:
         actor: str = "user",
         cancellation: CancellationToken | None = None,
     ) -> PluginEnvelope:
-        registration = self._registered(plugin_id)
         input_hash = stable_payload_hash(payload)
+        with self.engine.connect() as connection:
+            installation = connection.execute(
+                text(
+                    "SELECT enabled, current_version FROM plugin_installations "
+                    "WHERE plugin_id=:plugin_id"
+                ),
+                {"plugin_id": plugin_id},
+            ).mappings().first()
+        registration = self._registered(
+            plugin_id,
+            installation["current_version"] if installation is not None else None,
+        )
         with self.engine.connect() as connection:
             previous_run = connection.execute(
                 text("SELECT * FROM plugin_runs WHERE request_id=:request_id"),
@@ -801,15 +839,7 @@ class PluginLifecycleManager:
                     else None
                 ),
             )
-        with self.engine.connect() as connection:
-            row = connection.execute(
-                text(
-                    "SELECT enabled, current_version FROM plugin_installations "
-                    "WHERE plugin_id=:plugin_id"
-                ),
-                {"plugin_id": plugin_id},
-            ).mappings().first()
-        if row is None or not row["enabled"]:
+        if installation is None or not installation["enabled"]:
             result = PluginEnvelope.error_envelope(
                 request_id=request_id,
                 plugin_id=plugin_id,
@@ -868,49 +898,156 @@ class PluginLifecycleManager:
             )
         return result
 
-    def update_preview(self, plugin_id: str) -> dict[str, Any]:
+    def update_preview(
+        self,
+        plugin_id: str,
+        *,
+        capability: str | None = None,
+        fixture: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         registration = self._registered(plugin_id)
         with self.engine.connect() as connection:
             row = connection.execute(
                 text(
-                    "SELECT current_version FROM plugin_installations "
+                    "SELECT current_version, config FROM plugin_installations "
                     "WHERE plugin_id=:plugin_id"
                 ),
                 {"plugin_id": plugin_id},
             ).mappings().first()
-        current = row["current_version"] if row else None
+        if row is None:
+            raise PluginStateError("plugin is not installed")
+        current = row["current_version"]
+        current_registration = self._registered(plugin_id, current)
+        candidate = registration.manifest
+        current_manifest = current_registration.manifest
+        selected_capability = capability or next(
+            (
+                item
+                for item in candidate.capabilities
+                if item != "health" and item in current_manifest.capabilities
+            ),
+            "health",
+        )
+        shadow_payload = fixture or {}
+        current_result = self.runner.invoke(
+            current_registration,
+            request_id=f"shadow_current_{uuid.uuid4().hex}",
+            capability=selected_capability,
+            payload=dict(shadow_payload),
+            context=PluginContext(),
+        )
+        candidate_result = self.runner.invoke(
+            registration,
+            request_id=f"shadow_candidate_{uuid.uuid4().hex}",
+            capability=selected_capability,
+            payload=dict(shadow_payload),
+            context=PluginContext(),
+        )
+        current_permissions = self._permission_set(current_manifest)
+        candidate_permissions = self._permission_set(candidate)
+        compatibility = self._core_compatible(candidate)
+        license_verified = candidate.source.license.upper() not in {
+            "UNKNOWN",
+            "NOASSERTION",
+            "UNLICENSED",
+        }
+        capability_compatible = set(current_manifest.replacement.compatible_capabilities) <= set(
+            candidate.capabilities
+        )
+        shadow_passed = (
+            current_result.status == candidate_result.status
+            and current_result.output_hash == candidate_result.output_hash
+        )
+        permission_escalation = sorted(candidate_permissions - current_permissions)
+        safe_to_switch = all(
+            (compatibility, license_verified, capability_compatible, shadow_passed)
+        ) and not permission_escalation
+        tests = {
+            "core_compatible": compatibility,
+            "license_verified": license_verified,
+            "capability_compatible": capability_compatible,
+            "shadow_passed": shadow_passed,
+            "shadow_capability": selected_capability,
+            "current_output_hash": current_result.output_hash,
+            "candidate_output_hash": candidate_result.output_hash,
+            "permission_escalation": permission_escalation,
+            "safe_to_switch": safe_to_switch,
+        }
         preview = {
             "plugin_id": plugin_id,
             "current_version": current,
-            "candidate_version": registration.manifest.version,
-            "available": current is None or current != registration.manifest.version,
-            "tests": {"fixture": "pending"},
-            "approval": "pending",
+            "candidate_version": candidate.version,
+            "available": current != candidate.version,
+            "tests": tests,
+            "permission_diff": {
+                "added": permission_escalation,
+                "removed": sorted(current_permissions - candidate_permissions),
+            },
+            "migration": {
+                "from": current_manifest.data_migration_version,
+                "to": candidate.data_migration_version,
+                "required": candidate.data_migration_version
+                != current_manifest.data_migration_version,
+            },
+            "approval": "pending" if safe_to_switch else "rejected",
         }
-        if current is not None:
-            with self.engine.begin() as connection:
-                connection.execute(
+        with self.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT OR IGNORE INTO plugin_releases "
+                    "(plugin_id, version, release_commit, dependencies, compatibility, "
+                    "scan_report, content_hash, created_at) VALUES "
+                    "(:plugin_id, :version, :commit, :dependencies, :compatibility, "
+                    ":scan_report, :content_hash, :created_at)"
+                ),
+                self._release_values(candidate, datetime.now(UTC)),
+            )
+            connection.execute(
                     text(
                         "INSERT INTO plugin_update_plans "
                         "(plan_id, plugin_id, current_version, candidate_version, tests, "
                         "migration, approval, rollback_snapshot, created_at) VALUES "
                         "(:plan_id, :plugin_id, :current_version, :candidate_version, "
-                        ":tests, :migration, 'pending', :rollback_snapshot, :created_at)"
+                        ":tests, :migration, :approval, :rollback_snapshot, :created_at)"
                     ),
                     {
                         "plan_id": f"plan_{uuid.uuid4().hex}",
                         "plugin_id": plugin_id,
                         "current_version": current,
-                        "candidate_version": registration.manifest.version,
-                        "tests": json.dumps(preview["tests"]),
-                        "migration": json.dumps({}),
+                        "candidate_version": candidate.version,
+                        "tests": json.dumps(tests),
+                        "migration": json.dumps(preview["migration"]),
+                        "approval": preview["approval"],
                         "rollback_snapshot": json.dumps(
                             {"current_version": current}
                         ),
                         "created_at": datetime.now(UTC),
                     },
                 )
+        self._audit(plugin_id, "update_preview", "user", preview)
         return preview
+
+    @staticmethod
+    def _permission_set(manifest: PluginManifest) -> set[str]:
+        values = {f"network:{item}" for item in manifest.permissions.network}
+        values.update(f"filesystem:{item}" for item in manifest.permissions.filesystem)
+        values.update(f"secret:{item}" for item in manifest.permissions.secrets)
+        values.update(f"scope:{item}" for item in manifest.permissions.scope)
+        if manifest.permissions.external_write:
+            values.add("external_write")
+        return values
+
+    @staticmethod
+    def _core_compatible(manifest: PluginManifest) -> bool:
+        current = _version_key(__version__)[:3]
+        minimum = _version_key(manifest.core_compatibility.min_version)[:3]
+        maximum_text = manifest.core_compatibility.max_version
+        if maximum_text.endswith(".x"):
+            prefix = tuple(int(item) for item in maximum_text[:-2].split("."))
+            maximum_ok = current[: len(prefix)] == prefix
+        else:
+            maximum_ok = current <= _version_key(maximum_text)[:3]
+        return current >= minimum and maximum_ok
 
     def switch(
         self,
@@ -940,6 +1077,20 @@ class PluginLifecycleManager:
             ).first()
             if release is None:
                 raise PluginStateError("candidate release is not installed")
+            plan = connection.execute(
+                text(
+                    "SELECT plan_id, tests, approval FROM plugin_update_plans "
+                    "WHERE plugin_id=:plugin_id AND candidate_version=:version "
+                    "ORDER BY created_at DESC LIMIT 1"
+                ),
+                {"plugin_id": plugin_id, "version": candidate},
+            ).mappings().first()
+            if candidate != row["current_version"]:
+                tests = json.loads(plan["tests"]) if plan is not None else {}
+                if plan is None or plan["approval"] != "pending" or not tests.get(
+                    "safe_to_switch"
+                ):
+                    raise PluginStateError("candidate has no approved-safe update preview")
             connection.execute(
                 text(
                     "UPDATE plugin_installations SET previous_version=:previous, "
@@ -953,6 +1104,14 @@ class PluginLifecycleManager:
                     "plugin_id": plugin_id,
                 },
             )
+            if plan is not None:
+                connection.execute(
+                    text(
+                        "UPDATE plugin_update_plans SET approval='applied' "
+                        "WHERE plan_id=:plan_id"
+                    ),
+                    {"plan_id": plan["plan_id"]},
+                )
         result = {
             "plugin_id": plugin_id,
             "previous_version": row["current_version"],
@@ -990,6 +1149,82 @@ class PluginLifecycleManager:
         result = {"plugin_id": plugin_id, "rolled_back_to": target, "enabled": False}
         self._audit(plugin_id, "rollback", actor, result)
         return result
+
+    def set_update_policy(
+        self, plugin_id: str, policy: str, *, actor: str = "user"
+    ) -> dict[str, Any]:
+        if policy not in {"notify", "patch_auto", "manual"}:
+            raise ValueError("update policy must be notify, patch_auto or manual")
+        self._registered(plugin_id)
+        with self.engine.begin() as connection:
+            raw = connection.execute(
+                text("SELECT config FROM plugin_installations WHERE plugin_id=:id"),
+                {"id": plugin_id},
+            ).scalar_one_or_none()
+            if raw is None:
+                raise PluginStateError("plugin is not installed")
+            config = json.loads(raw) if isinstance(raw, str) else dict(raw)
+            config["update_policy"] = policy
+            connection.execute(
+                text(
+                    "UPDATE plugin_installations SET config=:config, updated_at=:now "
+                    "WHERE plugin_id=:id"
+                ),
+                {"config": json.dumps(config), "now": datetime.now(UTC), "id": plugin_id},
+            )
+        result = {"plugin_id": plugin_id, "update_policy": policy, "auto_switch": False}
+        self._audit(plugin_id, "update_policy", actor, result)
+        return result
+
+    def uninstall_preview(self, plugin_id: str) -> dict[str, Any]:
+        self._registered(plugin_id)
+        with self.engine.connect() as connection:
+            installation = connection.execute(
+                text("SELECT enabled FROM plugin_installations WHERE plugin_id=:id"),
+                {"id": plugin_id},
+            ).mappings().first()
+            if installation is None:
+                raise PluginStateError("plugin is not installed")
+            run_count = connection.execute(
+                text("SELECT count(*) FROM plugin_runs WHERE plugin_id=:id"),
+                {"id": plugin_id},
+            ).scalar_one()
+        return {
+            "plugin_id": plugin_id,
+            "enabled": bool(installation["enabled"]),
+            "run_count": run_count,
+            "core_truth_deleted": False,
+            "artifact_bytes_deleted": False,
+            "removal_allowed": not bool(installation["enabled"]),
+            "retained_records": ("plugin_runs", "plugin_audit_events", "artifacts"),
+        }
+
+    def audit_summary(self, plugin_id: str) -> dict[str, Any]:
+        self._registered(plugin_id)
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                text(
+                    "SELECT status, cost, trace FROM plugin_runs WHERE plugin_id=:id "
+                    "ORDER BY started_at"
+                ),
+                {"id": plugin_id},
+            ).mappings().all()
+            scopes = connection.execute(
+                text(
+                    "SELECT permission_kind, scope FROM plugin_permissions "
+                    "WHERE plugin_id=:id AND allowed=1 ORDER BY permission_kind, scope"
+                ),
+                {"id": plugin_id},
+            ).all()
+        errors = sum(1 for row in rows if row["status"] == "error")
+        return {
+            "plugin_id": plugin_id,
+            "run_count": len(rows),
+            "error_count": errors,
+            "error_rate": 0 if not rows else round(errors / len(rows), 6),
+            "declared_data_scopes": [f"{kind}:{scope}" for kind, scope in scopes],
+            "cost": {"recorded_runs": len(rows), "external_cost_known": False},
+        }
 
     def audit(self, plugin_id: str) -> list[dict[str, Any]]:
         self._registered(plugin_id)

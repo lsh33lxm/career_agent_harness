@@ -18,7 +18,7 @@
 | B Career Knowledge | DONE (local/offline) | Slice C entry: ResumeBase → proposal-only render chain |
 | C Resume Studio | DONE (local/offline) | Migration `0016_resume_studio` |
 | D Opportunity Radar | DONE (local/offline) | Migration `0017_opportunity_radar` |
-| E Lifecycle / Replacement | IN PROGRESS | update preview → shadow run → switch/rollback |
+| E Lifecycle / Replacement | DONE (local/offline) | versioned registry → shadow preview → switch/rollback |
 
 ## Slice A checklist
 
@@ -82,3 +82,14 @@ Start with `git status --short --branch`, inspect this file, then continue at th
 - Verification：focused backend/API/migration `5 passed`；backend full `627 passed, 5 skipped`；frontend `58 passed`；Vite build、backup/restore、Ruff、diff check 通过
 - Review：APPROVE；P0/P1 none。第三方 crawler/portal 接入因 license/ToS/credentials 保持 quarantined
 - Next slice：Slice E — Plugin Lifecycle / Replacement
+
+## Slice E checkpoint
+
+- 状态：DONE — local/offline Plugin Lifecycle / Replacement
+- Flow：release stage → compatibility/license/permission scan → deterministic shadow run → user switch → health observation/manual rollback
+- Safety：candidate staging 不改变 active pin；unknown license、Core incompatibility、capability loss、permission escalation 或 shadow mismatch 会拒绝 switch；quarantined plugin 无法启用
+- Policy：`notify`（默认）、`patch_auto`、`manual` 可记录；`patch_auto` 只自动准备检查，不自动执行任意代码或 switch
+- Recovery：旧 release/handler 保留；rollback 恢复 previous pin 并停用；uninstall preview 不删除 Core truth、Artifact bytes、run 或 audit
+- Verification：focused backend/API `9 passed`；backend full `629 passed, 5 skipped`；backup/restore/lifecycle rehearsal `9 passed`；frontend `58 passed`；Vite build、Ruff、diff check 通过
+- Review：APPROVE；P0/P1 none。真实 marketplace 下载与 external-write adapters 仍需单独授权
+- Next：A-E final audit；后续只处理已登记 external blockers 或新的产品授权

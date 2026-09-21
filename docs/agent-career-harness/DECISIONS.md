@@ -75,3 +75,11 @@
 - 决定：manual/offline JobSource 的原始 bytes 先进入 Artifact/Evidence 与 `job_staging_record`；URL/content fingerprint、terms status、suggested score 和 gaps 都是可审计投影。只有 `actor=user` 的 admission 才能创建 Job/Opportunity。
 - 原因：外部职位是不可信输入，来源频率、parser 或建议分数都不能提升为 Core truth 或 User Priority。
 - 影响：Resume 集成只输出 `proposal_only` seed；真实 crawler/portal adapter 必须先完成独立 license、ToS、网络权限与 fixture 审批。
+
+## D-2.0-011 — Plugin replacement is preview-gated and version-pinned
+
+- 状态：ACCEPTED
+- 日期：2026-09-21
+- 决定：同一 plugin ID 可注册多个 immutable release；installation 始终 pin 到一个版本。候选先 staging，再执行 Core compatibility、license、capability、permission diff 与 deterministic shadow fixture；只有全部通过后，用户 switch 才能改变 active pin。
+- 原因：更新和替换必须可恢复，候选代码不能因被发现或下载就接管运行路径。
+- 影响：`patch_auto` 仅自动准备 preview；不自动 switch。rollback 恢复 previous pin 并默认停用，保留 run/audit/artifact 以便重放。

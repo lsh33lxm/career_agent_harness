@@ -3,6 +3,9 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
+import pytest
+
+from career_harness.core.plugin.contracts import PluginType
 from career_harness.core.plugin.runtime import CancellationToken, PluginContext
 from career_harness.db.backup import create_backup, restore_backup, verify_backup
 from career_harness.db.migrations import alembic_config, upgrade_to_head
@@ -11,6 +14,7 @@ from career_harness.services.plugin_service import (
     PluginLifecycleManager,
     PluginRegistry,
     PluginRunner,
+    PluginStateError,
     RegisteredPlugin,
 )
 
@@ -54,6 +58,7 @@ def test_echo_install_invoke_disable_and_rollback_are_audited(tmp_path: Path) ->
     assert [entry["action"] for entry in manager.audit("echo-fixture")] == [
         "install",
         "enable",
+        "update_preview",
         "disable",
         "rollback",
     ]
@@ -69,6 +74,60 @@ def test_echo_install_invoke_disable_and_rollback_are_audited(tmp_path: Path) ->
         ).scalar_one()
     assert {"plugin.install", "plugin.enable", "plugin.disable", "plugin.rollback"} <= event_types
     assert plan_count == 1
+
+
+def test_versioned_shadow_switch_and_rollback_keep_old_release_available(tmp_path: Path) -> None:
+    base = PluginRegistry().get("echo-fixture")
+    candidate_manifest = base.manifest.model_copy(
+        update={
+            "version": "1.1.0",
+            "source": base.manifest.source.model_copy(
+                update={"ref": "v1.1.0", "commit": "builtin-echo-fixture-v1.1"}
+            ),
+        }
+    )
+    registry = PluginRegistry(
+        (base, RegisteredPlugin(candidate_manifest, base.handler))
+    )
+    database_url = sqlite_url(tmp_path / "versioned.db")
+    upgrade_to_head(database_url)
+    manager = PluginLifecycleManager(create_sqlite_engine(database_url), registry=registry)
+    manager.install(base.manifest)
+    manager.enable("echo-fixture")
+    manager.install(candidate_manifest)
+    preview = manager.update_preview(
+        "echo-fixture", capability="fixture.echo", fixture={"stable": True}
+    )
+    assert preview["candidate_version"] == "1.1.0"
+    assert preview["tests"]["safe_to_switch"] is True
+    switched = manager.switch("echo-fixture", version="1.1.0")
+    assert switched["current_version"] == "1.1.0"
+    assert manager.invoke(
+        "echo-fixture",
+        request_id="versioned-invoke-001",
+        capability="fixture.echo",
+        payload={"stable": True},
+    ).plugin_version == "1.1.0"
+    assert manager.rollback("echo-fixture")["rolled_back_to"] == "1.0.0"
+    assert manager.uninstall_preview("echo-fixture")["core_truth_deleted"] is False
+
+
+def test_unsafe_plugin_is_quarantined_and_cannot_be_enabled(tmp_path: Path) -> None:
+    base = PluginRegistry().get("echo-fixture")
+    unsafe = base.manifest.model_copy(
+        update={
+            "id": "unsafe-fixture",
+            "type": PluginType.MCP_PLUGIN,
+            "source": base.manifest.source.model_copy(update={"license": "NOASSERTION"}),
+        }
+    )
+    manager = PluginLifecycleManager(
+        _manager(tmp_path).engine,
+        registry=PluginRegistry((RegisteredPlugin(unsafe, base.handler),)),
+    )
+    assert manager.install(unsafe)["status"] == "quarantined"
+    with pytest.raises(PluginStateError, match="quarantined"):
+        manager.enable("unsafe-fixture")
 
 
 def test_permission_capability_timeout_and_cancellation_fail_loudly(tmp_path: Path) -> None:

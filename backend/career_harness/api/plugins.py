@@ -32,6 +32,15 @@ class PluginSwitchRequest(FrozenModel):
     version: str | None = Field(default=None, min_length=5, max_length=128)
 
 
+class PluginUpdatePreviewRequest(FrozenModel):
+    capability: str | None = Field(default=None, min_length=1, max_length=128)
+    fixture: dict[str, Any] = Field(default_factory=dict)
+
+
+class PluginUpdatePolicyRequest(FrozenModel):
+    policy: str = Field(pattern=r"^(notify|patch_auto|manual)$")
+
+
 IdempotencyHeader = Annotated[
     str | None, Header(alias="X-Idempotency-Key", min_length=8, max_length=255)
 ]
@@ -107,9 +116,16 @@ def create_plugin_router(api: PluginApi) -> APIRouter:
             raise _error(error) from error
 
     @router.post("/{plugin_id}/update-preview")
-    def update_preview(plugin_id: str = Path(min_length=3, max_length=64)) -> dict[str, Any]:
+    def update_preview(
+        request: PluginUpdatePreviewRequest | None = None,
+        plugin_id: str = Path(min_length=3, max_length=64),
+    ) -> dict[str, Any]:
         try:
-            return api.service.update_preview(plugin_id)
+            return api.service.update_preview(
+                plugin_id,
+                capability=request.capability if request else None,
+                fixture=request.fixture if request else None,
+            )
         except Exception as error:
             raise _error(error) from error
 
@@ -134,6 +150,30 @@ def create_plugin_router(api: PluginApi) -> APIRouter:
     def audit(plugin_id: str = Path(min_length=3, max_length=64)) -> list[dict[str, Any]]:
         try:
             return api.service.audit(plugin_id)
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.get("/{plugin_id}/audit-summary")
+    def audit_summary(plugin_id: str = Path(min_length=3, max_length=64)) -> dict[str, Any]:
+        try:
+            return api.service.audit_summary(plugin_id)
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/{plugin_id}/uninstall-preview")
+    def uninstall_preview(plugin_id: str = Path(min_length=3, max_length=64)) -> dict[str, Any]:
+        try:
+            return api.service.uninstall_preview(plugin_id)
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/{plugin_id}/update-policy")
+    def update_policy(
+        request: PluginUpdatePolicyRequest,
+        plugin_id: str = Path(min_length=3, max_length=64),
+    ) -> dict[str, Any]:
+        try:
+            return api.service.set_update_policy(plugin_id, request.policy)
         except Exception as error:
             raise _error(error) from error
 

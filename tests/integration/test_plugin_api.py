@@ -55,6 +55,28 @@ async def test_plugin_api_echo_acceptance(tmp_path: Path) -> None:
         )
         assert health.status_code == 200
         assert health.json()["status"] == "ok"
+        preview_update = await client.post(
+            "/api/v1/plugins/echo-fixture/update-preview",
+            json={"capability": "fixture.echo", "fixture": {"api": True}},
+            headers=headers,
+        )
+        assert preview_update.status_code == 200
+        assert preview_update.json()["tests"]["safe_to_switch"] is True
+        policy = await client.post(
+            "/api/v1/plugins/echo-fixture/update-policy",
+            json={"policy": "patch_auto"},
+            headers=headers,
+        )
+        assert policy.json() == {
+            "plugin_id": "echo-fixture",
+            "update_policy": "patch_auto",
+            "auto_switch": False,
+        }
+        summary = await client.get(
+            "/api/v1/plugins/echo-fixture/audit-summary", headers=headers
+        )
+        assert summary.status_code == 200
+        assert summary.json()["run_count"] >= 1
         assert (
             await client.post("/api/v1/plugins/echo-fixture/disable", headers=headers)
         ).json()["enabled"] is False
@@ -62,6 +84,10 @@ async def test_plugin_api_echo_acceptance(tmp_path: Path) -> None:
             "/api/v1/plugins/echo-fixture/rollback", headers=headers
         )
         assert rollback.status_code == 200
+        impact = await client.post(
+            "/api/v1/plugins/echo-fixture/uninstall-preview", headers=headers
+        )
+        assert impact.json()["artifact_bytes_deleted"] is False
         audit = await client.get(
             "/api/v1/plugins/echo-fixture/audit", headers=headers
         )

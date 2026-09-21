@@ -14,3 +14,4 @@
 - `BLOCKED_EXTERNAL_ACTION`：`career-kb-weknora` 没有配置 endpoint、credential 或已核验条款；当前 adapter 保持 read-only blocked，不发网络请求。
 - `BLOCKED_EXTERNAL_ACTION`：真实 ATS 提交、第三方模板执行和 Magic Resume 代码/资产复用未获授权；当前 Resume Studio 只生成本地 preview/PDF Artifact。
 - `BLOCKED_EXTERNAL_ACTION`：JobSpy、WebMagic/JobHunter 和 AI Job Search portal 尚未核验许可证、robots/ToS、登录边界和网络域名；Slice D 仅启用 manual/offline source，不发外部网络请求。
+- `BLOCKED_EXTERNAL_ACTION`：真实 marketplace 下载、第三方 plugin worker 执行与在线依赖扫描需要明确来源、immutable commit、许可证和网络权限；Slice E 当前只对 repository-owned releases 做离线 lifecycle 验收。

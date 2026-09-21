@@ -17,3 +17,6 @@
 - 完成 Slice D Opportunity Radar：`0017_opportunity_radar`、JobSource contract、manual/offline sources、Artifact/Evidence provenance、字段规范化、URL/content dedupe、match/gap/deal-breaker ranking、user-only admission、Resume proposal seed、API 与 Opportunities staging UI。
 - Slice D focused backend/API/migration `5 passed`；backend full `627 passed, 5 skipped`；frontend `58 passed`；Vite build、backup/restore、Ruff、diff check 通过。
 - 下一入口切换为 Slice E Lifecycle / Replacement；真实 crawler、portal 和 ATS 写入保持 blocked。
+- 完成 Slice E Plugin Lifecycle / Replacement：versioned registry、candidate staging、compatibility/license/permission diff、deterministic shadow run、preview-gated switch、manual rollback、update policy、audit summary、uninstall data-impact preview 与插件页生命周期控制。
+- Slice E focused backend/API `9 passed`；backend full `629 passed, 5 skipped`；backup/restore/lifecycle rehearsal `9 passed`；frontend `58 passed`；Vite build、Ruff、diff check 通过。
+- A-E local/offline slices 全部完成；真实 marketplace、第三方 crawler 与 external-write adapters 保持 blocked，等待独立授权。

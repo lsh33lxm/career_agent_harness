@@ -169,6 +169,14 @@ def create_knowledge_router(api: KnowledgeApi) -> APIRouter:
         except Exception as error:
             raise _error(error) from error
 
+    @router.get("/wiki/graph")
+    def wiki_graph() -> Any:
+        return api.repository.wiki_graph()
+
+    @router.get("/wiki/health")
+    def wiki_health() -> Any:
+        return api.repository.wiki_health()
+
     @router.get("/wiki/pages/{knowledge_id}/diff")
     def diff(
         knowledge_id: str = Path(min_length=3, max_length=128),

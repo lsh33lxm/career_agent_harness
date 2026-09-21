@@ -116,6 +116,80 @@ def test_proposal_review_diff_rollback_and_index_rebuild(tmp_path: Path) -> None
     assert repository.rebuild_index(imported.knowledge_id) == 3
 
 
+def test_wiki_graph_and_health_detect_orphans_and_stale_links(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    first = repository.import_document(
+        content=b"First sourced page.",
+        media_type="text/plain",
+        source_type="fixture",
+        source_locator="fixture://wiki/first",
+        category=KnowledgeCategory.PROJECT_EVIDENCE,
+        title="First",
+        authority=KnowledgeAuthority.DOCUMENT_SUPPORTED,
+    )
+    second = repository.import_document(
+        content=b"Second sourced page.",
+        media_type="text/plain",
+        source_type="fixture",
+        source_locator="fixture://wiki/second",
+        category=KnowledgeCategory.PROJECT_EVIDENCE,
+        title="Second",
+        authority=KnowledgeAuthority.DOCUMENT_SUPPORTED,
+    )
+    orphan = repository.import_document(
+        content=b"Orphan sourced page.",
+        media_type="text/plain",
+        source_type="fixture",
+        source_locator="fixture://wiki/orphan",
+        category=KnowledgeCategory.PROJECT_EVIDENCE,
+        title="Orphan",
+        authority=KnowledgeAuthority.DOCUMENT_SUPPORTED,
+    )
+    repository.create_link(
+        source_knowledge_id=first.knowledge_id,
+        source_revision=1,
+        target_knowledge_id=second.knowledge_id,
+        target_revision=1,
+        relation="supports",
+        evidence_refs=first.evidence_refs,
+        created_by=KnowledgeCreatedBy.USER,
+    )
+    proposal = repository.create_proposal(
+        category=KnowledgeCategory.PROJECT_EVIDENCE,
+        title="First",
+        content="First sourced page, revised.",
+        authority=KnowledgeAuthority.AI_INFERRED,
+        created_by=KnowledgeCreatedBy.LLM,
+        evidence_refs=first.evidence_refs,
+        target_knowledge_id=first.knowledge_id,
+        base_revision=1,
+    )
+    repository.review_proposal(
+        proposal.proposal_id,
+        decision=ProposalStatus.APPROVED,
+        reviewer="user",
+        reason="fixture review",
+    )
+
+    graph = repository.wiki_graph()
+    health = repository.wiki_health()
+    assert {node.knowledge_id for node in graph.nodes} == {
+        first.knowledge_id,
+        second.knowledge_id,
+        orphan.knowledge_id,
+    }
+    assert len(graph.edges) == 1
+    assert any(
+        issue.code == "orphan_page" and issue.knowledge_id == orphan.knowledge_id
+        for issue in health.issues
+    )
+    assert any(
+        issue.code == "stale_link" and issue.knowledge_id == first.knowledge_id
+        for issue in health.issues
+    )
+    assert health.score < 100
+
+
 def test_standard_document_extractors_and_weknora_are_offline(tmp_path: Path) -> None:
     repository = _repository(tmp_path)
     html = repository.import_document(
@@ -136,9 +210,7 @@ def test_standard_document_extractors_and_weknora_are_offline(tmp_path: Path) ->
         )
     docx = repository.import_document(
         content=document.getvalue(),
-        media_type=(
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        ),
+        media_type=("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
         source_type="docx",
         source_locator="file:///evidence.docx",
         category=KnowledgeCategory.PROJECT_EVIDENCE,
@@ -158,9 +230,9 @@ def test_plugin_knowledge_scope_and_redaction_are_explicit(tmp_path: Path) -> No
     repository = _repository(tmp_path)
     revision = repository.import_document(
         content=(
-            b'Contact minnn@example.com; token=secret-value; phone +86 138 0013 8000. '
+            b"Contact minnn@example.com; token=secret-value; phone +86 138 0013 8000. "
             b'{"api_key":"synthetic-json-secret"}; '
-            b'Authorization: Bearer synthetic-bearer-secret.'
+            b"Authorization: Bearer synthetic-bearer-secret."
         ),
         media_type="text/plain",
         source_type="fixture",
@@ -185,9 +257,10 @@ def test_plugin_knowledge_scope_and_redaction_are_explicit(tmp_path: Path) -> No
     assert "synthetic-bearer-secret" not in item["snippet"]
     assert "REDACTED_SECRET" in item["snippet"]
     assert "minnn@example.com" not in item["citation"]["source_locator"]
-    assert repository.search_for_plugin(
-        "Contact", {"allowed_categories": ["market_signal"]}
-    )["items"] == []
+    assert (
+        repository.search_for_plugin("Contact", {"allowed_categories": ["market_signal"]})["items"]
+        == []
+    )
 
 
 def test_local_kb_plugin_reads_core_and_dangling_refs_fail_loudly(tmp_path: Path) -> None:
@@ -215,9 +288,7 @@ def test_local_kb_plugin_reads_core_and_dangling_refs_fail_loudly(tmp_path: Path
         payload={"query": "Python"},
     )
     assert result.status.value == "ok"
-    assert result.data["items"][0]["citation"]["evidence_refs"] == list(
-        imported.evidence_refs
-    )
+    assert result.data["items"][0]["citation"]["evidence_refs"] == list(imported.evidence_refs)
 
     with repository.engine.begin() as connection:
         connection.execute(

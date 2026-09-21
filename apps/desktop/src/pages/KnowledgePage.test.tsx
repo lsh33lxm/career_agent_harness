@@ -3,6 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { getLegacyKnowledgeOverview } from "../api/legacy";
+import { getWikiHealth } from "../api/knowledge";
 import { KnowledgePage } from "./KnowledgePage";
 
 vi.mock("../api/legacy", async (importOriginal) => {
@@ -10,7 +11,16 @@ vi.mock("../api/legacy", async (importOriginal) => {
   return { ...original, getLegacyKnowledgeOverview: vi.fn() };
 });
 
+vi.mock("../api/knowledge", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../api/knowledge")>();
+  return { ...original, getWikiHealth: vi.fn() };
+});
+
 beforeEach(() => {
+  vi.mocked(getWikiHealth).mockResolvedValue({
+    score: 95, page_count: 12, link_count: 18,
+    issues: [{ code: "orphan_page", severity: "warning", knowledge_id: "k1", detail: "孤立页面" }],
+  });
   vi.mocked(getLegacyKnowledgeOverview).mockResolvedValue({
     data_as_of: "2026-09-22T00:00:00Z",
     job_count: 1028,
@@ -50,4 +60,6 @@ it("默认展示真实历史统计、技能和可追溯面试题", async () => {
   expect(screen.getByText("如何设计可审计的 Agent 工作流？")).toBeTruthy();
   expect(screen.getByText(/问题明细\.csv · 第 42 行/)).toBeTruthy();
   expect(screen.getByText(/统计不等于个人事实/)).toBeTruthy();
+  expect(await screen.findByText("Wiki 健康度 95")).toBeTruthy();
+  expect(screen.getByText(/12 个页面 · 18 条链接/)).toBeTruthy();
 });

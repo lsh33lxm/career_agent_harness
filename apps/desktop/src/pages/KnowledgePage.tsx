@@ -5,7 +5,7 @@ import {
 import { FormEvent, useEffect, useState } from "react";
 
 import { apiRequest } from "../api/client";
-import type { KnowledgeSearchPage } from "../api/knowledge";
+import { getWikiHealth, type KnowledgeSearchPage, type WikiHealthReport } from "../api/knowledge";
 import {
   getLegacyKnowledgeOverview,
   type LegacyKnowledgeItem,
@@ -51,6 +51,7 @@ export function KnowledgePage() {
   const [message, setMessage] = useState("输入关键词检索已确认知识与精确来源。");
   const [overview, setOverview] = useState<LegacyKnowledgeOverview | null>(null);
   const [overviewMessage, setOverviewMessage] = useState("正在读取历史知识投影…");
+  const [wikiHealth, setWikiHealth] = useState<WikiHealthReport | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -62,6 +63,12 @@ export function KnowledgePage() {
       .catch((error: Error) => {
         if (!controller.signal.aborted) setOverviewMessage(`历史知识暂不可用：${error.message}`);
       });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getWikiHealth(controller.signal).then(setWikiHealth).catch(() => setWikiHealth(null));
     return () => controller.abort();
   }, []);
 
@@ -136,6 +143,14 @@ export function KnowledgePage() {
             以上内容来自 Legacy 只读投影，共 {overview.needs_review_count} 条需要复核；统计不等于个人事实，也不会自动进入简历或能力状态。
           </p>
         </>
+      )}
+
+      {wikiHealth && (
+        <section className="knowledge-wiki-health" aria-label="Wiki 健康状态">
+          <div><p className="eyebrow">知识治理</p><h2>Wiki 健康度 {wikiHealth.score}</h2></div>
+          <p>{wikiHealth.page_count} 个页面 · {wikiHealth.link_count} 条链接 · {wikiHealth.issues.length} 个待处理问题</p>
+          <small>仅检查孤立页面、重复标题、过期链接、缺少引用和提示注入；不会自动发布或修复。</small>
+        </section>
       )}
 
       <section className="knowledge-canonical-search">

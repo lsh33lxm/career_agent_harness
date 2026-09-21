@@ -30,6 +30,10 @@ from career_harness.core.knowledge.models import (
     KnowledgeSearchResult,
     KnowledgeStatus,
     ProposalStatus,
+    WikiGraph,
+    WikiGraphNode,
+    WikiHealthIssue,
+    WikiHealthReport,
 )
 from career_harness.storage import ArtifactStore
 
@@ -66,8 +70,7 @@ def _parse_document(content: bytes, media_type: str, locator: str) -> str:
         parser.feed(content.decode("utf-8", errors="replace"))
         return "\n".join(parser.parts)
     if (
-        normalized
-        == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        normalized == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         or suffix == ".docx"
     ):
         try:
@@ -184,13 +187,17 @@ class KnowledgeRepository:
         stored = self.artifact_store.put(content, ArtifactClass.PERSONAL)
         flagged = _prompt_injection_flag(text_content)
         with self.engine.begin() as connection:
-            existing = connection.execute(
-                text(
-                    "SELECT knowledge_id, current_revision FROM knowledge_entry "
-                    "WHERE knowledge_id=:knowledge_id"
-                ),
-                {"knowledge_id": knowledge_id},
-            ).mappings().first()
+            existing = (
+                connection.execute(
+                    text(
+                        "SELECT knowledge_id, current_revision FROM knowledge_entry "
+                        "WHERE knowledge_id=:knowledge_id"
+                    ),
+                    {"knowledge_id": knowledge_id},
+                )
+                .mappings()
+                .first()
+            )
             if existing is not None:
                 return self.get_revision(knowledge_id, int(existing["current_revision"]))
             self._ensure_evidence(
@@ -389,41 +396,57 @@ class KnowledgeRepository:
 
     def get_entry(self, knowledge_id: str) -> KnowledgeEntry | None:
         with self.engine.connect() as connection:
-            row = connection.execute(
-                text("SELECT * FROM knowledge_entry WHERE knowledge_id=:knowledge_id"),
-                {"knowledge_id": knowledge_id},
-            ).mappings().first()
+            row = (
+                connection.execute(
+                    text("SELECT * FROM knowledge_entry WHERE knowledge_id=:knowledge_id"),
+                    {"knowledge_id": knowledge_id},
+                )
+                .mappings()
+                .first()
+            )
         return self._entry(row) if row else None
 
     def get_revision(self, knowledge_id: str, revision: int) -> KnowledgeRevision:
         with self.engine.connect() as connection:
-            row = connection.execute(
-                text(
-                    "SELECT * FROM knowledge_revision "
-                    "WHERE knowledge_id=:knowledge_id AND revision=:revision"
-                ),
-                {"knowledge_id": knowledge_id, "revision": revision},
-            ).mappings().first()
+            row = (
+                connection.execute(
+                    text(
+                        "SELECT * FROM knowledge_revision "
+                        "WHERE knowledge_id=:knowledge_id AND revision=:revision"
+                    ),
+                    {"knowledge_id": knowledge_id, "revision": revision},
+                )
+                .mappings()
+                .first()
+            )
             if row is None:
                 raise KeyError("knowledge revision not found")
-            refs = connection.execute(
-                text(
-                    "SELECT evidence_ref_id FROM knowledge_revision_evidence_ref "
-                    "WHERE knowledge_id=:knowledge_id AND revision=:revision ORDER BY ordinal"
-                ),
-                {"knowledge_id": knowledge_id, "revision": revision},
-            ).scalars().all()
+            refs = (
+                connection.execute(
+                    text(
+                        "SELECT evidence_ref_id FROM knowledge_revision_evidence_ref "
+                        "WHERE knowledge_id=:knowledge_id AND revision=:revision ORDER BY ordinal"
+                    ),
+                    {"knowledge_id": knowledge_id, "revision": revision},
+                )
+                .scalars()
+                .all()
+            )
         return self._revision(row, tuple(refs))
 
     def list_revisions(self, knowledge_id: str) -> tuple[KnowledgeRevision, ...]:
         with self.engine.connect() as connection:
-            rows = connection.execute(
-                text(
-                    "SELECT * FROM knowledge_revision WHERE knowledge_id=:knowledge_id "
-                    "ORDER BY revision"
-                ),
-                {"knowledge_id": knowledge_id},
-            ).mappings().all()
+            rows = (
+                connection.execute(
+                    text(
+                        "SELECT * FROM knowledge_revision WHERE knowledge_id=:knowledge_id "
+                        "ORDER BY revision"
+                    ),
+                    {"knowledge_id": knowledge_id},
+                )
+                .mappings()
+                .all()
+            )
             result = []
             for row in rows:
                 refs = tuple(
@@ -437,7 +460,9 @@ class KnowledgeRepository:
                             "knowledge_id": knowledge_id,
                             "revision": row["revision"],
                         },
-                    ).scalars().all()
+                    )
+                    .scalars()
+                    .all()
                 )
                 result.append(self._revision(row, refs))
         return tuple(result)
@@ -465,20 +490,25 @@ class KnowledgeRepository:
         terms = tuple(term.lower() for term in re.findall(r"\w+", query.lower()))
         query_vector = _vector_features(query)
         with self.engine.connect() as connection:
-            rows = connection.execute(
-                text(
-                    "SELECT e.*, r.title AS revision_title, r.content, r.content_sha256, "
-                    "r.source_type, r.source_locator, r.artifact_id AS revision_artifact_id, "
-                    "r.evidence_refs AS revision_evidence_refs, r.authority AS revision_authority, "
-                    "r.confidence, r.created_by AS revision_created_by, "
-                    "r.status AS revision_status, "
-                    "r.prompt_injection_flag, r.created_at AS revision_created_at "
-                    "FROM knowledge_entry e JOIN knowledge_revision r "
-                    "ON r.knowledge_id=e.knowledge_id AND r.revision=e.current_revision "
-                    "WHERE e.status IN ('approved', 'proposed') "
-                    "ORDER BY e.knowledge_id"
+            rows = (
+                connection.execute(
+                    text(
+                        "SELECT e.*, r.title AS revision_title, r.content, r.content_sha256, "
+                        "r.source_type, r.source_locator, r.artifact_id AS revision_artifact_id, "
+                        "r.evidence_refs AS revision_evidence_refs, "
+                        "r.authority AS revision_authority, "
+                        "r.confidence, r.created_by AS revision_created_by, "
+                        "r.status AS revision_status, "
+                        "r.prompt_injection_flag, r.created_at AS revision_created_at "
+                        "FROM knowledge_entry e JOIN knowledge_revision r "
+                        "ON r.knowledge_id=e.knowledge_id AND r.revision=e.current_revision "
+                        "WHERE e.status IN ('approved', 'proposed') "
+                        "ORDER BY e.knowledge_id"
+                    )
                 )
-            ).mappings().all()
+                .mappings()
+                .all()
+            )
             results: list[KnowledgeSearchResult] = []
             for row in rows:
                 if row["prompt_injection_flag"] and not include_flagged:
@@ -515,7 +545,9 @@ class KnowledgeRepository:
                             "knowledge_id": row["knowledge_id"],
                             "revision": row["current_revision"],
                         },
-                    ).scalars().all()
+                    )
+                    .scalars()
+                    .all()
                 )
                 if not refs:
                     refs = tuple(_loads(row["revision_evidence_refs"], []))
@@ -561,9 +593,7 @@ class KnowledgeRepository:
             query=query,
             evidence_sufficient=bool(page),
             message=(
-                None
-                if page
-                else "evidence insufficient: no matching approved/proposed knowledge"
+                None if page else "evidence insufficient: no matching approved/proposed knowledge"
             ),
             next_cursor=page[-1].knowledge_id if len(results) > limit else None,
         )
@@ -670,10 +700,14 @@ class KnowledgeRepository:
 
     def get_proposal(self, proposal_id: str) -> KnowledgeProposal:
         with self.engine.connect() as connection:
-            row = connection.execute(
-                text("SELECT * FROM knowledge_proposal WHERE proposal_id=:proposal_id"),
-                {"proposal_id": proposal_id},
-            ).mappings().first()
+            row = (
+                connection.execute(
+                    text("SELECT * FROM knowledge_proposal WHERE proposal_id=:proposal_id"),
+                    {"proposal_id": proposal_id},
+                )
+                .mappings()
+                .first()
+            )
         if row is None:
             raise KeyError("knowledge proposal not found")
         return self._proposal(row)
@@ -690,10 +724,14 @@ class KnowledgeRepository:
             raise ValueError("review decision must be approved or rejected")
         now = datetime.now(UTC)
         with self.engine.begin() as connection:
-            row = connection.execute(
-                text("SELECT * FROM knowledge_proposal WHERE proposal_id=:proposal_id"),
-                {"proposal_id": proposal_id},
-            ).mappings().first()
+            row = (
+                connection.execute(
+                    text("SELECT * FROM knowledge_proposal WHERE proposal_id=:proposal_id"),
+                    {"proposal_id": proposal_id},
+                )
+                .mappings()
+                .first()
+            )
             if row is None:
                 raise KeyError("knowledge proposal not found")
             if row["status"] != ProposalStatus.PENDING.value:
@@ -880,6 +918,138 @@ class KnowledgeRepository:
             )
         return self.get_revision(knowledge_id, revision)
 
+    def wiki_graph(self) -> WikiGraph:
+        with self.engine.connect() as connection:
+            entries = (
+                connection.execute(
+                    text(
+                        "SELECT * FROM knowledge_entry WHERE status<>'archived' "
+                        "ORDER BY title, knowledge_id"
+                    )
+                )
+                .mappings()
+                .all()
+            )
+            links = (
+                connection.execute(
+                    text("SELECT * FROM knowledge_link ORDER BY created_at, link_id")
+                )
+                .mappings()
+                .all()
+            )
+        active_ids = {row["knowledge_id"] for row in entries}
+        return WikiGraph(
+            nodes=tuple(
+                WikiGraphNode(
+                    knowledge_id=row["knowledge_id"],
+                    revision=row["current_revision"],
+                    title=row["title"],
+                    category=KnowledgeCategory(row["category"]),
+                    status=KnowledgeStatus(row["status"]),
+                )
+                for row in entries
+            ),
+            edges=tuple(
+                self._link(row)
+                for row in links
+                if row["source_knowledge_id"] in active_ids
+                and row["target_knowledge_id"] in active_ids
+            ),
+        )
+
+    def wiki_health(self) -> WikiHealthReport:
+        graph = self.wiki_graph()
+        current = {node.knowledge_id: node.revision for node in graph.nodes}
+        degrees: Counter[str] = Counter()
+        issues: list[WikiHealthIssue] = []
+        titles: dict[str, list[str]] = {}
+        for node in graph.nodes:
+            titles.setdefault(node.title.casefold().strip(), []).append(node.knowledge_id)
+        for link in graph.edges:
+            degrees[link.source_knowledge_id] += 1
+            degrees[link.target_knowledge_id] += 1
+            if current[link.source_knowledge_id] != link.source_revision:
+                issues.append(
+                    WikiHealthIssue(
+                        code="stale_link",
+                        severity="warning",
+                        knowledge_id=link.source_knowledge_id,
+                        detail="链接仍引用旧的来源页面版本",
+                    )
+                )
+            if current[link.target_knowledge_id] != link.target_revision:
+                issues.append(
+                    WikiHealthIssue(
+                        code="stale_link",
+                        severity="warning",
+                        knowledge_id=link.target_knowledge_id,
+                        detail="链接仍引用旧的目标页面版本",
+                    )
+                )
+        if len(graph.nodes) > 1:
+            for node in graph.nodes:
+                if degrees[node.knowledge_id] == 0:
+                    issues.append(
+                        WikiHealthIssue(
+                            code="orphan_page",
+                            severity="warning",
+                            knowledge_id=node.knowledge_id,
+                            detail="页面没有任何入站或出站链接",
+                        )
+                    )
+        for ids in titles.values():
+            if len(ids) > 1:
+                for knowledge_id in ids:
+                    issues.append(
+                        WikiHealthIssue(
+                            code="duplicate_title",
+                            severity="warning",
+                            knowledge_id=knowledge_id,
+                            detail="存在规范化后相同的页面标题",
+                        )
+                    )
+        with self.engine.connect() as connection:
+            for node in graph.nodes:
+                row = (
+                    connection.execute(
+                        text(
+                        "SELECT evidence_refs, authority, prompt_injection_flag "
+                        "FROM knowledge_revision "
+                        "WHERE knowledge_id=:id AND revision=:revision"
+                        ),
+                        {"id": node.knowledge_id, "revision": node.revision},
+                    )
+                    .mappings()
+                    .one()
+                )
+                if row["prompt_injection_flag"]:
+                    issues.append(
+                        WikiHealthIssue(
+                            code="prompt_injection",
+                            severity="error",
+                            knowledge_id=node.knowledge_id,
+                            detail="当前版本包含疑似提示注入文本",
+                        )
+                    )
+                if row["authority"] != KnowledgeAuthority.USER_CONFIRMED.value and not _loads(
+                    row["evidence_refs"], []
+                ):
+                    issues.append(
+                        WikiHealthIssue(
+                            code="missing_citation",
+                            severity="error",
+                            knowledge_id=node.knowledge_id,
+                            detail="非用户确认页面缺少证据引用",
+                        )
+                    )
+        penalty = sum(20 if issue.severity == "error" else 5 for issue in issues)
+        return WikiHealthReport(
+            score=max(0, 100 - penalty),
+            page_count=len(graph.nodes),
+            link_count=len(graph.edges),
+            issues=tuple(issues),
+        )
+
     def rebuild_index(self, knowledge_id: str | None = None) -> int:
         with self.engine.begin() as connection:
             query = "SELECT knowledge_id, revision, content FROM knowledge_revision"
@@ -932,10 +1102,14 @@ class KnowledgeRepository:
                 },
             )
         with self.engine.connect() as connection:
-            row = connection.execute(
-                text("SELECT * FROM knowledge_link WHERE link_id=:link_id"),
-                {"link_id": link_id},
-            ).mappings().one()
+            row = (
+                connection.execute(
+                    text("SELECT * FROM knowledge_link WHERE link_id=:link_id"),
+                    {"link_id": link_id},
+                )
+                .mappings()
+                .one()
+            )
         return self._link(row)
 
     @staticmethod

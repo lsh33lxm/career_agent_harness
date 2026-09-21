@@ -70,3 +70,10 @@ async def test_knowledge_api_import_search_and_review(tmp_path: Path) -> None:
         )
         assert revisions.status_code == 200
         assert len(revisions.json()) == 1
+        graph = await client.get("/api/v1/wiki/graph", headers=headers)
+        assert graph.status_code == 200
+        assert len(graph.json()["nodes"]) == 2
+        health = await client.get("/api/v1/wiki/health", headers=headers)
+        assert health.status_code == 200
+        assert health.json()["page_count"] == 2
+        assert any(issue["code"] == "orphan_page" for issue in health.json()["issues"])

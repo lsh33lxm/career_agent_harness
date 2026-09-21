@@ -142,3 +142,30 @@ class KnowledgeSearchPage(FrozenModel):
     evidence_sufficient: bool
     message: str | None = None
     next_cursor: str | None = None
+
+
+class WikiGraphNode(FrozenModel):
+    knowledge_id: OpaqueId
+    revision: int = Field(ge=1)
+    title: str
+    category: KnowledgeCategory
+    status: KnowledgeStatus
+
+
+class WikiGraph(FrozenModel):
+    nodes: tuple[WikiGraphNode, ...]
+    edges: tuple[KnowledgeLink, ...]
+
+
+class WikiHealthIssue(FrozenModel):
+    code: str
+    severity: str = Field(pattern=r"^(warning|error)$")
+    knowledge_id: OpaqueId
+    detail: str
+
+
+class WikiHealthReport(FrozenModel):
+    score: int = Field(ge=0, le=100)
+    page_count: int = Field(ge=0)
+    link_count: int = Field(ge=0)
+    issues: tuple[WikiHealthIssue, ...]

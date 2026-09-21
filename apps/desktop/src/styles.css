@@ -394,6 +394,10 @@ textarea:focus-visible {
 .knowledge-history-item h3 { margin-top: 8px; font-family: var(--font-heading); font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
 .knowledge-history-item p, .knowledge-history-item small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
 .knowledge-authority-note { margin: 14px 0 0; padding: 10px 13px; color: var(--muted); background: var(--surface-soft); border-left: 3px solid var(--gold); font-size: 12px; }
+.knowledge-wiki-health { display: flex; align-items: center; gap: 22px; margin-top: 14px; padding: 16px 20px; background: var(--surface-panel); border: 1px solid var(--border); border-radius: var(--radius-panel); box-shadow: var(--shadow-panel); }
+.knowledge-wiki-health h2 { font-family: var(--font-heading); font-size: 19px; }
+.knowledge-wiki-health > p { flex: 1; color: var(--green); font-weight: 650; }
+.knowledge-wiki-health small { max-width: 420px; color: var(--muted); line-height: 1.55; }
 .knowledge-canonical-search { margin-top: 22px; }
 .knowledge-canonical-search .knowledge-search { margin-top: 12px; }
 .knowledge-empty { display: flex; align-items: center; gap: 14px; margin-top: 22px; }
@@ -415,6 +419,7 @@ textarea:focus-visible {
   .knowledge-metrics > div:last-child { border-bottom: 0; }
   .knowledge-trend-columns { grid-template-columns: 1fr; }
   .knowledge-empty { align-items: flex-start; flex-wrap: wrap; }
+  .knowledge-wiki-health { align-items: flex-start; flex-direction: column; gap: 8px; }
   .knowledge-search { flex-wrap: wrap; }
   .knowledge-search button { width: 100%; }
 }

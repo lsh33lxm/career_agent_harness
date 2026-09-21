@@ -27,6 +27,6 @@ export const navigation: NavigationItem[] = [
   { path: "/history", label: "历史", icon: History },
   { path: "/context", label: "我的", icon: CircleUserRound },
   { path: "/settings", label: "设置", icon: Settings },
-  { path: "/plugins", label: "插件", icon: Package },
+  { path: "/plugins", label: "工具与模型", icon: Package },
   { path: "/knowledge", label: "知识", icon: Library },
 ];

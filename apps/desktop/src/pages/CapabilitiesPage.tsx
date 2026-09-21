@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   AlertCircle,
@@ -6,7 +6,6 @@ import {
   Boxes,
   FileCheck2,
   RefreshCw,
-  Search,
   Target,
   UserRound,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import type {
   CapabilityRelation,
   PersonalCapabilityState,
 } from "../api/capabilities";
+import { listCapabilityIdentities } from "../api/capabilities";
 import { useCapabilities, type CapabilityQuery } from "../api/useCapabilities";
 
 const layerLabels = {
@@ -86,7 +86,7 @@ function CapabilityDetail({
                 <div><dt>证据</dt><dd>{state.evidence ? "是" : "否"}</dd></div>
                 <div><dt>面试</dt><dd>{state.interview_ready ? "就绪" : "未就绪"}</dd></div>
               </dl>
-              <small>{state.personal_state_id} · revision {state.revision}</small>
+              <small>个人覆盖层 · 第 {state.revision} 版</small>
             </>
           )}
         </DetailSection>
@@ -105,13 +105,13 @@ function CapabilityDetail({
 
         <DetailSection icon={<Target size={17} />} title="目标市场绑定">
           <strong className="capability-count">{projection.target_market_bindings.length}</strong>
-          <p>条 Core 返回的 TARGET 绑定记录</p>
+          <p>条职业核心返回的目标市场绑定记录</p>
           {projection.target_market_bindings.map((binding) => <code key={binding.binding_id}>{binding.binding_id}</code>)}
         </DetailSection>
 
         <DetailSection icon={<BarChart3 size={17} />} title="广泛市场绑定">
           <strong className="capability-count">{projection.broad_market_bindings.length}</strong>
-          <p>条 Core 返回的 BROAD 绑定记录，仅作探索信号</p>
+          <p>条职业核心返回的广泛市场绑定记录，仅作探索信号</p>
           {projection.broad_market_bindings.map((binding) => <code key={binding.binding_id}>{binding.binding_id}</code>)}
         </DetailSection>
 
@@ -121,7 +121,7 @@ function CapabilityDetail({
               <strong className={`investment-label investment-label--${projection.investment_state.recommendation}`}>
                 建议 {recommendationLabels[projection.investment_state.recommendation]}
               </strong>
-              <p>Core score {projection.investment_state.score}</p>
+              <p>系统评分 {projection.investment_state.score}</p>
               <ul>{projection.investment_state.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
               <small>这是提案，不是用户优先级。</small>
             </>
@@ -147,11 +147,23 @@ function CapabilityDetail({
 export function CapabilitiesPage() {
   const location = useLocation();
   const restored = (location.state as { capabilityQuery?: CapabilityQuery } | null)?.capabilityQuery;
-  const [candidateInput, setCandidateInput] = useState(restored?.candidateId ?? "");
-  const [graphInput, setGraphInput] = useState(restored?.graphVersionId ?? "");
+  const [identities, setIdentities] = useState<string[]>([]);
+  const [identityError, setIdentityError] = useState("");
   const [query, setQuery] = useState<CapabilityQuery | null>(restored ?? null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [state, retry] = useCapabilities(query);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    listCapabilityIdentities(controller.signal).then((items) => {
+      if (controller.signal.aborted) return;
+      setIdentities(items);
+      if (!restored && items[0]) setQuery({ candidateId: items[0] });
+    }).catch(() => {
+      if (!controller.signal.aborted) setIdentityError("个人能力档案暂时无法读取。");
+    });
+    return () => controller.abort();
+  }, [restored]);
 
   useEffect(() => setSelectedIndex(0), [state.status === "ready" ? state.data : null]);
 
@@ -166,38 +178,30 @@ export function CapabilitiesPage() {
     return node && projection ? { node, projection, relations } : null;
   }, [selectedIndex, state]);
 
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    const candidateId = candidateInput.trim();
-    if (!candidateId) return;
-    const graphVersionId = graphInput.trim();
-    setQuery({ candidateId, ...(graphVersionId ? { graphVersionId } : {}) });
-  }
-
   return (
     <main className="capability-page">
       <header className="capability-heading">
-        <div><span>Capability Workspace</span><h1>能力地图</h1><p>查看官方图谱、个人覆盖、市场信号与投资提案。</p><Link to="/capabilities/inbox" state={{ capabilityQuery: query }}>审核能力候选</Link></div>
+        <div><span>能力工作台</span><h1>能力地图</h1><p>查看官方图谱、个人覆盖、市场信号与投资提案。</p><Link to="/capabilities/inbox" state={{ capabilityQuery: query }}>审核能力候选</Link></div>
         {state.status === "ready" && state.data.graph_version !== null && (
-          <div className="capability-version"><span>Graph</span><strong>{state.data.graph_version.version_label}</strong><code>{state.data.graph_version.graph_version_id}</code></div>
+          <div className="capability-version"><span>图谱版本</span><strong>{state.data.graph_version.version_label}</strong><code>{state.data.graph_version.graph_version_id}</code></div>
         )}
       </header>
 
-      <form className="capability-query" onSubmit={submit}>
-        <label><span>候选人 ID</span><input required value={candidateInput} onChange={(event) => setCandidateInput(event.target.value)} placeholder="candidate_001" /></label>
-        <label><span>图谱版本 ID <small>可选</small></span><input value={graphInput} onChange={(event) => setGraphInput(event.target.value)} placeholder="留空使用最新版本" /></label>
-        <button type="submit"><Search size={16} />加载能力地图</button>
-      </form>
+      <div className="capability-query">
+        <label><span>个人能力档案</span><select aria-label="选择个人能力档案" value={query?.candidateId ?? ""} onChange={(event) => setQuery({ candidateId: event.target.value })}><option value="">请选择</option>{identities.map((identity, index) => <option key={identity} value={identity}>我的能力档案 {index + 1}</option>)}</select></label>
+        <button type="button" onClick={retry} disabled={!query}><RefreshCw size={16} />刷新能力地图</button>
+      </div>
+      {identityError && <p className="inline-error" role="alert">{identityError}</p>}
 
-      {state.status === "idle" && <section className="capability-state"><UserRound size={28} /><h2>请选择候选人</h2><p>身份必须显式输入，系统不会猜测或混合个人能力数据。</p></section>}
+      {state.status === "idle" && <section className="capability-state"><UserRound size={28} /><h2>还没有个人能力档案</h2><p>先确认一条个人能力状态；系统不会猜测或混合不同身份的数据。</p></section>}
       {state.status === "loading" && <section className="capability-state" aria-label="能力地图加载中"><span className="status-spinner" /><p>正在加载能力地图…</p></section>}
       {state.status === "error" && <section className="capability-state" role="alert"><AlertCircle size={28} /><h2>能力地图不可用</h2><p>{state.message}</p><button type="button" onClick={retry}><RefreshCw size={15} />重试</button></section>}
-      {state.status === "ready" && state.data.graph_version === null && <section className="capability-state"><Boxes size={28} /><h2>暂无官方能力图谱</h2><p>Core 返回了空 workspace，没有生成示例数据。</p></section>}
+      {state.status === "ready" && state.data.graph_version === null && <section className="capability-state"><Boxes size={28} /><h2>暂无官方能力图谱</h2><p>职业核心返回了空能力工作台，没有生成示例数据。</p></section>}
 
       {state.status === "ready" && state.data.graph_version !== null && (
         <div className="capability-workspace-layout">
           <section className="capability-node-panel" aria-labelledby="capability-node-title">
-            <header><div><h2 id="capability-node-title">官方节点</h2><p>{state.data.candidate_id} · {state.data.nodes.length} 个节点</p></div><span>{state.data.input_revisions.length} 个输入引用</span></header>
+            <header><div><h2 id="capability-node-title">官方节点</h2><p>个人覆盖 · {state.data.nodes.length} 个节点</p></div><span>{state.data.input_revisions.length} 个输入引用</span></header>
             {state.data.nodes.length === 0 ? <div className="capability-node-empty">该图谱版本没有节点。</div> : (
               <div className="capability-node-list">
                 {state.data.nodes.map((node, index) => {

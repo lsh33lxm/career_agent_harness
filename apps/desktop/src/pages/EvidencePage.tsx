@@ -68,7 +68,7 @@ export function EvidencePage() {
   }, [cursor, attempt]);
   function navigate(next: string | null) { setSelected(null); setCursor(next); }
   return <main className="page evidence-page">
-    <header className="page-heading"><div><p className="eyebrow">History / Evidence</p><h1>证据来源</h1><p>回看已保存材料的来源与精确引用。</p><Link to="/history">返回职业历程</Link></div></header>
+    <header className="page-heading"><div><p className="eyebrow">历史与证据</p><h1>证据来源</h1><p>回看已保存材料的来源与精确引用。</p><Link to="/history">返回职业历程</Link></div></header>
     <section className="today-panel evidence-notice"><p>这里显示当前连接的 Core 记录。演练环境与正式环境分别读取，不会自动合并。</p><p>证据保存不等于事实确认，也不代表个人能力已掌握。</p></section>
     {state.status === "loading" && <p role="status">正在读取证据记录…</p>}
     {state.status === "error" && <div className="today-panel" role="alert"><p>{state.message}</p><button type="button" onClick={() => setAttempt((n) => n + 1)}>重试列表</button></div>}
@@ -76,7 +76,7 @@ export function EvidencePage() {
       <h2 className="today-section-title"><span />本页 {state.data.items.length} 条记录</h2>
       {state.data.items.length === 0 && <p>{cursor === null ? "还没有证据记录。" : "此页没有更多证据记录。"}</p>}
       {state.data.items.map((item) => <button className="evidence-item" type="button" key={item.evidence_ref.evidence_ref_id} aria-pressed={selected === item.evidence_ref.evidence_ref_id} onClick={() => setSelected(item.evidence_ref.evidence_ref_id)}>
-        <strong>{sourceLabel(item)}</strong><span>{item.evidence_ref.evidence_ref_id}</span><small>{classes[item.artifact.artifact_class]} · {item.artifact.byte_length.toLocaleString()} bytes</small>
+        <strong>{sourceLabel(item)}</strong><span>{item.evidence_ref.evidence_ref_id}</span><small>{classes[item.artifact.artifact_class]} · {item.artifact.byte_length.toLocaleString()} 字节</small>
       </button>)}
       <div className="evidence-pagination">
         {cursor !== null && <button type="button" onClick={() => navigate(null)}>返回首页</button>}

@@ -15,8 +15,8 @@ import { PluginsPage } from "../pages/PluginsPage";
 import { KnowledgePage } from "../pages/KnowledgePage";
 
 const sections = [
-  ["context", "Me / Context", "个人上下文页面尚未接入，未查询个人记录。"],
-  ["settings", "Settings", "偏好设置页面尚未接入，未读取本地配置。"],
+  ["context", "我的上下文", "个人上下文页面尚未接入，未查询个人记录。"],
+  ["settings", "设置", "偏好设置页面尚未接入，未读取本地配置。"],
 ] as const;
 
 export function App() {

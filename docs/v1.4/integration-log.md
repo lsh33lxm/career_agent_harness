@@ -68,6 +68,21 @@ Feature branches are integrated only after contract and test review; `main` rema
 Every feature merge must record branch, reviewed commit, owned modules, commands/results, conflict
 resolution, migration impact and remaining follow-up before the integration branch advances.
 
+## 2026-09-21 — Chinese workspace and record-list integration
+
+- Branch: `refactor/v1.4-integration`; direct integration slice following `2025793`.
+- Modules: Project/Resume/Capability list repositories and authenticated APIs; desktop navigation,
+  record selectors, Chinese route copy, and user-facing local tool catalog labels.
+- Contract impact: no schema or authority change. APIs are read-only; Project presence still does
+  not imply personal mastery, and Resume/Capability writes retain existing review gates.
+- Validation: backend full `652 passed, 5 skipped`; Ruff `backend tests` passed; frontend full
+  `18 files, 51 tests` and Vite production build passed; `git diff --check` passed.
+- Live acceptance: imported preview showed 7,575 historical records at `/opportunities`; `/projects`
+  showed Chinese no-project guidance; `/plugins` showed translated built-in tool metadata.
+- Migration impact: none. No Legacy writes, canonical cutover, external write, main merge or push.
+- Follow-up: implement real model-provider configuration and connection tests, then the bounded
+  read-only GitHub project-analysis chain. Windows packaging follows after those flows stabilize.
+
 ## Final overnight checkpoint — 2026-09-21
 
 - `b13d0f3` archive/rehearsal and `f760053` evidence projection are integrated after review; `64dba1e` data baseline is an ancestor.

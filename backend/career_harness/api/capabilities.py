@@ -27,6 +27,10 @@ class CapabilityApi:
 def create_capability_router(api: CapabilityApi) -> APIRouter:
     router = APIRouter(prefix="/api/v1/capabilities", tags=["capabilities"])
 
+    @router.get("/identities", response_model=list[str])
+    def list_capability_identities() -> tuple[str, ...]:
+        return api.service.list_candidate_ids()
+
     @router.get("/{candidate_id}", response_model=CapabilityWorkspace)
     def get_capability_workspace(
         candidate_id: OpaqueId,

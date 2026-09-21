@@ -7,7 +7,7 @@ import type { KnowledgeSearchPage } from "../api/knowledge";
 export function KnowledgePage() {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<KnowledgeSearchPage | null>(null);
-  const [message, setMessage] = useState("输入关键词检索本地知识与 exact provenance。");
+  const [message, setMessage] = useState("输入关键词检索本地知识与精确来源。");
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -28,7 +28,7 @@ export function KnowledgePage() {
     <main className="page knowledge-page">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Career Knowledge</p>
+          <p className="eyebrow">职业知识</p>
           <h1>知识库</h1>
         </div>
         <span className="service-status"><ShieldCheck size={16} />证据约束</span>

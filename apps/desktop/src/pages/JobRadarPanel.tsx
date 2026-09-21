@@ -40,6 +40,16 @@ const reviewLabels: Record<LegacyJobSummary["review_status"], string> = {
   duplicate: "重复记录 · 待复核",
 };
 
+const sourceClassLabels: Record<string, string> = {
+  unified_job: "统一岗位库",
+  cn_jd_event: "国内岗位记录",
+  overseas_jd: "海外岗位记录",
+  candidate_platform: "候选平台岗位",
+  candidate_official: "官方岗位候选",
+  candidate_canonical: "Canonical 岗位候选",
+  snapshot_overseas: "海外历史快照",
+};
+
 function message(error: unknown): string {
   return error instanceof Error ? error.message : "本地服务请求失败";
 }
@@ -221,9 +231,9 @@ export function JobRadarPanel() {
 
       <div className="legacy-import-bar">
         <label>
-          <span>Legacy 数据目录</span>
+          <span>旧版 Agent Radar 数据目录</span>
           <input
-            aria-label="Legacy 数据目录"
+            aria-label="旧版 Agent Radar 数据目录"
             value={sourceRoot}
             onChange={(event) => setSourceRoot(event.target.value)}
             placeholder="请选择或输入旧 Agent Radar 目录"
@@ -333,7 +343,7 @@ export function JobRadarPanel() {
                       {displayTags(job.tags).map((tag) => <span key={tag}>{tag}</span>)}
                     </div>
                   )}
-                  <small>{reviewLabels[job.review_status]} · {job.source_class}</small>
+                  <small>{reviewLabels[job.review_status]} · {sourceClassLabels[job.source_class] ?? "历史来源"}</small>
                 </button>
                 <div className="legacy-job-card__actions">
                   <button className="secondary-command" type="button" onClick={() => void openDetail(job)}>

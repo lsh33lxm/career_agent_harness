@@ -111,6 +111,18 @@ class CapabilityRepository:
         with Session(self.engine) as session:
             return tuple(self._to_candidate(row) for row in session.scalars(statement).all())
 
+    def list_candidate_ids(self) -> tuple[str, ...]:
+        """List identities that already own a personal capability overlay."""
+
+        with Session(self.engine) as session:
+            return tuple(
+                session.scalars(
+                    select(PersonalCapabilityStateRow.candidate_id)
+                    .distinct()
+                    .order_by(PersonalCapabilityStateRow.candidate_id)
+                ).all()
+            )
+
     def list_candidate_inbox(self) -> tuple[CandidateCapabilityNode, ...]:
         return self.list_candidates(CandidateCapabilityStatus.PENDING)
 

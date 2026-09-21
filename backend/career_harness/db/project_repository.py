@@ -50,6 +50,26 @@ class ProjectRepository:
             )
             return self._to_project(row) if row is not None else None
 
+    def list_projects(self) -> tuple[Project, ...]:
+        """Return the latest revision of every project in stable display order."""
+
+        with Session(self.engine) as session:
+            rows = session.scalars(
+                select(ProjectRecordRow).order_by(
+                    ProjectRecordRow.project_id,
+                    ProjectRecordRow.revision.desc(),
+                )
+            ).all()
+            latest: dict[str, ProjectRecordRow] = {}
+            for row in rows:
+                latest.setdefault(row.project_id, row)
+            return tuple(
+                sorted(
+                    (self._to_project(row) for row in latest.values()),
+                    key=lambda item: (item.display_name.casefold(), item.project_id),
+                )
+            )
+
     def get_scan_scope(self, scope_id: str, revision: int | None = None) -> ProjectScanScope | None:
         with Session(self.engine) as session:
             row = self._get_revisioned_row(

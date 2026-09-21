@@ -1,5 +1,7 @@
 # Agent Career Harness 当前架构
 
+> 当前桌面读投影（2026-09-21）：Project、Resume Base/Revision 与 Capability identity 均通过带认证的列表 API 发现。React 客户端不直接读取 SQLite，列表与读取操作不创建 canonical state。Legacy staging 继续作为历史只读投影，只有用户明确操作才可进入 Career Core 命令边界。
+
 观察基点：integration `0bb1ba1` 加当前 Legacy structured projection slice，2026-09-21。Shared contract：`0.17.0` / D-027。
 历史基线与各阶段变更见 Git 历史和 `integration-log.md`；以下描述当前实现。
 

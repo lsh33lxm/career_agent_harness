@@ -799,6 +799,26 @@ h3 {
 .legacy-jobs__empty h3, .legacy-jobs__empty p { margin: 0; }
 .muted-copy { color: var(--muted); font-size: 12px; line-height: 1.6; }
 
+.record-browser { padding: 0; overflow: hidden; }
+.record-browser__toolbar { display: flex; align-items: end; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+.record-browser__toolbar label { display: grid; flex: 1; gap: 6px; color: var(--muted); font-size: 11px; }
+.record-browser__toolbar input, .record-browser__toolbar select, .resume-browser__content select { width: 100%; min-width: 180px; padding: 9px 10px; color: var(--text); background: var(--surface-panel); border: 1px solid var(--border); border-radius: var(--radius-control); }
+.record-browser__search { display: flex; align-items: center; gap: 8px; padding-left: 10px; background: var(--surface-panel); border: 1px solid var(--border); border-radius: var(--radius-control); }
+.record-browser__search input { padding-left: 0; border: 0; outline: 0; }
+.record-browser__layout { display: grid; grid-template-columns: minmax(220px, .34fr) minmax(0, 1fr); min-height: 420px; }
+.record-browser__list { display: grid; align-content: start; border-right: 1px solid var(--border); }
+.record-browser__list > button { display: grid; gap: 5px; padding: 14px 16px; color: var(--text); text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.record-browser__list > button span { color: var(--muted); font-size: 11px; }
+.record-browser__list > button.is-selected { background: color-mix(in srgb, var(--green) 7%, var(--surface-panel)); box-shadow: inset 3px 0 var(--green); }
+.record-browser__detail { min-width: 0; padding: 20px; }
+.record-browser__detail > h2, .record-browser__detail > h3 { font-family: var(--font-heading); }
+.record-browser__detail article { margin-top: 14px; padding: 14px; background: var(--surface-panel); border: 1px solid var(--border); border-radius: var(--radius-panel); }
+.resume-browser__content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--border); }
+.resume-browser__content > section { min-width: 0; padding: 20px; background: var(--surface-panel); }
+.advanced-tools { margin-top: 18px; }
+.advanced-tools > summary { padding: 16px 18px; font-weight: 650; cursor: pointer; }
+.advanced-tools > p { padding: 0 18px; color: var(--muted); }
+
 .admission-panel {
   margin-bottom: 20px;
 }
@@ -1117,6 +1137,9 @@ h3 {
 }
 
 @media (max-width: 760px) {
+  .record-browser__toolbar { align-items: stretch; flex-direction: column; }
+  .record-browser__layout, .resume-browser__content { grid-template-columns: 1fr; }
+  .record-browser__list { border-right: 0; border-bottom: 1px solid var(--border); }
   .legacy-import-bar, .legacy-job-filters { grid-template-columns: 1fr; }
   .legacy-import-bar > button, .legacy-job-filters > button { width: 100%; }
   .legacy-import-result, .legacy-job-filters label:nth-of-type(4) { grid-column: 1; }

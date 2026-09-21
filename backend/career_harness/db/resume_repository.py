@@ -51,6 +51,49 @@ class ResumeRepository:
                 created_by=row.created_by,
             )
 
+    def list_bases(self) -> tuple[ResumeBase, ...]:
+        """Return the latest base revision for each resume identity."""
+
+        with Session(self.engine) as session:
+            rows = session.scalars(
+                select(ResumeBaseRevisionRow).order_by(
+                    ResumeBaseRevisionRow.resume_id,
+                    ResumeBaseRevisionRow.revision.desc(),
+                )
+            ).all()
+            latest: dict[str, ResumeBaseRevisionRow] = {}
+            for row in rows:
+                latest.setdefault(row.resume_id, row)
+            result: list[ResumeBase] = []
+            for resume_id, row in latest.items():
+                identity = session.get(ResumeIdentityRow, resume_id)
+                if identity is None:
+                    raise RuntimeError("persisted Resume identity is missing")
+                result.append(
+                    ResumeBase(
+                        resume_id=row.resume_id,
+                        candidate_id=identity.candidate_id,
+                        revision=row.revision,
+                        schema_version=row.schema_version,
+                        sections=row.sections,
+                        created_at=row.created_at,
+                        created_by=row.created_by,
+                    )
+                )
+            return tuple(sorted(result, key=lambda item: item.resume_id))
+
+    def list_revisions(self, resume_id: str) -> tuple[ResumeRevision, ...]:
+        with Session(self.engine) as session:
+            revision_ids = session.scalars(
+                select(ResumeRevisionRow.revision_id)
+                .where(ResumeRevisionRow.resume_id == resume_id)
+                .order_by(ResumeRevisionRow.created_at.desc(), ResumeRevisionRow.revision_id)
+            ).all()
+        revisions = [self.get_revision(revision_id) for revision_id in revision_ids]
+        if any(item is None for item in revisions):
+            raise RuntimeError("persisted ResumeRevision disappeared during list read")
+        return tuple(item for item in revisions if item is not None)
+
     def get_patch(self, patch_id: str, revision: int | None = None) -> ResumePatch | None:
         with Session(self.engine) as session:
             row = self._revision_row(

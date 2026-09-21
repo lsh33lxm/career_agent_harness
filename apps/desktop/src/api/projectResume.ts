@@ -6,12 +6,21 @@ export interface ProjectRead {
 }
 export interface ResumeBaseRead { resume_id: string; revision: number; candidate_id: string; sections: Record<string, unknown>; created_at: string; created_by: string }
 export interface ResumeRevisionRead { revision_id: string; resume_id: string; base_revision: number; content: Record<string, unknown>; content_sha256: string; accepted_patch_refs: Array<{ entity_id: string; revision: number }>; created_at: string; created_by: string }
+export function listProjects(signal?: AbortSignal): Promise<ProjectRead["project"][]> {
+  return apiRequest("/api/v1/projects", { signal });
+}
 export function getProject(id: string, revision: string, signal?: AbortSignal): Promise<ProjectRead> {
   return apiRequest(`/api/v1/projects/${encodeURIComponent(id)}${revision ? `?revision=${encodeURIComponent(revision)}` : ""}`, { signal });
+}
+export function listResumeBases(signal?: AbortSignal): Promise<ResumeBaseRead[]> {
+  return apiRequest("/api/v1/resumes", { signal });
 }
 export function getResumeBase(id: string, revision: string, signal?: AbortSignal): Promise<ResumeBaseRead> {
   return apiRequest(`/api/v1/resumes/${encodeURIComponent(id)}/base${revision ? `?revision=${encodeURIComponent(revision)}` : ""}`, { signal });
 }
 export function getResumeRevision(id: string, signal?: AbortSignal): Promise<ResumeRevisionRead> {
   return apiRequest(`/api/v1/resume-revisions/${encodeURIComponent(id)}`, { signal });
+}
+export function listResumeRevisions(id: string, signal?: AbortSignal): Promise<ResumeRevisionRead[]> {
+  return apiRequest(`/api/v1/resumes/${encodeURIComponent(id)}/revisions`, { signal });
 }

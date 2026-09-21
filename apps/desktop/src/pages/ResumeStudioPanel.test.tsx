@@ -70,9 +70,9 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
   render(<ResumeStudioPanel />);
   fireEvent.focus(screen.getByLabelText("渲染模板"));
   expect(await screen.findByRole("option", { name: /Typst A4/ })).toBeTruthy();
-  fireEvent.change(screen.getByLabelText("Studio Resume Base ID"), { target: { value: "resume_001" } });
-  fireEvent.change(screen.getByLabelText("Studio Resume Revision ID"), { target: { value: "resume_revision_001" } });
-  fireEvent.change(screen.getByLabelText("Target Profile ID"), { target: { value: "target_profile_001" } });
+  fireEvent.change(screen.getByLabelText("基础简历精确引用"), { target: { value: "resume_001" } });
+  fireEvent.change(screen.getByLabelText("生成修订精确引用"), { target: { value: "resume_revision_001" } });
+  fireEvent.change(screen.getByLabelText("目标岗位档案精确引用"), { target: { value: "target_profile_001" } });
   fireEvent.change(screen.getByLabelText("目标岗位"), { target: { value: "Platform Engineer" } });
   fireEvent.click(screen.getByRole("button", { name: "保存目标岗位" }));
   expect(await screen.findByText(/目标岗位已保存/)).toBeTruthy();

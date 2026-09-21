@@ -74,7 +74,7 @@ export function HistoryPage() {
   const application = state.status === "ready" ? state.data.find((item) => item.entity_id === selected) : undefined;
   return (
     <main className="page history-page">
-      <header className="page-heading"><div><p className="eyebrow">Career History</p><h1>职业历程</h1><p>回看已记录的申请与结果。</p><Link to="/history/evidence">查看证据来源</Link></div></header>
+      <header className="page-heading"><div><p className="eyebrow">职业历史</p><h1>职业历程</h1><p>回看已记录的申请与结果。</p><Link to="/history/evidence">查看证据来源</Link></div></header>
       {state.status === "loading" && <p role="status">正在读取申请记录…</p>}
       {state.status === "error" && <div className="today-panel" role="alert"><p>{state.message}</p><button type="button" onClick={() => setAttempt((n) => n + 1)}>重试申请</button></div>}
       {state.status === "ready" && state.data.length === 0 && <section className="today-panel empty-state"><h2>还没有申请记录</h2><p>在 Core 中记录申请后，这里会显示真实进展。</p></section>}

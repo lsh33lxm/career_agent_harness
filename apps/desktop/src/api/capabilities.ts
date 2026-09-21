@@ -109,3 +109,7 @@ export function getCapabilities(
     { signal },
   );
 }
+
+export function listCapabilityIdentities(signal?: AbortSignal): Promise<string[]> {
+  return apiRequest<string[]>("/api/v1/capabilities/identities", { signal });
+}

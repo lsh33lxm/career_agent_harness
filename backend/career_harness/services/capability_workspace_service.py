@@ -60,3 +60,6 @@ class CapabilityWorkspaceService:
             market_bindings=market_bindings,
             investment_states=self.repository.list_investment_states(candidate_id=candidate_id),
         )
+
+    def list_candidate_ids(self) -> tuple[str, ...]:
+        return self.repository.list_candidate_ids()

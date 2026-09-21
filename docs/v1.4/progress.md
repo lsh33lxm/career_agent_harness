@@ -248,3 +248,14 @@ The historical entries above are retained for audit. Current integration is `f76
 - Added repeatable CLI/API import over the approved Legacy source set. Legacy stayed read-only; first preview produced 1,028 job staging rows plus 6,547 historical projections from 7,575 records. Idempotent rerun produced 0 new/updated, 7,575 unchanged, 684 duplicates and 0 failures.
 - Desktop Opportunities now defaults to real imported jobs, supports Chinese search/filter/detail/provenance and explicit user admission; internal Job/proposal IDs are removed from the first-screen flow.
 - Verification: backend focused 16 passed, full 652 passed / 5 Windows symlink skips; frontend 55 passed/build; Ruff and diff check passed; `0022 → 0023 → 0022 → 0023` passed. Canonical authority mapping/cutover remains user-gated.
+## Chinese workspace selection checkpoint — 2026-09-21
+
+- Project, Resume and Capability pages now discover existing records through authenticated list
+  endpoints instead of asking for internal identifiers on first use.
+- Current navigation, route headings, errors, loading/empty states, Resume advanced tools and the
+  local tool catalog use Simplified Chinese. Raw contract identifiers remain only where needed for
+  technical provenance.
+- Live preview acceptance confirmed 7,575 imported historical records on Opportunities and correct
+  empty-state behavior on Projects. Model provider configuration, GitHub repository analysis and
+  Windows installer work remain READY follow-ups, not completed functionality.
+- Gate: backend 652 passed / 5 Windows symlink skips; frontend 51 passed/build; Ruff and diff check passed.

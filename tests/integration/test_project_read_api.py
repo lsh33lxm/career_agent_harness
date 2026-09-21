@@ -22,6 +22,7 @@ async def test_project_read_auth_exact_revision_and_root_privacy(tmp_path: Path)
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
+        project_list = await client.get("/api/v1/projects", headers=AUTH)
         assert (await client.get("/api/v1/projects/project_001")).status_code == 401
         first = await client.get("/api/v1/projects/project_001?revision=1", headers=AUTH)
         latest = await client.get("/api/v1/projects/project_001", headers=AUTH)
@@ -38,6 +39,12 @@ async def test_project_read_auth_exact_revision_and_root_privacy(tmp_path: Path)
             await client.get("/api/v1/projects/project_001?revision=0", headers=AUTH)
         ).status_code == 422
         assert (await client.post("/api/v1/projects/project_001", headers=AUTH)).status_code == 405
+        assert project_list.status_code == 200
+        assert len(project_list.json()) == 1
+        assert project_list.json()[0]["project_id"] == "project_001"
+        assert project_list.json()[0]["revision"] == 2
+        assert project_list.json()[0]["display_name"] == "Agent Gateway"
+        assert "root_locator" not in project_list.text
     engine.dispose()
 
 

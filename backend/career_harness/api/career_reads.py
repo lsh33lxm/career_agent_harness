@@ -24,6 +24,10 @@ def _not_found(detail: str) -> HTTPException:
 def create_career_read_router(api: CareerReadApi) -> APIRouter:
     router = APIRouter(prefix="/api/v1", tags=["career-reads"])
 
+    @router.get("/resumes", response_model=list[ResumeBase])
+    def list_resume_bases() -> tuple[ResumeBase, ...]:
+        return api.resumes.list_bases()
+
     @router.get("/resumes/{resume_id}/base", response_model=ResumeBase)
     def get_resume_base(
         resume_id: str,
@@ -40,6 +44,12 @@ def create_career_read_router(api: CareerReadApi) -> APIRouter:
         if result is None:
             raise _not_found("resume revision not found")
         return result
+
+    @router.get("/resumes/{resume_id}/revisions", response_model=list[ResumeRevision])
+    def list_resume_revisions(resume_id: str) -> tuple[ResumeRevision, ...]:
+        if api.resumes.get_base(resume_id) is None:
+            raise _not_found("resume not found")
+        return api.resumes.list_revisions(resume_id)
 
     @router.get("/applications", response_model=list[Application])
     def list_applications() -> tuple[Application, ...]:

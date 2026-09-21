@@ -33,6 +33,13 @@ class ProjectReadApi:
 def create_project_read_router(api: ProjectReadApi) -> APIRouter:
     router = APIRouter(prefix="/api/v1/projects", tags=["project-reads"])
 
+    @router.get("", response_model=list[ProjectMetadata])
+    def list_projects() -> tuple[ProjectMetadata, ...]:
+        return tuple(
+            ProjectMetadata.model_validate(item.model_dump(exclude={"root_locator"}))
+            for item in api.repository.list_projects()
+        )
+
     @router.get("/{project_id}", response_model=ProjectRead)
     def get_project(
         project_id: str = Path(min_length=1, max_length=128),

@@ -51,6 +51,7 @@ async def test_capability_workspace_supports_exact_graph_and_unknown_is_404(
 ) -> None:
     transport = httpx.ASGITransport(app=_app(tmp_path, seed=True))
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        identities = await client.get("/api/v1/capabilities/identities", headers=AUTH)
         response = await client.get(
             "/api/v1/capabilities/candidate_001",
             params={"graph_version_id": "graph_version_001"},
@@ -63,6 +64,8 @@ async def test_capability_workspace_supports_exact_graph_and_unknown_is_404(
         )
 
     assert response.status_code == 200
+    assert identities.status_code == 200
+    assert identities.json() == ["candidate_001"]
     payload = response.json()
     assert payload["candidate_id"] == "candidate_001"
     assert payload["graph_version"]["graph_version_id"] == "graph_version_001"

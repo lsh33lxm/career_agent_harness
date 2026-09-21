@@ -77,6 +77,8 @@ async def test_career_reads_require_auth_and_return_exact_history(tmp_path: Path
         prepared = await client.get("/api/v1/applications/application_001?revision=2", headers=AUTH)
         outcomes = await client.get("/api/v1/applications/application_001/outcomes", headers=AUTH)
         base = await client.get("/api/v1/resumes/resume_001/base?revision=1", headers=AUTH)
+        bases = await client.get("/api/v1/resumes", headers=AUTH)
+        revisions = await client.get("/api/v1/resumes/resume_001/revisions", headers=AUTH)
         resume_revision = await client.get(
             "/api/v1/resume-revisions/resume_revision_001", headers=AUTH
         )
@@ -87,6 +89,9 @@ async def test_career_reads_require_auth_and_return_exact_history(tmp_path: Path
     assert prepared.json()["state"] == "ready_for_review"
     assert outcomes.json()[0]["result"] == "rejection"
     assert base.json()["resume_id"] == "resume_001"
+    assert [item["resume_id"] for item in bases.json()] == ["resume_001"]
+    assert bases.json()[0]["revision"] == 1
+    assert [item["revision_id"] for item in revisions.json()] == ["resume_revision_001"]
     assert resume_revision.json()["revision_id"] == "resume_revision_001"
 
 
@@ -103,9 +108,13 @@ async def test_career_reads_fail_closed_and_expose_no_write_route(tmp_path: Path
         missing_resume = await client.get(
             "/api/v1/resume-revisions/resume_revision_missing", headers=AUTH
         )
+        missing_resume_revisions = await client.get(
+            "/api/v1/resumes/resume_missing/revisions", headers=AUTH
+        )
         write_attempt = await client.post("/api/v1/applications", headers=AUTH, json={})
 
     assert missing_application.status_code == 404
     assert missing_outcomes.status_code == 404
     assert missing_resume.status_code == 404
+    assert missing_resume_revisions.status_code == 404
     assert write_attempt.status_code == 405

@@ -19,9 +19,67 @@ function statusLabel(item: PluginCatalogItem): string {
   return item.installation?.status === "rolled_back" ? "已回滚" : "已停用";
 }
 
+const displayLabels: Record<string, string> = {
+  builtin_adapter: "内置适配器",
+  mcp_plugin: "MCP 工具",
+  worker_plugin: "本地工具",
+  knowledge_plugin: "知识工具",
+  ui_plugin: "界面工具",
+  "fixture.echo": "本地连通性检查",
+  "knowledge.search": "知识检索",
+  "knowledge.read": "读取知识",
+  "knowledge.ask": "知识问答",
+  "knowledge.list": "浏览知识库",
+  "resume.render": "简历渲染",
+  health: "健康检查",
+  user: "用户",
+  system: "系统",
+  install: "安装",
+  enable: "启用",
+  disable: "停用",
+  healthcheck: "健康检查",
+  rollback: "回滚",
+  update_preview: "更新预览",
+  passed: "通过",
+  verified: "已验证",
+  unknown: "未知",
+  offline_pass: "离线检查通过",
+  offline_review_required: "需要人工复核",
+  approved: "已批准",
+  pending: "待处理",
+};
+
+const toolCopy: Record<string, { name: string; description: string }> = {
+  "career-kb-local": {
+    name: "本地职业知识库",
+    description: "只读访问本地职业知识；不会改写 Career Core 的权威数据。",
+  },
+  "career-kb-weknora": {
+    name: "WeKnora 职业知识库",
+    description: "只读访问 WeKnora；配置服务地址、凭据并确认使用条款后才可启用。",
+  },
+  "echo-fixture": {
+    name: "本地连通性检查",
+    description: "用于验证工具协议的确定性离线检查工具。",
+  },
+};
+
+function toolName(item: PluginCatalogItem): string {
+  return toolCopy[item.manifest.id]?.name ?? item.manifest.name;
+}
+
+function toolDescription(item: PluginCatalogItem): string {
+  return toolCopy[item.manifest.id]?.description ?? item.manifest.user_visible_description;
+}
+
+function displayLabel(value: string | null | undefined, fallback = "未记录"): string {
+  if (!value) return fallback;
+  return displayLabels[value] ?? value.replaceAll("_", " ");
+}
+
 export function PluginsPage() {
   const [items, setItems] = useState<PluginCatalogItem[]>([]);
-  const [message, setMessage] = useState("正在读取插件目录…");
+  const [message, setMessage] = useState("正在读取本地工具目录…");
   const [pending, setPending] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [auditPluginId, setAuditPluginId] = useState("");
@@ -34,7 +92,7 @@ export function PluginsPage() {
       setItems(await apiRequest<PluginCatalogItem[]>("/api/v1/plugins", { signal }));
       setMessage("");
     } catch (error) {
-      if (!signal?.aborted) setMessage("插件目录暂不可用：" + (error as Error).message);
+      if (!signal?.aborted) setMessage("本地工具目录暂不可用：" + (error as Error).message);
     }
   }, []);
 
@@ -111,37 +169,38 @@ export function PluginsPage() {
     <main className="page plugins-page">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Extensions</p>
-          <h1>插件</h1>
+          <p className="eyebrow">本地接入</p>
+          <h1>工具与模型</h1>
+          <p>管理本地工具的权限、健康状态与更新。模型服务配置将在“模型服务”区域显示。</p>
         </div>
         <span className="service-status"><Package size={16} />本地目录</span>
       </div>
       {message && <div className="empty-state"><p>{message}</p></div>}
       {actionMessage && <p className="plugin-action-message" role="status">{actionMessage}</p>}
-      <section className="plugin-grid" aria-label="插件目录">
+      <section className="plugin-grid" aria-label="工具目录">
         {items.map((item) => (
           <article className="plugin-card" key={item.manifest.id}>
             <div className="plugin-card-header">
               <div className="plugin-icon" aria-hidden="true"><Package size={19} /></div>
               <div>
-                <h2>{item.manifest.name}</h2>
-                <p>{item.manifest.id} · v{item.manifest.version}</p>
+                <h2>{toolName(item)}</h2>
+                <p>版本 {item.manifest.version}</p>
               </div>
               <span className="plugin-status">
                 {item.installation?.enabled ? <ShieldCheck size={14} /> : <XCircle size={14} />}
                 {statusLabel(item)}
               </span>
             </div>
-            <p className="plugin-description">{item.manifest.user_visible_description}</p>
+            <p className="plugin-description">{toolDescription(item)}</p>
             <dl className="plugin-meta">
-              <div><dt>类型</dt><dd>{item.manifest.type}</dd></div>
+              <div><dt>类型</dt><dd>{displayLabel(item.manifest.type)}</dd></div>
               <div><dt>许可证</dt><dd>{item.manifest.source.license}</dd></div>
               <div><dt>固定来源</dt><dd title={item.manifest.source.commit}>{item.manifest.source.ref}</dd></div>
-              <div><dt>健康</dt><dd>{item.installation?.last_health_status ?? "未检查"}</dd></div>
+              <div><dt>健康</dt><dd>{displayLabel(item.installation?.last_health_status, "未检查")}</dd></div>
               <div><dt>离线扫描</dt><dd>{item.release_scan?.overall === "passed" ? "通过" : "隔离"}</dd></div>
             </dl>
             <div className="plugin-chips">
-              {item.manifest.capabilities.map((capability) => <span key={capability}>{capability}</span>)}
+              {item.manifest.capabilities.map((capability) => <span key={capability}>{displayLabel(capability)}</span>)}
             </div>
             <div className="plugin-permissions">
               <HeartPulse size={14} />
@@ -151,14 +210,14 @@ export function PluginsPage() {
               <summary>查看详情与权限</summary>
               <dl className="plugin-detail-list">
                 <div><dt>仓库</dt><dd>{item.manifest.source.repo}</dd></div>
-                <div><dt>固定 commit</dt><dd>{item.manifest.source.commit}</dd></div>
+                <div><dt>固定代码版本</dt><dd>{item.manifest.source.commit}</dd></div>
                 <div><dt>网络</dt><dd>{item.manifest.permissions.network.join(", ") || "无"}</dd></div>
                 <div><dt>文件</dt><dd>{item.manifest.permissions.filesystem.join(", ") || "无"}</dd></div>
-                <div><dt>Secret</dt><dd>{item.manifest.permissions.secrets.join(", ") || "无"}</dd></div>
+                <div><dt>密钥权限</dt><dd>{item.manifest.permissions.secrets.join(", ") || "无"}</dd></div>
                 <div><dt>数据范围</dt><dd>{item.manifest.permissions.scope.join(", ") || "无"}</dd></div>
-                <div><dt>License review</dt><dd>{item.release_scan?.license?.manual_review_status ?? "未记录"}</dd></div>
-                <div><dt>NOTICE</dt><dd>{item.release_scan?.license?.notice_requirement ?? "未记录"}</dd></div>
-                <div><dt>依赖扫描</dt><dd>{item.release_scan?.dependencies?.scan_mode ?? "未记录"}</dd></div>
+                <div><dt>许可证复核</dt><dd>{displayLabel(item.release_scan?.license?.manual_review_status)}</dd></div>
+                <div><dt>许可证声明要求</dt><dd>{displayLabel(item.release_scan?.license?.notice_requirement)}</dd></div>
+                <div><dt>依赖扫描</dt><dd>{displayLabel(item.release_scan?.dependencies?.scan_mode)}</dd></div>
               </dl>
             </details>
             {item.installed && (
@@ -196,7 +255,7 @@ export function PluginsPage() {
                 <p>运行 {auditSummary.run_count} 次 · 错误率 {auditSummary.error_rate} · 平均延迟 {auditSummary.latency.average_ms.toFixed(1)} ms</p>
                 <p>数据范围：{auditSummary.declared_data_scopes.join(", ") || "无"}</p>
                 <ol>
-                  {auditEvents.slice(-8).map((event) => <li key={event.audit_id}>{event.action} · {event.actor} · {event.occurred_at}</li>)}
+                  {auditEvents.slice(-8).map((event) => <li key={event.audit_id}>{displayLabel(event.action)} · {displayLabel(event.actor)} · {event.occurred_at}</li>)}
                 </ol>
               </section>
             )}

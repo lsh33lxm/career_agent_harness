@@ -265,20 +265,20 @@ export function ResumeStudioPanel() {
   }
 
   return (
-    <section className="resume-studio panel" aria-label="Resume Studio">
+    <section className="resume-studio panel" aria-label="简历工作室">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Resume Studio</p>
+          <p className="eyebrow">简历工作室</p>
           <h2>目标岗位定制与预览</h2>
         </div>
         <span className="service-status"><Palette size={15} />观复模板</span>
       </div>
       <div className="resume-studio-grid">
-        <label>Studio Resume Base ID<input value={resumeId} onChange={(event) => setResumeId(event.target.value)} placeholder="resume_…" /></label>
-        <label>Studio Resume Revision ID<input value={revisionId} onChange={(event) => setRevisionId(event.target.value)} placeholder="resume_revision_…" /></label>
-        <label>Target Profile ID<input value={profileId} onChange={(event) => setProfileId(event.target.value)} placeholder="target_profile_…" /></label>
-        <label>目标岗位<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Platform Engineer" /></label>
-        <label>公司（可选）<input value={company} onChange={(event) => setCompany(event.target.value)} placeholder="Company" /></label>
+        <label>基础简历精确引用<input value={resumeId} onChange={(event) => setResumeId(event.target.value)} placeholder="输入高级引用" /></label>
+        <label>生成修订精确引用<input value={revisionId} onChange={(event) => setRevisionId(event.target.value)} placeholder="输入高级引用" /></label>
+        <label>目标岗位档案精确引用<input value={profileId} onChange={(event) => setProfileId(event.target.value)} placeholder="输入高级引用" /></label>
+        <label>目标岗位<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：平台工程师" /></label>
+        <label>公司（可选）<input value={company} onChange={(event) => setCompany(event.target.value)} placeholder="例如：目标公司" /></label>
         <label>渲染模板<select aria-label="渲染模板" value={templateId} onFocus={loadTemplates} onChange={(event) => setTemplateId(event.target.value)}>
           {templates.map((template) => <option key={template.template_id} value={template.template_id} disabled={template.status !== "active"}>{template.name} · {template.renderer}{template.status === "disabled" ? "（不可用）" : ""}</option>)}
         </select></label>
@@ -290,7 +290,7 @@ export function ResumeStudioPanel() {
       </div>
       <p className="resume-studio-message">{message}</p>
       <div className="resume-draft-workspace">
-        <div><label>Proposal draft（JSON，本地自动保存）<textarea aria-label="Resume proposal draft" value={draftContent} onChange={(event) => setDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></label><label>EvidenceRef<input aria-label="Draft EvidenceRef" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="evidence_…" /></label><button className="button button-primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新 Revision</button></div>
+        <div><label>建议草稿（JSON，本地自动保存）<textarea aria-label="简历建议草稿" value={draftContent} onChange={(event) => setDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></label><label>证据精确引用<input aria-label="草稿证据精确引用" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="输入证据引用" /></label><button className="button button-primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新修订</button></div>
         <div>
           <label>预览主题<select aria-label="预览主题" value={previewTheme} onChange={(event) => setPreviewTheme(event.target.value)}><option value="warm-paper">暖纸</option><option value="compact-ink">紧凑墨色</option></select></label>
           <article className={`resume-draft-preview ${previewTheme}`} aria-label="草稿实时预览">
@@ -313,7 +313,7 @@ export function ResumeStudioPanel() {
             </div>
           )}
           <div className="resume-render-review">
-            <strong>Artifact 人工审核</strong>
+            <strong>导出文件人工审核</strong>
             <p>生成物不会自动成为 Resume Fact 或申请用最终稿。</p>
             <label>审核理由<input aria-label="审核理由" value={reviewReason} onChange={(event) => setReviewReason(event.target.value)} disabled={Boolean(review)} /></label>
             <div className="button-row">

@@ -29,3 +29,6 @@
 - Slice E completion audit 补齐 run latency/output/provenance/error metrics、离线 license/dependency/security scan、shadow output/error/provenance/latency comparison、audit summary 和 non-automatic rollback recommendation；migration `0021_plugin_lifecycle_observability` upgrade/downgrade 与 lifecycle rehearsal 通过。
 - 最终独立回归：backend `646 passed, 5 skipped`；frontend `17 test files, 58 passed`；Vite build、Ruff `backend tests migrations`、`git diff --check` 全部通过。A–E 当前状态为 DONE（local/offline），真实 marketplace、第三方 crawler 与 external-write adapters 继续按 blocker ledger 隔离。
 - 自治记录完成收口：更新 `AUTONOMOUS_EXECUTION_STATE.md`、`DECISIONS.md`、`BLOCKERS.md`，Git HEAD 保持 `164c440`。
+- Final requirement hardening：补充 Plugin Manifest v1 示例、第三方 source/ref/commit + license/NOTICE/manual-review scan 证据、默认 quarantine、knowledge category scope/敏感字段脱敏、WeKnora `list` blocked contract、Plugins UI manifest/审计/更新策略/卸载影响，以及 migration `0022_job_source_terms_provenance`。
+- Hardening verification：focused backend `32 passed`、Plugins UI `1 passed`；full backend `650 passed, 5 skipped`、frontend `18 files / 59 passed`；Vite build、Ruff `backend tests migrations` 与 `git diff --check` 通过。
+- Independent hardening review：先后修复 quarantine 经 disable/rollback 绕过、旧 scan report 绕过、JSON/Bearer 脱敏遗漏、历史 terms 时间伪造与无效 manifest 示例；最终 APPROVE，P0/P1/P2/P3 none。

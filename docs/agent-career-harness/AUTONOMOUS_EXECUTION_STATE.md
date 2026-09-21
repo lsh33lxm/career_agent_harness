@@ -23,12 +23,21 @@
 ## Final audit
 
 - 状态：DONE — Slice A–E 均已完成 local/offline Definition of Done；当前没有阻塞本地继续工作的 P0/P1。
-- Backend：`646 passed, 5 skipped`；跳过项均是 Windows symlink 创建权限/能力限制。
-- Frontend：`17 test files, 58 passed`；Vite production build passed。
+- Backend：`650 passed, 5 skipped`；跳过项均是 Windows symlink 创建权限/能力限制。
+- Frontend：`18 test files, 59 passed`；Vite production build passed。
 - Quality：Ruff `backend tests migrations` passed；`git diff --check` passed。
 - Recovery：migration upgrade/downgrade、backup/restore、plugin lifecycle rehearsal 均通过；Legacy Agent Radar 仍只读。
 - External boundary：真实 marketplace 下载、第三方 crawler/portal、Typst compiler、Feishu/Gmail/Notion/ATS 写入仍按 blocker ledger 保持隔离或 proposal-only。
 - 当前入口：A–E 已收口；后续工作只从已登记 external boundary 获得授权后继续，或由新的产品授权开启下一切片。
+
+## Final requirement hardening
+
+- Plugin Manifest v1 现在有 repository-owned 示例；插件详情页展示 source/commit、权限、license review、NOTICE、依赖扫描、审计、更新策略与卸载影响。
+- 非 `builtin://` release 即使声明已知 SPDX license，也会因人工 license/NOTICE 与 install-script/vulnerability scan 未完成而保持 quarantined；不会被离线声明自动信任。
+- Plugin knowledge search 默认脱敏 email、phone 与 credential-shaped text，并可限定 knowledge category；WeKnora blocked adapter 覆盖声明的 `search/read/ask/list` 能力。
+- Migration `0022_job_source_terms_provenance` 将每次 source run 的 terms/robots/ToS note 与检查时间作为 immutable provenance 保存，并通过 upgrade/downgrade 验证。
+- Focused：backend `32 passed`，Plugins UI `1 passed`；full：backend `650 passed, 5 skipped`，frontend `18 files / 59 passed`；Vite build、Ruff、diff check 通过。
+- Independent review：APPROVE；历史 scan report、rollback、enable、healthcheck 与 invoke 的 quarantine bypass 已回归验证，P0/P1/P2/P3 均无未解决项。
 
 ## Slice A checklist
 

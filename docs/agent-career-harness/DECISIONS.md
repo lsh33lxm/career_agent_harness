@@ -119,3 +119,11 @@
 - 决定：每次 plugin run 持久化 latency、output/provenance hash、error code 和 output size；candidate update preview 离线扫描 SPDX/license、依赖许可证、声明权限和安全边界，并在 deterministic shadow run 中比较 structured output、error behavior、provenance 和 latency。审计摘要与 observation window 生成 rollback recommendation；recommendation 的 `automatic` 永远为 `false`，实际 switch/rollback 仍需显式用户动作。
 - 原因：替换决策必须有可见、可重放的质量证据，同时不能让 telemetry 或 scan 结果越过用户授权边界自动接管 active pin。
 - 影响：`0021_plugin_lifecycle_observability` 为 additive/reversible migration；未知许可证、扫描失败、权限升级、shadow mismatch 或 latency regression 会 quarantine/reject，旧 release、run、audit 和 artifact 保留以支持恢复。
+
+## D-2.0-017 — Offline declarations cannot establish third-party plugin trust
+
+- 状态：`ACCEPTED`
+- 日期：2026-09-21
+- 决定：只有 repository-owned `builtin://` release 可在确定性离线 scan 后进入 passed；任何第三方来源即使声明已知 SPDX license，也必须保留 source/ref/commit、NOTICE 与人工复核状态，并因 install-script、漏洞和外部条款尚未核验而保持 quarantined。Plugin knowledge read model 默认脱敏敏感字段并接受显式 category scope；Job source run 持久化 terms/robots/ToS note 与检查时间。
+- 原因：manifest 自声明不能证明许可证、安全或数据授权；插件和外部 source 只能降低已有 authority，不能凭配置提升信任。
+- 影响：真实 marketplace、WeKnora 与 crawler 仍需外部核验；repository-owned fixture/local adapter 可继续离线验收。`0022_job_source_terms_provenance` 为 additive/reversible migration。

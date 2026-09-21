@@ -1,11 +1,12 @@
 # Agent Career Harness 当前状态
 
-更新时间：2026-09-21；分支：`refactor/v1.4-integration`；最后功能 HEAD：`2e279ba`（文档收口后会产生新文档提交）。
+更新时间：2026-09-21；分支：`refactor/v1.4-integration`；最新 v2.0 功能提交：`db7efc2`。
 
 ## 当前结论
 
-- 观复视觉基线：**DONE**（`babf9c0`，前端 56 tests/build，84 组浏览器检查历史证据）。
-- Career Core 与 Capability Visualization：**DONE**，真实读模型和用户 authority 边界保持。
+- v2.0 Slice A–E（Plugin Foundation、Career Knowledge、Resume Studio、Opportunity Radar、Lifecycle / Replacement）：**DONE for local/offline scope**。
+- Career Core 与 Capability Visualization：**DONE**，真实读模型、evidence provenance 与用户 authority 边界保持。
+- Plugin Marketplace：manifest/schema、scoped runtime、生命周期、scan/quarantine、审计、更新策略、卸载影响与桌面页面已实现；第三方执行仍隔离。
 - Legacy inventory/archive/rehearsal/backup restore：**DONE for reversible subset**；2,426 files、2,205 preserved、17 deferred，未执行 canonical cutover。
 - Evidence provenance、History、Feishu offline projection：**DONE / offline only**。
 - 真实 legacy Job/Interview/Capability authority mapping：**BLOCKED / NEEDS USER AUTHORITY**。
@@ -13,15 +14,15 @@
 
 ## 最新验证
 
-- Backend：`602 passed, 5 skipped`；跳过为 Windows symlink privilege/availability。
-- Frontend：`56 passed`，`npm run build` 通过。
-- Focused migration/evidence/Feishu：`27 passed`；Ruff 与 `git diff --check` 通过。
+- Backend：`650 passed, 5 skipped`；跳过为 Windows symlink privilege/availability。
+- Frontend：`18 test files, 59 passed`，`npm run build` 通过。
+- v2.0 hardening focused：backend `32 passed`、Plugins UI `1 passed`；Ruff `backend tests migrations` 与 `git diff --check` 通过。
 
 ## 下一阶段与授权依赖
 
-1. Projects 与 Resume 窄只读客户端已合入；下一步补真实 fixture 与 acceptance，不加写路径。
+1. 真实 marketplace、WeKnora、crawler/portal、Typst compiler 与 external-write adapters 仍需 credentials、license/terms/security 核验和明确授权。
 2. 按 CANONICAL_CUTOVER_GATE 决定 source identity/authority/mapping，再实施结构化 Core 导入；当前只保存历史 evidence。
-3. 真实 rehearsal Evidence API 已验收2205条；真实职业闭环待用户数据/身份决定。L2 runner/result为下一阶段新契约。
+3. 本地 A–E 已收口；后续只处理已登记 external boundary，或由新的产品授权开启下一切片。
 
 禁止 main merge、push、生产 Feishu 写入、canonical cutover、legacy 修改和破坏性迁移。
 

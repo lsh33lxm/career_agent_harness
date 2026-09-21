@@ -13,6 +13,7 @@ import {
 } from "../api/plugins";
 import { apiRequest } from "../api/client";
 import { ModelProvidersPanel } from "./ModelProvidersPanel";
+import { TaskQueuePanel } from "./TaskQueuePanel";
 
 function statusLabel(item: PluginCatalogItem): string {
   if (!item.installed) return "未安装";
@@ -272,6 +273,7 @@ export function PluginsPage() {
         ))}
       </section>
       <ModelProvidersPanel />
+      <TaskQueuePanel />
     </main>
   );
 }

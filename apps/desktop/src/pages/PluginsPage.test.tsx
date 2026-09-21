@@ -52,6 +52,7 @@ it("shows manifest details, policy, audit and uninstall impact without external 
     const url = String(input);
     if (url.endsWith("/api/v1/plugins") && (init?.method ?? "GET") === "GET") return response(catalog);
     if (url.endsWith("/api/v1/model-providers") && (init?.method ?? "GET") === "GET") return response([]);
+    if (url.includes("/api/v1/tasks?limit=100") && (init?.method ?? "GET") === "GET") return response([]);
     if (url.endsWith("/audit")) return response([{ audit_id: "audit_1", plugin_id: "echo-fixture", action: "install", actor: "user", idempotency_key: null, payload: {}, occurred_at: "now" }]);
     if (url.endsWith("/audit-summary")) return response({
       plugin_id: "echo-fixture", run_count: 2, error_count: 0, error_rate: 0,

@@ -23,8 +23,16 @@ from career_harness.api.resume_studio import ResumeStudioApi
 from career_harness.api.source_connectors import SourceConnectorApi
 from career_harness.api.tasks import TaskApi
 from career_harness.api.today import TodayApi
+from career_harness.api.tools import ToolApi
 from career_harness.config import Settings
 from career_harness.core.connectors.models import SyncMode
+from career_harness.core.tools.registry import (
+    ToolDefinition,
+    ToolPermission,
+    ToolRegistry,
+    ToolScope,
+    ToolScopeKind,
+)
 from career_harness.db.application_repository import ApplicationRepository
 from career_harness.db.capability_repository import CapabilityRepository
 from career_harness.db.evidence_repository import EvidenceRepository
@@ -39,6 +47,7 @@ from career_harness.db.resume_studio_repository import ResumeStudioRepository
 from career_harness.db.session import create_sqlite_engine, sqlite_url
 from career_harness.db.source_connector_repository import SourceConnectorRepository
 from career_harness.db.task_repository import TaskRepository
+from career_harness.db.tool_audit import DatabaseToolAuditSink
 from career_harness.platform import AppPaths
 from career_harness.platform.secure_store import WindowsCredentialSecretStore
 from career_harness.services.capability_review_service import CapabilityReviewService
@@ -103,6 +112,30 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         ),
         stage_limits={"evaluation": 2, "source_sync": 1},
     )
+    tool_registry = ToolRegistry(audit_sink=DatabaseToolAuditSink(engine))
+    tool_registry.register(
+        ToolDefinition(
+            name="knowledge.search",
+            source="builtin://career-knowledge",
+            version="1.0.0",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer"},
+                },
+                "required": ["query"],
+                "additionalProperties": False,
+            },
+            permissions=frozenset({ToolPermission.READ}),
+            scope_kinds=frozenset({ToolScopeKind.WORKSPACE}),
+            output_limit_bytes=128_000,
+            handler=lambda arguments: knowledge_repository.search_for_plugin(
+                str(arguments["query"]),
+                {"limit": int(arguments.get("limit", 20)), "redact_sensitive": True},
+            ),
+        )
+    )
     return create_app(
         settings,
         project_read_api=ProjectReadApi(ProjectRepository(engine)),
@@ -148,5 +181,13 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         task_api=TaskApi(task_service, task_repository),
         source_connector_api=SourceConnectorApi(
             source_connector_service, source_connector_repository, task_service
+        ),
+        tool_api=ToolApi(
+            registry=tool_registry,
+            principal_id="local-user",
+            allowed_scopes=frozenset(
+                {ToolScope(ToolScopeKind.WORKSPACE, "workspace-local")}
+            ),
+            permissions=frozenset({ToolPermission.READ}),
         ),
     )

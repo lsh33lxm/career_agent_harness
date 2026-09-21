@@ -28,6 +28,7 @@ from career_harness.api.source_connectors import (
 )
 from career_harness.api.tasks import TaskApi, create_task_router
 from career_harness.api.today import TodayApi, create_today_router
+from career_harness.api.tools import ToolApi, create_tool_router
 from career_harness.config import Settings
 
 
@@ -60,6 +61,7 @@ def create_app(
     memory_api: MemoryApi | None = None,
     task_api: TaskApi | None = None,
     source_connector_api: SourceConnectorApi | None = None,
+    tool_api: ToolApi | None = None,
 ) -> FastAPI:
     active_settings = settings or Settings()
     app = FastAPI(title="Agent Career Harness Local API", version=__version__)
@@ -133,5 +135,7 @@ def create_app(
         app.include_router(create_task_router(task_api))
     if source_connector_api is not None:
         app.include_router(create_source_connector_router(source_connector_api))
+    if tool_api is not None:
+        app.include_router(create_tool_router(tool_api))
 
     return app

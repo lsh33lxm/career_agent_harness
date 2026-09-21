@@ -14,6 +14,7 @@ from career_harness.api.github_projects import GitHubProjectApi
 from career_harness.api.job_radar import JobRadarApi
 from career_harness.api.knowledge import KnowledgeApi
 from career_harness.api.legacy_import import LegacyImportApi
+from career_harness.api.memory import MemoryApi
 from career_harness.api.model_providers import ModelProviderApi
 from career_harness.api.opportunities import OpportunityApi
 from career_harness.api.plugins import PluginApi
@@ -25,6 +26,7 @@ from career_harness.db.application_repository import ApplicationRepository
 from career_harness.db.capability_repository import CapabilityRepository
 from career_harness.db.evidence_repository import EvidenceRepository
 from career_harness.db.knowledge_repository import KnowledgeRepository
+from career_harness.db.memory_repository import MemoryRepository
 from career_harness.db.migrations import upgrade_to_head
 from career_harness.db.model_provider_repository import ModelProviderRepository
 from career_harness.db.opportunity_repository import OpportunityRepository
@@ -111,4 +113,5 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
                 WindowsCredentialSecretStore(),
             )
         ),
+        memory_api=MemoryApi(MemoryRepository(engine)),
     )

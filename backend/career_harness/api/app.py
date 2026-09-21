@@ -16,6 +16,7 @@ from career_harness.api.github_projects import GitHubProjectApi, create_github_p
 from career_harness.api.job_radar import JobRadarApi, create_job_radar_router
 from career_harness.api.knowledge import KnowledgeApi, create_knowledge_router
 from career_harness.api.legacy_import import LegacyImportApi, create_legacy_import_router
+from career_harness.api.memory import MemoryApi, create_memory_router
 from career_harness.api.model_providers import ModelProviderApi, create_model_provider_router
 from career_harness.api.opportunities import OpportunityApi, create_opportunity_router
 from career_harness.api.plugins import PluginApi, create_plugin_router
@@ -51,6 +52,7 @@ def create_app(
     legacy_import_api: LegacyImportApi | None = None,
     model_provider_api: ModelProviderApi | None = None,
     github_project_api: GitHubProjectApi | None = None,
+    memory_api: MemoryApi | None = None,
 ) -> FastAPI:
     active_settings = settings or Settings()
     app = FastAPI(title="Agent Career Harness Local API", version=__version__)
@@ -118,5 +120,7 @@ def create_app(
         app.include_router(create_model_provider_router(model_provider_api))
     if github_project_api is not None:
         app.include_router(create_github_project_router(github_project_api))
+    if memory_api is not None:
+        app.include_router(create_memory_router(memory_api))
 
     return app

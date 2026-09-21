@@ -13,11 +13,9 @@ import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { PluginsPage } from "../pages/PluginsPage";
 import { KnowledgePage } from "../pages/KnowledgePage";
+import { ContextPage } from "../pages/ContextPage";
 
-const sections = [
-  ["context", "我的上下文", "个人上下文页面尚未接入，未查询个人记录。"],
-  ["settings", "设置", "偏好设置页面尚未接入，未读取本地配置。"],
-] as const;
+const sections = [["settings", "设置", "偏好设置页面尚未接入，未读取本地配置。"]] as const;
 
 export function App() {
   return (
@@ -35,6 +33,7 @@ export function App() {
             <Route path="history/evidence" element={<EvidencePage />} />
             <Route path="plugins" element={<PluginsPage />} />
             <Route path="knowledge" element={<KnowledgePage />} />
+            <Route path="context" element={<ContextPage />} />
             {sections.map(([path, title, emptyLabel]) => (
               <Route
                 key={path}

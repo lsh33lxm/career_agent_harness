@@ -7,6 +7,7 @@ from career_harness.api.capabilities import CapabilityApi
 from career_harness.api.capability_inbox import CapabilityInboxApi
 from career_harness.api.career_reads import CareerReadApi
 from career_harness.api.evidence import EvidenceApi
+from career_harness.api.job_radar import JobRadarApi
 from career_harness.api.knowledge import KnowledgeApi
 from career_harness.api.opportunities import OpportunityApi
 from career_harness.api.plugins import PluginApi
@@ -28,6 +29,7 @@ from career_harness.platform import AppPaths
 from career_harness.services.capability_review_service import CapabilityReviewService
 from career_harness.services.capability_workspace_service import CapabilityWorkspaceService
 from career_harness.services.command_service import CommandService
+from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.plugin_service import PluginLifecycleManager
 from career_harness.services.resume_studio_service import ResumeStudioService
@@ -75,4 +77,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         plugin_api=PluginApi(plugin_service),
         knowledge_api=KnowledgeApi(knowledge_repository),
         resume_studio_api=ResumeStudioApi(resume_studio_service),
+        job_radar_api=JobRadarApi(
+            OpportunityRadarService(engine, ArtifactStore(active_paths.artifacts))
+        ),
     )

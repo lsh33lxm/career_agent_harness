@@ -14,3 +14,6 @@
 - 完成 Slice C Resume Studio：`0016_resume_studio`、TargetProfile、target/patch refs、自有 HTML/CSS 模板、确定性 PDF、Artifact、ATS report、diff/provenance、authenticated API 与前端 Studio panel。
 - Slice C focused backend/API/migration/restore `59 passed`；backend full `622 passed, 5 skipped`；frontend `57 passed`；Vite build、Ruff、diff check 通过。
 - 下一入口切换为 Slice D Opportunity Radar；真实抓取器和自动投递保持 blocked。
+- 完成 Slice D Opportunity Radar：`0017_opportunity_radar`、JobSource contract、manual/offline sources、Artifact/Evidence provenance、字段规范化、URL/content dedupe、match/gap/deal-breaker ranking、user-only admission、Resume proposal seed、API 与 Opportunities staging UI。
+- Slice D focused backend/API/migration `5 passed`；backend full `627 passed, 5 skipped`；frontend `58 passed`；Vite build、backup/restore、Ruff、diff check 通过。
+- 下一入口切换为 Slice E Lifecycle / Replacement；真实 crawler、portal 和 ATS 写入保持 blocked。

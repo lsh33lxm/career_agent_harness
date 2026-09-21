@@ -695,12 +695,34 @@ h3 {
 }
 
 .admission-panel,
+.radar-panel,
 .opportunity-list {
   overflow: hidden;
   background: #ffffff;
   border: 1px solid #dce1dd;
   border-radius: 7px;
 }
+
+.radar-panel { margin-bottom: 20px; }
+.radar-import { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.radar-import label { display: grid; min-width: 0; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 650; }
+.radar-import input, .radar-import textarea { width: 100%; min-width: 0; padding: 9px 10px; color: var(--text); background: var(--surface-panel); border: 1px solid var(--border); border-radius: var(--radius-control); }
+.radar-import__text { grid-column: 1 / -1; }
+.radar-import textarea { resize: vertical; }
+.radar-import > button { grid-column: 1 / -1; justify-self: end; }
+.radar-error { padding: 12px 20px; border-bottom: 1px solid var(--border); }
+.radar-error button { margin-left: auto; }
+.radar-state { display: grid; min-height: 110px; place-items: center; align-content: center; gap: 8px; color: var(--muted); }
+.radar-records { display: grid; }
+.radar-record { display: grid; grid-template-columns: minmax(180px, 1fr) 80px minmax(180px, 1fr) auto; align-items: center; gap: 14px; padding: 14px 20px; border-top: 1px solid var(--border); }
+.radar-record:first-child { border-top: 0; }
+.radar-record h3, .radar-record p { margin: 0; overflow-wrap: anywhere; }
+.radar-record h3 { font-size: 14px; }
+.radar-record p, .radar-notes { color: var(--muted); font-size: 11px; }
+.radar-score { display: grid; justify-items: center; }
+.radar-score strong { color: var(--green); font-size: 20px; }
+.radar-score span { color: var(--muted); font-size: 10px; }
+.radar-notes { display: flex; flex-wrap: wrap; gap: 5px 10px; }
 
 .admission-panel {
   margin-bottom: 20px;
@@ -1011,6 +1033,11 @@ h3 {
 }
 
 @media (max-width: 760px) {
+  .radar-import { grid-template-columns: 1fr; }
+  .radar-import__text, .radar-import > button { grid-column: 1; }
+  .radar-import > button { width: 100%; }
+  .radar-record { grid-template-columns: minmax(0, 1fr) auto; }
+  .radar-notes, .radar-record > button { grid-column: 1 / -1; }
   .app-shell {
     grid-template-columns: 64px minmax(0, 1fr);
   }

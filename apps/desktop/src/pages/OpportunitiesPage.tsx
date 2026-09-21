@@ -18,6 +18,7 @@ import {
   type OpportunitySummary,
   type PriorityLevel,
 } from "../api/client";
+import { JobRadarPanel } from "./JobRadarPanel";
 
 const priorityLevels: PriorityLevel[] = ["low", "medium", "high", "urgent"];
 
@@ -181,6 +182,8 @@ export function OpportunitiesPage() {
           <span>{admissionOpen ? "Close" : "Add opportunity"}</span>
         </button>
       </div>
+
+      <JobRadarPanel />
 
       {admissionOpen && (
         <section className="admission-panel" aria-labelledby="admission-title">

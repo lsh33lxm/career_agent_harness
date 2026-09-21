@@ -17,8 +17,8 @@
 | A Plugin Foundation | DONE (local/offline) | Slice A commit `e2f2807` |
 | B Career Knowledge | DONE (local/offline) | Slice C entry: ResumeBase → proposal-only render chain |
 | C Resume Studio | DONE (local/offline) | Migration `0016_resume_studio` |
-| D Opportunity Radar | IN PROGRESS | 先建立 job-source contract 与 staging fixture |
-| E Lifecycle / Replacement | NOT STARTED | 等待 Slice D DoD |
+| D Opportunity Radar | DONE (local/offline) | Migration `0017_opportunity_radar` |
+| E Lifecycle / Replacement | IN PROGRESS | update preview → shadow run → switch/rollback |
 
 ## Slice A checklist
 
@@ -73,3 +73,12 @@
 ## Recovery entry
 
 Start with `git status --short --branch`, inspect this file, then continue at the current Slice entry. Record every blocker in `BLOCKERS.md` and every architectural decision in `DECISIONS.md`.
+
+## Slice D checkpoint
+
+- 状态：DONE — local/offline Opportunity Radar vertical slice
+- Flow：manual/offline source → Artifact/Evidence → staging → fingerprint dedupe → match/gap/rank → explicit user admission → Opportunity
+- Resume handoff：仅对 user-admitted staging 生成 `proposal_only` seed，仍须经过 Resume Studio target/patch/review gate
+- Verification：focused backend/API/migration `5 passed`；backend full `627 passed, 5 skipped`；frontend `58 passed`；Vite build、backup/restore、Ruff、diff check 通过
+- Review：APPROVE；P0/P1 none。第三方 crawler/portal 接入因 license/ToS/credentials 保持 quarantined
+- Next slice：Slice E — Plugin Lifecycle / Replacement

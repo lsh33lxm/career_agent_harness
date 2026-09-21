@@ -67,3 +67,11 @@
 - 决定：首个 `resume-render-html` 使用项目自有暖纸 HTML/CSS 模板和确定性本地 PDF writer，支持可提取文字层与页数检查；非 Latin 字符完整保留在 HTML preview，PDF baseline 会替换字体不支持的 glyph。
 - 原因：不复制 Magic Resume 受限资产，不增加运行时外部依赖或网络，同时提供可重放的离线验收基线。
 - 影响：高级 CJK 字体嵌入和隔离 LaTeX/Typst worker 是后续增强，不阻塞当前 Core-backed workflow。
+
+## D-2.0-010 — Job sources stage evidence before Core admission
+
+- 状态：ACCEPTED
+- 日期：2026-09-21
+- 决定：manual/offline JobSource 的原始 bytes 先进入 Artifact/Evidence 与 `job_staging_record`；URL/content fingerprint、terms status、suggested score 和 gaps 都是可审计投影。只有 `actor=user` 的 admission 才能创建 Job/Opportunity。
+- 原因：外部职位是不可信输入，来源频率、parser 或建议分数都不能提升为 Core truth 或 User Priority。
+- 影响：Resume 集成只输出 `proposal_only` seed；真实 crawler/portal adapter 必须先完成独立 license、ToS、网络权限与 fixture 审批。

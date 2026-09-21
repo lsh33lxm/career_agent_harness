@@ -10,6 +10,7 @@ import {
   setOpportunityUserPriority,
   type OpportunitySummary,
 } from "../api/client";
+import { listJobStaging } from "../api/jobRadar";
 import { OpportunitiesPage } from "./OpportunitiesPage";
 
 vi.mock("../api/client", async (importOriginal) => {
@@ -22,6 +23,11 @@ vi.mock("../api/client", async (importOriginal) => {
     listOpportunities: vi.fn(),
     setOpportunityUserPriority: vi.fn(),
   };
+});
+
+vi.mock("../api/jobRadar", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../api/jobRadar")>();
+  return { ...original, listJobStaging: vi.fn(), importManualJob: vi.fn(), admitStagedJob: vi.fn() };
 });
 
 function opportunity(overrides: Partial<OpportunitySummary> = {}): OpportunitySummary {
@@ -54,6 +60,7 @@ function opportunity(overrides: Partial<OpportunitySummary> = {}): OpportunitySu
 }
 
 beforeEach(() => {
+  vi.mocked(listJobStaging).mockResolvedValue([]);
   vi.mocked(admitOpportunityManually).mockReset();
   vi.mocked(admitOpportunityProposal).mockReset();
   vi.mocked(getOpportunity).mockReset();

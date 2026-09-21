@@ -3,11 +3,11 @@
 版本：v2.1
 
 日期：2026-09-22
-实现基线：`58c4b3a`（integration worktree）
+实现基线：`31f32ea`（integration worktree；后续文档提交仅更新本文件）
 
 ## 1. 本次目标与结论
 
-Agent Career Harness 已从页面原型形成可安装的本地中文职业工作台：Career Core 管理权威状态，Artifact/Evidence 保存来源，Legacy 数据以只读投影进入机会与知识页面，插件、模型、GitHub 项目分析、简历、岗位、能力和 Wiki 通过同一审计边界协作。本轮恢复正确的“观复”桌面图标，并补齐 Wiki graph、长期记忆、持久任务队列、本地/Legacy/GitHub 资料源治理、Feishu 离线预览和 scoped tool governance。
+Agent Career Harness 已从页面原型形成可安装的本地中文职业工作台：Career Core 管理权威状态，Artifact/Evidence 保存来源，Legacy 数据以只读投影进入机会与知识页面，插件、模型、GitHub 项目分析、简历、岗位、能力和 Wiki 通过同一审计边界协作。本轮恢复正确的“观复”桌面图标，并补齐 Wiki graph、review-gated Wiki 编辑、长期记忆、持久任务队列及失败恢复界面、本地/Legacy/GitHub 资料源治理、Feishu 离线预览和 scoped tool governance。
 
 状态定义：**已完成**表示代码、测试和本地构建均存在；**部分完成**表示安全的本地闭环存在但高级能力或外部连接未完成；**阻塞**表示需要凭据、条款许可或用户权威。
 
@@ -19,9 +19,9 @@ Agent Career Harness 已从页面原型形成可安装的本地中文职业工�
 | Legacy 岗位/面试/问题只读导入 | 已完成（非 canonical） | `backend/career_harness/services/legacy_import_service.py` |
 | Opportunity Radar、去重、排名、admission | 已完成（本地/离线来源） | `backend/career_harness/services/opportunity_radar_service.py` |
 | Knowledge 导入、chunk、hybrid retrieval、引用 | 已完成 | `backend/career_harness/db/knowledge_repository.py` |
-| Wiki proposal、revision、diff、rollback、graph、health | 已完成 | `backend/career_harness/api/knowledge.py` |
+| Wiki proposal、用户审核编辑、revision、diff、rollback、graph、health | 已完成 | `backend/career_harness/api/knowledge.py`、`apps/desktop/src/pages/KnowledgePage.tsx` |
 | 长期记忆 proposal、确认、revision、tombstone | 已完成（本地作用域） | `backend/career_harness/db/memory_repository.py` |
-| 持久任务队列、retry/cancel/dead-letter/attempt guard | 已完成（本地手动调度） | `backend/career_harness/db/task_repository.py` |
+| 持久任务队列、retry/cancel/dead-letter/attempt guard、恢复界面 | 已完成（本地手动调度） | `backend/career_harness/db/task_repository.py`、`apps/desktop/src/pages/TaskQueuePanel.tsx` |
 | SourceConnector、cursor、delete safety、sync log | 部分完成（本地文件夹、Legacy、GitHub） | `backend/career_harness/services/source_connector_service.py` |
 | Scoped Tool Registry 与审计 | 部分完成（内置只读工具） | `backend/career_harness/core/tools/registry.py` |
 | Resume proposal、revision、HTML/PDF、ATS 检查 | 已完成（本地 renderer） | `backend/career_harness/services/resume_studio_service.py` |
@@ -44,7 +44,7 @@ Agent Career Harness 已从页面原型形成可安装的本地中文职业工�
 
 当前 Knowledge 支持 Markdown、HTML、PDF、DOCX 和文本导入，原始 bytes 进入 Artifact Store；内容被确定性分块并建立 lexical + 本地字符向量 hybrid index。检索返回分数、片段、EvidenceRef、source locator、authority 与 revision；疑似 prompt injection 默认隔离。
 
-Wiki 支持 proposal 审核、revision history、line diff、rollback、显式页面 link、当前 graph 和 health score。Health 检查孤立页面、重复标题、过期 revision link、缺少引用和提示注入；检查只读，不自动发布、删除或批量修复。
+Wiki 支持 proposal 审核、revision history、line diff、rollback、显式页面 link、当前 graph 和 health score。桌面端可以从检索结果读取完整当前 revision，修改标题、分类或正文；保存只创建 proposal，用户再次明确批准后才发布新 revision，拒绝不修改当前页面，原 EvidenceRef 继续保留。Health 检查孤立页面、重复标题、过期 revision link、缺少引用和提示注入；检查只读，不自动发布、删除或批量修复。
 
 长期记忆已支持 profile/preference/fact/task/interest、user/workspace/session scope、候选 proposal、用户确认/拒绝/编辑、revision、检索与 tombstone。LLM 原始创建者与用户确认者分离，未确认候选不能作为强事实；记忆不能授予工具权限或覆盖本轮用户要求。Memory consolidation 与 memory-document affinity 尚未实现。
 
@@ -52,7 +52,7 @@ Wiki 支持 proposal 审核、revision history、line diff、rollback、显式�
 
 Feishu Today 是出站投影而非 SourceConnector。当前“今天”页可生成保留 Core 顺序、exact revisions、UserPriority 与 SuggestedPriority 的 `dry_run` JSON 预览，不请求凭据、不连接 Feishu、不产生远端写入。Feishu 作为入站资料源的 connector 与真实投影写入仍未实现。
 
-持久 Task Queue 支持 pending/processing/finalizing/completed/failed/cancelled/retrying/dead-letter 状态、指数退避、取消、恢复、人工重试、stage worker limit、不可变 attempt 和 version/attempt guard。任务 JSON 限制为 1 MB，禁止直接持久化 token/password/API key；异常在写库前脱敏。当前 runtime 提供手动 dispatcher，常驻后台调度与 scheduled sync 尚未实现。
+持久 Task Queue 支持 pending/processing/finalizing/completed/failed/cancelled/retrying/dead-letter 状态、指数退避、取消、恢复、人工重试、stage worker limit、不可变 attempt 和 version/attempt guard。任务 JSON 限制为 1 MB，禁止直接持久化 token/password/API key；异常在写库前脱敏。“工具与模型”页展示中文任务状态、进度、失败原因和 attempt 历史；人工重试会先恢复任务，再调用受控 stage dispatcher 并刷新结果。当前 runtime 仍没有常驻后台调度与 scheduled sync。
 
 ## 5. 职位、简历、面试与申请流程
 
@@ -95,10 +95,10 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 |---|---|---|
 | Career Core / Evidence / Audit | 已完成 | 保持兼容并扩展精确引用 |
 | Knowledge import/chunk/hybrid search/citation | 已完成 | 增加真实 embedding/rerank 可选 adapter |
-| Wiki revision/diff/rollback/graph/health | 已完成 | 增加页面编辑、移动和 lint 修复 proposal |
+| Wiki revision/diff/rollback/graph/health | 已完成 | 页面编辑/重分类 proposal 已完成；增加 lint 修复 proposal |
 | Memory governance | 已完成本地核心 | 增加 consolidation 与 document affinity |
 | SourceConnector/sync cursor/delete safety | 部分完成 | local-folder、Legacy、GitHub 已完成；增加其他入站 adapter |
-| Task retry/cancel/dead-letter/worker pool | 已完成本地核心 | 增加后台 dispatcher、scheduled sync 与每模型并发策略 |
+| Task retry/cancel/dead-letter/worker pool | 已完成本地核心与恢复 UI | 增加后台 dispatcher、scheduled sync 与每模型并发策略 |
 | Opportunity/Resume/Application | 已完成本地核心 | 编排离线端到端任务和公司/面试产物 |
 | 外部 ATS/邮件/Feishu/Notion 写入 | 阻塞 | 需要凭据、条款与逐次用户批准 |
 | MCP/CLI Runner | 部分完成 | scoped tool registry 已完成；补 transport auth 与 CLI sandbox |
@@ -106,10 +106,10 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 
 ## 10. 测试与构建结果
 
-本轮可审计实现提交：`4e8e944`（Memory）、`0caa294`（Task Queue）、`e14d795`（local-folder SourceConnector）、`64374d0`（知识页资料源 UI）、`58c4b3a`（scoped Tool Registry/API）、`9bae9f1`（Legacy SourceConnector）、`34ef3d8`（GitHub SourceConnector）、`eee4776`（Feishu Today dry-run）。
+本轮可审计实现提交：`4e8e944`（Memory）、`0caa294`（Task Queue）、`e14d795`（local-folder SourceConnector）、`64374d0`（知识页资料源 UI）、`58c4b3a`（scoped Tool Registry/API）、`9bae9f1`（Legacy SourceConnector）、`34ef3d8`（GitHub SourceConnector）、`eee4776`（Feishu Today dry-run）、`09f4674`（资料源类型 UI）、`4b2613d`/`924c482`（任务恢复 UI 与执行）、`31f32ea`（review-gated Wiki 编辑）。
 
 - Backend：`681 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制。
-- Frontend：`22 test files, 61 passed`。
+- Frontend：`23 test files, 64 passed`。
 - Ruff：`backend tests migrations` 通过。
 - TypeScript/Vite：production build 通过。
 - Legacy/SourceConnector focused：`10 passed`；GitHub/SourceConnector focused：`11 passed`；Feishu/Today focused：`11 passed`；Tool/API focused：`6 passed`。
@@ -122,7 +122,7 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 
 - Memory 本地治理已完成；consolidation/affinity 仍缺失。
 - SourceConnector 当前覆盖本地文件夹、Legacy Agent Radar 与 GitHub；Feishu 入站、Notion、Yuque、DingTalk、RSS、Confluence 尚未统一，scheduled sync 也未实现。
-- Task Queue 当前由 API/业务显式 dispatch；没有常驻后台 worker supervisor 或每模型并发策略。
+- Task Queue 已提供失败检查、attempt 查看和可执行的人工重试；没有常驻后台 worker supervisor、scheduled sync 或每模型并发策略。
 - Tool scope 已由后端强制执行；真实 MCP transport auth 和 CLI sandbox 尚未实现。
 - GraphRAG、真实 dense embedding/rerank、OCR/VLM/ASR、表格/图片/Office 全格式解析仍需可替换 adapter。
 - 真实模型对话需要用户配置凭据并明确允许发送的数据；连接测试成功前只能显示“尚未配置/未验证”。
@@ -132,8 +132,8 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 
 ## 12. 下一阶段具体顺序
 
-1. 增加后台 dispatcher、scheduled sync、per-model concurrency 与 failed-task inspection UI。
-2. 将 Opportunity → Resume proposal → ATS → company research → STAR → Application audit 串成离线 E2E。
+1. 将 Opportunity → Resume proposal → ATS → company research → STAR → Application audit 串成离线 E2E。
+2. 增加后台 dispatcher、scheduled sync 与 per-model concurrency；failed-task inspection UI 已完成。
 3. 在 scoped Tool Registry 上实现认证的 MCP transport 与受控 CLI Runner；默认只读，写入必须 approval，网络/文件系统由后端强制。
 4. 增加 Memory consolidation/document affinity 与 Wiki 编辑/移动/lint-fix proposal。
 5. 增加 Feishu 入站资料 connector；真实出站写入继续等待凭据、权限与逐次批准。

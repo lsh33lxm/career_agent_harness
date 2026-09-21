@@ -86,6 +86,27 @@ async def test_today_returns_queue_items(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_feishu_today_preview_is_offline_and_preserves_core_authority(
+    tmp_path: Path,
+) -> None:
+    app = _app(tmp_path, seed=True)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post(
+            "/api/v1/projections/feishu/today/preview", headers=AUTH
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["mode"] == "dry_run"
+    assert payload["schema_version"] == "feishu-today-preview-v1"
+    assert payload["rows"][0]["ordinal"] == 1
+    assert payload["rows"][0]["item"]["source_refs"] == payload["input_revisions"]
+    assert payload["rows"][0]["item"]["user_priority"] is None
+    assert payload["rows"][0]["item"]["suggested_priority"] is None
+
+
+@pytest.mark.asyncio
 async def test_today_api_exposes_exact_selected_interview_and_historical_application(
     tmp_path: Path,
 ) -> None:

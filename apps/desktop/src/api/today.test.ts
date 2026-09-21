@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getToday } from "./today";
+import { getToday, previewFeishuToday } from "./today";
 
 describe("today API client", () => {
   afterEach(() => {
@@ -47,5 +47,33 @@ describe("today API client", () => {
     const error = await getToday().catch((reason: unknown) => reason);
     expect(String(error)).toContain("500");
     expect(String(error)).not.toContain("secret-not-for-errors");
+  });
+
+  it("requests the Feishu preview as an explicit local dry-run", async () => {
+    window.__ACH_CONFIG__ = {
+      apiBaseUrl: "http://127.0.0.1:43123",
+      launchToken: "ephemeral-test-token",
+    };
+    const preview = {
+      schema_version: "feishu-today-preview-v1",
+      mode: "dry_run",
+      source_sha256: "a".repeat(64),
+      generated_at: "2026-09-20T08:00:00Z",
+      policy_version: "today-policy-v1",
+      input_revisions: [],
+      rows: [],
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(preview), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(previewFeishuToday()).resolves.toEqual(preview);
+    const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("http://127.0.0.1:43123/api/v1/projections/feishu/today/preview");
+    expect(request.method).toBe("POST");
   });
 });

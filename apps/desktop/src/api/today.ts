@@ -59,6 +59,27 @@ export interface TodayQueue {
   policy_version: string;
 }
 
+export interface FeishuTodayPreviewRow {
+  ordinal: number;
+  item: TodayItem;
+}
+
+export interface FeishuTodayPreview {
+  schema_version: "feishu-today-preview-v1";
+  mode: "dry_run";
+  source_sha256: string;
+  generated_at: string;
+  policy_version: string;
+  input_revisions: TodaySourceRef[];
+  rows: FeishuTodayPreviewRow[];
+}
+
 export function getToday(signal?: AbortSignal): Promise<TodayQueue> {
   return apiRequest<TodayQueue>("/api/v1/today", { signal });
+}
+
+export function previewFeishuToday(): Promise<FeishuTodayPreview> {
+  return apiRequest<FeishuTodayPreview>("/api/v1/projections/feishu/today/preview", {
+    method: "POST",
+  });
 }

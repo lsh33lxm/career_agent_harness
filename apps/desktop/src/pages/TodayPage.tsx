@@ -1,12 +1,18 @@
 import {
-  AlertCircle, CheckCircle2, ChevronRight, FileText, Link2, RefreshCw, ScanText, Upload,
+  AlertCircle, CheckCircle2, ChevronRight, FileJson2, FileText, Link2, RefreshCw, ScanText, Upload,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { getLegacyKnowledgeOverview } from "../api/legacy";
 import { useHealth } from "../api/useHealth";
 import { useToday } from "../api/useToday";
-import type { TodayItem, TodayItemKind, TodayQueue } from "../api/today";
+import {
+  previewFeishuToday,
+  type FeishuTodayPreview,
+  type TodayItem,
+  type TodayItemKind,
+  type TodayQueue,
+} from "../api/today";
 import type { PriorityLevel } from "../api/client";
 
 const priorityLabels: Record<PriorityLevel, string> = {
@@ -107,6 +113,9 @@ function TodayQueuePanel({ queue, legacyJobCount }: { queue: TodayQueue; legacyJ
 
 export function TodayPage() {
   const [legacyJobCount, setLegacyJobCount] = useState<number | null>(null);
+  const [feishuPreview, setFeishuPreview] = useState<
+    { status: "idle" | "loading" } | { status: "ready"; data: FeishuTodayPreview } | { status: "error"; message: string }
+  >({ status: "idle" });
   const [health, retryHealth] = useHealth();
   const [today, retryToday] = useToday();
   const firstItem = today.status === "ready" ? today.data.items[0] : undefined;
@@ -122,6 +131,17 @@ export function TodayPage() {
       });
     return () => controller.abort();
   }, []);
+  const generateFeishuPreview = async () => {
+    setFeishuPreview({ status: "loading" });
+    try {
+      setFeishuPreview({ status: "ready", data: await previewFeishuToday() });
+    } catch (error) {
+      setFeishuPreview({
+        status: "error",
+        message: error instanceof Error ? error.message : "生成失败",
+      });
+    }
+  };
   return (
     <main className="today-page">
       <header className="today-hero">
@@ -195,6 +215,30 @@ export function TodayPage() {
                   {item.reasons.map((reason) => <p key={reason.code}>{reason.explanation}</p>)}
                 </li>)}</ul>}
             <small>仅展示队列中的待确认项；本页不执行审批。</small>
+          </section>
+          <section className="today-panel feishu-preview-panel" aria-labelledby="feishu-preview-title">
+            <h2 className="today-section-title" id="feishu-preview-title"><span />飞书离线预览</h2>
+            <p>把当前 Core 今日队列生成可审计 JSON；不会连接或写入飞书。</p>
+            <button
+              className="today-secondary"
+              type="button"
+              disabled={today.status !== "ready" || feishuPreview.status === "loading"}
+              onClick={generateFeishuPreview}
+            >
+              <FileJson2 size={16} />
+              {feishuPreview.status === "loading" ? "正在生成…" : "生成离线预览"}
+            </button>
+            {feishuPreview.status === "ready" && <div className="feishu-preview-result" aria-live="polite">
+              <strong>{feishuPreview.data.rows.length} 行 · {feishuPreview.data.schema_version}</strong>
+              <small>来源摘要 {feishuPreview.data.source_sha256.slice(0, 16)}… · 仅 dry-run</small>
+              {feishuPreview.data.rows.length === 0
+                ? <p>当前 Today 队列为空，预览没有行。</p>
+                : <ol>{feishuPreview.data.rows.slice(0, 3).map((row) => (
+                  <li key={row.item.item_id}>{row.ordinal}. {kindLabels[row.item.kind]} · {row.item.item_id}</li>
+                ))}</ol>}
+            </div>}
+            {feishuPreview.status === "error" && <p className="today-unavailable" role="alert">预览生成失败：{feishuPreview.message}</p>}
+            <small>真实同步仍需凭据、目标权限和逐次批准。</small>
           </section>
           <section className="today-panel capture-panel" aria-labelledby="capture-title">
             <h2 className="today-section-title" id="capture-title"><span />快速收集</h2>

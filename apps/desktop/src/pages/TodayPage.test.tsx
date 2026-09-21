@@ -2,14 +2,14 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getToday, type TodayItem, type TodayQueue } from "../api/today";
+import { getToday, previewFeishuToday, type TodayItem, type TodayQueue } from "../api/today";
 import { getLegacyKnowledgeOverview } from "../api/legacy";
 import { useHealth } from "../api/useHealth";
 import { TodayPage } from "./TodayPage";
 
 vi.mock("../api/today", async (importOriginal) => {
   const original = await importOriginal<typeof import("../api/today")>();
-  return { ...original, getToday: vi.fn() };
+  return { ...original, getToday: vi.fn(), previewFeishuToday: vi.fn() };
 });
 
 vi.mock("../api/useHealth", () => ({
@@ -46,6 +46,7 @@ function todayQueue(items: TodayItem[] = []): TodayQueue {
 
 beforeEach(() => {
   vi.mocked(getToday).mockReset();
+  vi.mocked(previewFeishuToday).mockReset();
   vi.mocked(useHealth).mockReturnValue([
     {
       status: "online",
@@ -177,5 +178,31 @@ describe("TodayPage", () => {
     const capture = screen.getByRole("region", { name: "快速收集" });
     expect(within(capture).getAllByRole("button").every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
     expect(screen.getByText("周度回看尚未接入，当前不展示进度或完成数量。")).toBeTruthy();
+  });
+
+  it("生成飞书离线预览并明确不执行外部写入", async () => {
+    const item = todayItem();
+    vi.mocked(getToday).mockResolvedValue(todayQueue([item]));
+    vi.mocked(previewFeishuToday).mockResolvedValue({
+      schema_version: "feishu-today-preview-v1",
+      mode: "dry_run",
+      source_sha256: "a".repeat(64),
+      generated_at: "2026-09-20T08:00:00Z",
+      policy_version: "today-policy-v1",
+      input_revisions: item.source_refs,
+      rows: [{ ordinal: 1, item }],
+    });
+
+    render(<TodayPage />);
+    await screen.findByRole("article");
+    const region = screen.getByRole("region", { name: "飞书离线预览" });
+    const button = within(region).getByRole("button", { name: "生成离线预览" });
+    expect(within(region).getByText(/不会连接或写入飞书/)).toBeTruthy();
+    fireEvent.click(button);
+
+    expect(await within(region).findByText(/1 行 · feishu-today-preview-v1/)).toBeTruthy();
+    expect(within(region).getByText(/仅 dry-run/)).toBeTruthy();
+    expect(within(region).getByText(/真实同步仍需凭据/)).toBeTruthy();
+    expect(previewFeishuToday).toHaveBeenCalledTimes(1);
   });
 });

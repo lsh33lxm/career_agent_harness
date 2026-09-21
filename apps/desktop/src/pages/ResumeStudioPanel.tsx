@@ -41,6 +41,10 @@ function localId(prefix: string): string {
   return `${prefix}_${window.crypto.randomUUID().replaceAll("-", "")}`;
 }
 
+function templateDisplayName(name: string): string {
+  return name.replaceAll("Warm Paper", "暖纸");
+}
+
 export function ResumeStudioPanel() {
   const [resumeId, setResumeId] = useState("");
   const [revisionId, setRevisionId] = useState("");
@@ -51,11 +55,11 @@ export function ResumeStudioPanel() {
   const [templates, setTemplates] = useState<ResumeTemplate[]>([
     {
       template_id: "resume-render-html",
-      name: "观复简历 / Warm Paper",
+      name: "观复简历 / 暖纸",
       version: "1.0.0",
       renderer: "html_css",
       content_sha256: "",
-      description: "Built-in local renderer",
+      description: "内置本地渲染器",
       status: "active",
       created_at: "",
     },
@@ -68,7 +72,7 @@ export function ResumeStudioPanel() {
   const [report, setReport] = useState<ResumeAtsReport | null>(null);
   const [review, setReview] = useState<ResumeRenderReview | null>(null);
   const [reviewReason, setReviewReason] = useState("");
-  const [message, setMessage] = useState("从已审核的 Resume Revision 开始渲染。");
+  const [message, setMessage] = useState("从已审核的简历修订开始渲染。");
 
   useEffect(() => {
     const raw = window.localStorage.getItem(DRAFT_KEY);
@@ -140,7 +144,7 @@ export function ResumeStudioPanel() {
       setReview(null);
       setReviewReason("");
       setDraftContent(JSON.stringify(revision.content, null, 2));
-      setMessage("已加载为本地 proposal draft；修改不会写回 Career Core。");
+      setMessage("已加载为本地提案草稿；修改不会写回职业核心。");
     } catch (error) {
       setMessage("版本读取失败：" + (error as Error).message);
     }
@@ -163,7 +167,7 @@ export function ResumeStudioPanel() {
           expected_value_hash: await valueHash(previous[key]),
           proposed_value: parsedDraft[key],
           evidence_refs: [evidenceRef.trim()],
-          reason: "User-edited local draft backed by an explicit EvidenceRef.",
+          reason: "用户编辑的本地草稿，由明确的证据引用支持。",
         });
       }
       if (operations.length === 0) throw new Error("草稿与已加载 revision 没有差异。");
@@ -183,7 +187,7 @@ export function ResumeStudioPanel() {
         command_id: reviewCommand,
         expected_revision: proposal.revision,
         decision: "accepted",
-        review_reason: "User approved the visible local draft changes.",
+        review_reason: "用户已核对可见的本地草稿修改。",
       }, `resume-studio-${reviewCommand}`);
       const revisionCommand = localId("command_resume_revision");
       const revision = await createResumeRevision({
@@ -197,7 +201,7 @@ export function ResumeStudioPanel() {
       }, `resume-studio-${revisionCommand}`);
       setRevisionId(revision.revision_id);
       setLoadedRevision(null);
-      setMessage("草稿已由用户审核并生成新的 immutable ResumeRevision；现在可正式渲染。");
+      setMessage("草稿已由用户审核并生成新的不可变简历修订；现在可正式渲染。");
     } catch (error) {
       setMessage("草稿提交失败：" + (error as Error).message);
     }
@@ -213,7 +217,7 @@ export function ResumeStudioPanel() {
         company: company || undefined,
       });
       setProfileId(profile.target_profile_id);
-      setMessage("目标岗位已保存为用户确认的 target profile。");
+      setMessage("目标岗位已保存为用户确认的目标岗位档案。");
     } catch (error) {
       setMessage("目标岗位保存失败：" + (error as Error).message);
     }
@@ -281,7 +285,7 @@ export function ResumeStudioPanel() {
         <label>目标岗位<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：平台工程师" /></label>
         <label>公司（可选）<input value={company} onChange={(event) => setCompany(event.target.value)} placeholder="例如：目标公司" /></label>
         <label>渲染模板<select aria-label="渲染模板" value={templateId} onFocus={loadTemplates} onChange={(event) => setTemplateId(event.target.value)}>
-          {templates.map((template) => <option key={template.template_id} value={template.template_id} disabled={template.status !== "active"}>{template.name} · {displayLabel(template.renderer, rendererLabels)}{template.status === "disabled" ? "（不可用）" : ""}</option>)}
+          {templates.map((template) => <option key={template.template_id} value={template.template_id} disabled={template.status !== "active"}>{templateDisplayName(template.name)} · {displayLabel(template.renderer, rendererLabels)}{template.status === "disabled" ? "（不可用）" : ""}</option>)}
         </select></label>
       </div>
       <div className="button-row">

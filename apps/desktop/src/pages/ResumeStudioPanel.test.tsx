@@ -26,7 +26,7 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
       {
         template_id: "resume-render-html", name: "观复简历 / Warm Paper",
         version: "1.0.0", renderer: "html_css", content_sha256: "a".repeat(64),
-        description: "Built in", status: "active", created_at: "now",
+        description: "内置本地渲染器", status: "active", created_at: "now",
       },
       {
         template_id: "resume-render-typst", name: "观复简历 / Typst A4",

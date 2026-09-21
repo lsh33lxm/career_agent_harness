@@ -9,11 +9,11 @@ import "./HistoryPage.css";
 
 const states: Record<ApplicationState, string> = {
   preparing: "准备中", ready_for_review: "待确认", submitted_by_user: "用户已投递",
-  screen: "筛选中", oa: "在线测评", interview: "面试中", offer: "Offer",
+  screen: "筛选中", oa: "在线测评", interview: "面试中", offer: "录用意向",
   rejected: "未通过", withdrawn: "已撤回", closed: "已关闭",
 };
 const results: Record<OutcomeRead["result"], string> = {
-  offer: "Offer", rejection: "未通过", withdrawal: "已撤回", closed: "已关闭",
+  offer: "录用意向", rejection: "未通过", withdrawal: "已撤回", closed: "已关闭",
 };
 type Load<T> = { status: "loading" } | { status: "error"; message: string }
   | { status: "ready"; data: T };

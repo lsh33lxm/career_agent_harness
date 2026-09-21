@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from typing import Any
+
+from career_harness.core.tasks.models import TaskRecord
+from career_harness.db.task_repository import StaleTaskLease, TaskRepository
+
+TaskHandler = Callable[[dict[str, Any]], dict[str, Any]]
+
+
+@dataclass(frozen=True, slots=True)
+class RegisteredTaskHandler:
+    task_type: str
+    stage: str
+    handler: TaskHandler
+
+
+class TaskService:
+    def __init__(
+        self,
+        repository: TaskRepository,
+        handlers: tuple[RegisteredTaskHandler, ...] = (),
+        stage_limits: dict[str, int] | None = None,
+    ) -> None:
+        self.repository = repository
+        self.handlers = {item.task_type: item for item in handlers}
+        if len(self.handlers) != len(handlers):
+            raise ValueError("task handler names must be unique")
+        self.stage_limits = dict(stage_limits or {})
+        if any(limit < 1 for limit in self.stage_limits.values()):
+            raise ValueError("stage concurrency limits must be positive")
+
+    def enqueue(
+        self, task_type: str, payload: dict[str, Any], *, max_attempts: int = 3
+    ) -> TaskRecord:
+        registration = self.handlers.get(task_type)
+        if registration is None:
+            raise ValueError("task type is not registered")
+        return self.repository.enqueue(
+            task_type=task_type,
+            stage=registration.stage,
+            payload=payload,
+            max_attempts=max_attempts,
+        )
+
+    def run_one(self, stage: str) -> TaskRecord | None:
+        lease = self.repository.claim_next(stage)
+        if lease is None:
+            return None
+        registration = self.handlers.get(lease.task.task_type)
+        if registration is None or registration.stage != stage:
+            return self.repository.fail(lease, RuntimeError("task handler is unavailable"))
+        try:
+            result = registration.handler(dict(lease.task.payload))
+            return self.repository.complete(lease, result)
+        except StaleTaskLease:
+            return self.repository.get(lease.task.task_id)
+        except Exception as error:
+            try:
+                return self.repository.fail(lease, error)
+            except StaleTaskLease:
+                return self.repository.get(lease.task.task_id)
+
+    def run_ready(self, stage: str) -> tuple[TaskRecord, ...]:
+        limit = self.stage_limits.get(stage, 1)
+        with ThreadPoolExecutor(max_workers=limit, thread_name_prefix=f"task-{stage}") as pool:
+            results = tuple(pool.map(lambda _index: self.run_one(stage), range(limit)))
+        return tuple(result for result in results if result is not None)

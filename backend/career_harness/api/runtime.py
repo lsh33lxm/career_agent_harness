@@ -20,6 +20,7 @@ from career_harness.api.opportunities import OpportunityApi
 from career_harness.api.plugins import PluginApi
 from career_harness.api.project_reads import ProjectReadApi
 from career_harness.api.resume_studio import ResumeStudioApi
+from career_harness.api.tasks import TaskApi
 from career_harness.api.today import TodayApi
 from career_harness.config import Settings
 from career_harness.db.application_repository import ApplicationRepository
@@ -34,6 +35,7 @@ from career_harness.db.project_repository import ProjectRepository
 from career_harness.db.resume_repository import ResumeRepository
 from career_harness.db.resume_studio_repository import ResumeStudioRepository
 from career_harness.db.session import create_sqlite_engine, sqlite_url
+from career_harness.db.task_repository import TaskRepository
 from career_harness.platform import AppPaths
 from career_harness.platform.secure_store import WindowsCredentialSecretStore
 from career_harness.services.capability_review_service import CapabilityReviewService
@@ -46,6 +48,7 @@ from career_harness.services.opportunity_radar_service import OpportunityRadarSe
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.plugin_service import PluginLifecycleManager
 from career_harness.services.resume_studio_service import ResumeStudioService
+from career_harness.services.task_service import RegisteredTaskHandler, TaskService
 from career_harness.services.today_service import TodayService
 from career_harness.storage import ArtifactStore
 
@@ -71,6 +74,18 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         engine,
         ArtifactStore(active_paths.artifacts),
         default_source_root=Path(configured_legacy_root) if configured_legacy_root else None,
+    )
+    task_repository = TaskRepository(engine)
+    task_service = TaskService(
+        task_repository,
+        handlers=(
+            RegisteredTaskHandler(
+                task_type="local.health_check",
+                stage="evaluation",
+                handler=lambda payload: {"ok": True, "label": payload.get("label")},
+            ),
+        ),
+        stage_limits={"evaluation": 2},
     )
     return create_app(
         settings,
@@ -114,4 +129,5 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
             )
         ),
         memory_api=MemoryApi(MemoryRepository(engine)),
+        task_api=TaskApi(task_service, task_repository),
     )

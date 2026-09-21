@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { getLegacyKnowledgeOverview } from "../api/legacy";
-import { getWikiHealth } from "../api/knowledge";
+import { apiRequest } from "../api/client";
+import {
+  createKnowledgeProposal,
+  getWikiHealth,
+  getWikiRevisions,
+  reviewKnowledgeProposal,
+} from "../api/knowledge";
 import { KnowledgePage } from "./KnowledgePage";
 
 vi.mock("../api/legacy", async (importOriginal) => {
@@ -13,7 +19,18 @@ vi.mock("../api/legacy", async (importOriginal) => {
 
 vi.mock("../api/knowledge", async (importOriginal) => {
   const original = await importOriginal<typeof import("../api/knowledge")>();
-  return { ...original, getWikiHealth: vi.fn() };
+  return {
+    ...original,
+    createKnowledgeProposal: vi.fn(),
+    getWikiHealth: vi.fn(),
+    getWikiRevisions: vi.fn(),
+    reviewKnowledgeProposal: vi.fn(),
+  };
+});
+
+vi.mock("../api/client", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../api/client")>();
+  return { ...original, apiRequest: vi.fn() };
 });
 
 beforeEach(() => {
@@ -46,6 +63,61 @@ beforeEach(() => {
     }],
     interviews: [],
   });
+  vi.mocked(apiRequest).mockImplementation(async (path) => {
+    if (path === "/api/v1/source-connectors") return [];
+    if (path === "/api/v1/knowledge/search") return {
+      items: [{
+        knowledge_id: "knowledge_1",
+        revision: 2,
+        title: "Agent 工作流",
+        snippet: "可审计任务编排",
+        score: 1,
+        lexical_score: 1,
+        semantic_score: 1,
+        search_mode: "hybrid",
+        category: "skill",
+        status: "approved",
+        citation: {
+          knowledge_id: "knowledge_1",
+          revision: 2,
+          evidence_refs: ["evidence_1"],
+          source_type: "document",
+          source_locator: "local:test.md",
+          authority: "document_supported",
+        },
+      }],
+      query: "Agent",
+      evidence_sufficient: true,
+      message: null,
+      next_cursor: null,
+    };
+    throw new Error(`unexpected request ${path}`);
+  });
+  vi.mocked(getWikiRevisions).mockResolvedValue([{
+    knowledge_id: "knowledge_1",
+    revision: 2,
+    title: "Agent 工作流",
+    content: "原始正文",
+    evidence_refs: ["evidence_1"],
+  }]);
+  vi.mocked(createKnowledgeProposal).mockResolvedValue({
+    proposal_id: "proposal_1",
+    target_knowledge_id: "knowledge_1",
+    base_revision: 2,
+    category: "skill",
+    title: "Agent 工作流（修订）",
+    proposed_content: "修订正文",
+    status: "pending",
+  });
+  vi.mocked(reviewKnowledgeProposal).mockResolvedValue({
+    proposal_id: "proposal_1",
+    target_knowledge_id: "knowledge_1",
+    base_revision: 2,
+    category: "skill",
+    title: "Agent 工作流（修订）",
+    proposed_content: "修订正文",
+    status: "approved",
+  });
 });
 
 afterEach(cleanup);
@@ -62,4 +134,27 @@ it("默认展示真实历史统计、技能和可追溯面试题", async () => {
   expect(screen.getByText(/统计不等于个人事实/)).toBeTruthy();
   expect(await screen.findByText("Wiki 健康度 95")).toBeTruthy();
   expect(screen.getByText(/12 个页面 · 18 条链接/)).toBeTruthy();
+});
+
+it("Wiki 编辑先创建提案，用户再次批准后才发布", async () => {
+  render(<KnowledgePage />);
+  fireEvent.change(screen.getByLabelText("检索知识"), { target: { value: "Agent" } });
+  fireEvent.click(screen.getByRole("button", { name: "检索" }));
+  expect(await screen.findByRole("heading", { name: "Agent 工作流" })).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: "提出修订" }));
+  expect(await screen.findByDisplayValue("原始正文")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("页面标题"), { target: { value: "Agent 工作流（修订）" } });
+  fireEvent.change(screen.getByLabelText("页面正文"), { target: { value: "修订正文" } });
+  fireEvent.click(screen.getByRole("button", { name: "保存为待确认修订" }));
+  await waitFor(() => expect(createKnowledgeProposal).toHaveBeenCalled());
+  expect(reviewKnowledgeProposal).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("button", { name: "批准并发布" }));
+  await waitFor(() => expect(reviewKnowledgeProposal).toHaveBeenCalledWith(
+    "proposal_1",
+    "approved",
+    "用户确认桌面端 Wiki 修订",
+  ));
+  expect(screen.getByText("修订已批准并发布为新版本。")).toBeTruthy();
 });

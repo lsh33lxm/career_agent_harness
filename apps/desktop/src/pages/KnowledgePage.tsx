@@ -5,7 +5,16 @@ import {
 import { FormEvent, useEffect, useState } from "react";
 
 import { apiRequest } from "../api/client";
-import { getWikiHealth, type KnowledgeSearchPage, type WikiHealthReport } from "../api/knowledge";
+import {
+  createKnowledgeProposal,
+  getWikiHealth,
+  getWikiRevisions,
+  reviewKnowledgeProposal,
+  type KnowledgeProposal,
+  type KnowledgeSearchPage,
+  type KnowledgeSearchResult,
+  type WikiHealthReport,
+} from "../api/knowledge";
 import {
   getLegacyKnowledgeOverview,
   type LegacyKnowledgeItem,
@@ -25,6 +34,17 @@ const statusLabels: Record<string, string> = {
 const reviewLabels: Record<string, string> = {
   historical_unconfirmed: "历史未确认", needs_review: "待复核", duplicate: "重复待复核",
 };
+
+const editableCategories = Object.entries(categoryLabels);
+
+interface WikiEditDraft {
+  knowledgeId: string;
+  baseRevision: number;
+  category: string;
+  title: string;
+  content: string;
+  evidenceRefs: string[];
+}
 
 function shortHash(value: string): string {
   return `${value.slice(0, 8)}…${value.slice(-6)}`;
@@ -53,6 +73,9 @@ export function KnowledgePage() {
   const [overview, setOverview] = useState<LegacyKnowledgeOverview | null>(null);
   const [overviewMessage, setOverviewMessage] = useState("正在读取历史知识投影…");
   const [wikiHealth, setWikiHealth] = useState<WikiHealthReport | null>(null);
+  const [wikiDraft, setWikiDraft] = useState<WikiEditDraft | null>(null);
+  const [wikiProposal, setWikiProposal] = useState<KnowledgeProposal | null>(null);
+  const [wikiBusy, setWikiBusy] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,6 +108,70 @@ export function KnowledgePage() {
       setMessage(data.message ?? (data.items.length ? "" : "没有可引用的已确认知识。"));
     } catch (error) {
       setMessage("知识库暂不可用：" + (error as Error).message);
+    }
+  }
+
+  async function startWikiEdit(item: KnowledgeSearchResult) {
+    setWikiBusy(true);
+    setMessage("正在读取页面当前版本…");
+    try {
+      const revisions = await getWikiRevisions(item.knowledge_id);
+      const current = revisions.find((revision) => revision.revision === item.revision);
+      if (!current) throw new Error("找不到当前页面版本");
+      setWikiDraft({
+        knowledgeId: item.knowledge_id,
+        baseRevision: item.revision,
+        category: item.category,
+        title: current.title,
+        content: current.content,
+        evidenceRefs: item.citation.evidence_refs,
+      });
+      setWikiProposal(null);
+      setMessage("编辑内容会先形成待确认修订，不会直接覆盖当前页面。");
+    } catch (error) {
+      setMessage(`页面读取失败：${(error as Error).message}`);
+    } finally {
+      setWikiBusy(false);
+    }
+  }
+
+  async function proposeWikiEdit(event: FormEvent) {
+    event.preventDefault();
+    if (!wikiDraft) return;
+    setWikiBusy(true);
+    try {
+      setWikiProposal(await createKnowledgeProposal({
+        category: wikiDraft.category,
+        title: wikiDraft.title,
+        content: wikiDraft.content,
+        evidence_refs: wikiDraft.evidenceRefs,
+        target_knowledge_id: wikiDraft.knowledgeId,
+        base_revision: wikiDraft.baseRevision,
+      }));
+      setMessage("修订提案已保存，等待你批准或拒绝。");
+    } catch (error) {
+      setMessage(`修订提案保存失败：${(error as Error).message}`);
+    } finally {
+      setWikiBusy(false);
+    }
+  }
+
+  async function reviewWikiEdit(decision: "approved" | "rejected") {
+    if (!wikiProposal) return;
+    setWikiBusy(true);
+    try {
+      await reviewKnowledgeProposal(
+        wikiProposal.proposal_id,
+        decision,
+        decision === "approved" ? "用户确认桌面端 Wiki 修订" : "用户拒绝桌面端 Wiki 修订",
+      );
+      setWikiDraft(null);
+      setWikiProposal(null);
+      setMessage(decision === "approved" ? "修订已批准并发布为新版本。" : "修订已拒绝，当前页面未改变。");
+    } catch (error) {
+      setMessage(`修订审核失败：${(error as Error).message}`);
+    } finally {
+      setWikiBusy(false);
     }
   }
 
@@ -176,6 +263,25 @@ export function KnowledgePage() {
               </div>
               <p>{item.snippet}</p>
               <small>引用 {item.knowledge_id}#{item.revision} · {item.citation.evidence_refs.join("、") || "无证据引用"}</small>
+              <div className="plugin-actions">
+                <button type="button" disabled={wikiBusy} onClick={() => void startWikiEdit(item)}>提出修订</button>
+              </div>
+              {wikiDraft?.knowledgeId === item.knowledge_id && (
+                <form className="wiki-edit-form" onSubmit={proposeWikiEdit}>
+                  <p>当前版本 #{wikiDraft.baseRevision}。标题、分类和正文修改只会创建提案。</p>
+                  <label>页面标题<input value={wikiDraft.title} maxLength={512} required onChange={(event) => setWikiDraft({ ...wikiDraft, title: event.target.value })} /></label>
+                  <label>页面分类<select value={wikiDraft.category} onChange={(event) => setWikiDraft({ ...wikiDraft, category: event.target.value })}>{editableCategories.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+                  <label>页面正文<textarea value={wikiDraft.content} required rows={10} onChange={(event) => setWikiDraft({ ...wikiDraft, content: event.target.value })} /></label>
+                  {!wikiProposal ? (
+                    <div className="plugin-actions"><button type="submit" disabled={wikiBusy}>保存为待确认修订</button><button type="button" onClick={() => setWikiDraft(null)}>取消</button></div>
+                  ) : (
+                    <div className="wiki-review-actions" role="region" aria-label="修订审核">
+                      <p>提案已保存。批准后才会生成新版本；拒绝不会改动当前页面。</p>
+                      <div className="plugin-actions"><button type="button" disabled={wikiBusy} onClick={() => void reviewWikiEdit("approved")}>批准并发布</button><button type="button" disabled={wikiBusy} onClick={() => void reviewWikiEdit("rejected")}>拒绝修订</button></div>
+                    </div>
+                  )}
+                </form>
+              )}
             </article>
           ))}
         </section>

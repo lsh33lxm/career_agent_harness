@@ -13,12 +13,12 @@
 - 历史岗位与面试关联已可查询；legacy authority → canonical Job/Fact/Capability 映射仍为 **NEEDS USER AUTHORITY**。
 - Feishu external write：**BLOCKED_EXTERNAL_ACTION**（credentials、destination permission、sync contract）。
 - 中文桌面工作台第二阶段：**DONE for current routes**。Project、Resume 与 Capability 入口改为列表、搜索和选择，不再要求用户在首屏填写内部 ID；导航、错误、空状态和当前内置工具目录已中文化。
-- 模型服务凭据、受控 CLI Runner、GitHub 项目分析与 Windows 安装包：**NOT YET IMPLEMENTED**，当前本地工具目录不代表模型已经连接。
+- 模型服务配置：**IMPLEMENTED, CONNECTION UNVERIFIED WITHOUT USER CREDENTIALS**。OpenAI、Anthropic、DeepSeek 与 OpenAI-compatible 的非敏感配置进入 Core DB，密钥只进入 Windows Credential Manager；只有真实 `/models` 测试成功才显示“已连接”。受控 CLI Runner、GitHub 项目分析与 Windows 安装包仍未实现。
 
 ## 最新验证
 
-- Backend：`652 passed, 5 skipped`；本轮结构化导入/Radar/API 聚焦：`16 passed`。
-- Frontend：`18 test files, 51 passed`，`npm run build` 通过；旧内部 ID 输入用例已由列表/选择流程用例替代。
+- Backend：`654 passed, 5 skipped`；模型 migration/API subset：`50 passed`。
+- Frontend：`19 test files, 52 passed`，`npm run build` 通过；旧内部 ID 输入用例已由列表/选择流程用例替代。
 - Legacy preview：读取 7,575、新增 0、更新 0、未变化 7,575、重复 684、失败 0；FK errors 0，源 metadata signature 不变。
 - v2.0 hardening focused：backend `32 passed`、Plugins UI `1 passed`；Ruff `backend tests migrations` 与 `git diff --check` 通过。
 

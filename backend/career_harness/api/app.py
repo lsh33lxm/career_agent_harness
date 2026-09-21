@@ -15,6 +15,7 @@ from career_harness.api.evidence import EvidenceApi, create_evidence_router
 from career_harness.api.job_radar import JobRadarApi, create_job_radar_router
 from career_harness.api.knowledge import KnowledgeApi, create_knowledge_router
 from career_harness.api.legacy_import import LegacyImportApi, create_legacy_import_router
+from career_harness.api.model_providers import ModelProviderApi, create_model_provider_router
 from career_harness.api.opportunities import OpportunityApi, create_opportunity_router
 from career_harness.api.plugins import PluginApi, create_plugin_router
 from career_harness.api.project_reads import ProjectReadApi, create_project_read_router
@@ -47,6 +48,7 @@ def create_app(
     resume_studio_api: ResumeStudioApi | None = None,
     job_radar_api: JobRadarApi | None = None,
     legacy_import_api: LegacyImportApi | None = None,
+    model_provider_api: ModelProviderApi | None = None,
 ) -> FastAPI:
     active_settings = settings or Settings()
     app = FastAPI(title="Agent Career Harness Local API", version=__version__)
@@ -110,5 +112,7 @@ def create_app(
         app.include_router(create_job_radar_router(job_radar_api))
     if legacy_import_api is not None:
         app.include_router(create_legacy_import_router(legacy_import_api))
+    if model_provider_api is not None:
+        app.include_router(create_model_provider_router(model_provider_api))
 
     return app

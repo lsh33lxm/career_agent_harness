@@ -110,3 +110,15 @@ and 6,547 historical projections; idempotent rerun returned 7,575 unchanged, 684
 full backend 652 passed / 5 Windows symlink skips;
 frontend 18 files / 55 tests passed and production build passed; Ruff/diff check and
 `0022 → 0023 → 0022 → 0023` passed. No canonical cutover, Legacy write, main merge or push.
+## 2026-09-21 — Model provider configuration and secure credential boundary
+
+- Added reversible migration `0024_model_provider_configs`, non-secret provider repository/API,
+  Windows Credential Manager storage, and desktop configuration for OpenAI, Anthropic, DeepSeek and
+  OpenAI-compatible endpoints.
+- A saved configuration is `not_tested`; only an explicitly confirmed real `/models` request can set
+  `connected`. API responses and logs never contain the API key.
+- Validation: backend full 654 passed / 5 Windows symlink skips; migration/API subset 50 passed;
+  frontend 19 files / 52 passed and production build; Credential Manager synthetic write/read/delete
+  and `0023→0024→0023→0024` passed.
+- No real provider connection was attempted because no user credential is configured. GitHub project
+  analysis, controlled CLI runners and Windows packaging remain follow-ups.

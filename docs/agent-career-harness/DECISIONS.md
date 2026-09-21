@@ -127,3 +127,10 @@
 - 决定：只有 repository-owned `builtin://` release 可在确定性离线 scan 后进入 passed；任何第三方来源即使声明已知 SPDX license，也必须保留 source/ref/commit、NOTICE 与人工复核状态，并因 install-script、漏洞和外部条款尚未核验而保持 quarantined。Plugin knowledge read model 默认脱敏敏感字段并接受显式 category scope；Job source run 持久化 terms/robots/ToS note 与检查时间。
 - 原因：manifest 自声明不能证明许可证、安全或数据授权；插件和外部 source 只能降低已有 authority，不能凭配置提升信任。
 - 影响：真实 marketplace、WeKnora 与 crawler 仍需外部核验；repository-owned fixture/local adapter 可继续离线验收。`0022_job_source_terms_provenance` 为 additive/reversible migration。
+## D-2.0-018 — Model credentials stay outside SQLite and connection state requires proof
+
+- 状态：`ACCEPTED`
+- 日期：2026-09-21
+- 决定：模型 provider 的 endpoint、model、timeout 与测试状态可进入 Core DB；API key 只进入 Windows Credential Manager。保存配置一律回到 `not_tested`，只有用户明确确认的一次真实只读 `/models` 请求成功后才标记 `connected`。
+- 原因：配置存在、密钥存在与服务真实可用是三个不同事实；任何一个都不能替代真实连接证据。避免明文凭据进入 SQLite、日志、Git 或 API 响应。
+- 影响：OpenAI-compatible 的 loopback endpoint 可无密钥；所有远程 HTTP endpoint 被拒绝。连接测试不发送职业数据，真实对话必须另行记录模型、提示词版本和输入引用。

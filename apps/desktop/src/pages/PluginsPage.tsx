@@ -12,6 +12,7 @@ import {
   type PluginUninstallPreview,
 } from "../api/plugins";
 import { apiRequest } from "../api/client";
+import { ModelProvidersPanel } from "./ModelProvidersPanel";
 
 function statusLabel(item: PluginCatalogItem): string {
   if (!item.installed) return "未安装";
@@ -270,6 +271,7 @@ export function PluginsPage() {
           </article>
         ))}
       </section>
+      <ModelProvidersPanel />
     </main>
   );
 }

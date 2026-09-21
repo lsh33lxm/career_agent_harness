@@ -136,3 +136,12 @@ Start with `git status --short --branch`, inspect this file, then continue at th
 - 安全：prompt-injection flagged revision 默认不进入搜索或 plugin result；只有显式本地审核请求可包含。
 - Verification：focused knowledge/API/contract `11 passed`；backend full `630 passed, 5 skipped`；frontend `58 passed`；Ruff、build、diff check 通过。
 - Next：Slice C completion audit（已在后续 checkpoint 完成）。
+## Model provider configuration checkpoint — 2026-09-21
+
+- 状态：IMPLEMENTED / real provider connection pending user-supplied credentials.
+- Providers：OpenAI、Anthropic、DeepSeek、OpenAI-compatible；配置服务地址、默认模型、超时与 API key。
+- Secret boundary：API key 仅存 Windows Credential Manager；SQLite 只保存 `has_secret`，API/UI 只返回布尔状态与遮罩值。
+- Connection gate：保存配置后状态为 `not_tested`；只有用户勾选外部请求确认且真实 `/models` 请求成功才成为 `connected`。测试不发送简历、岗位或项目内容。
+- Migration：additive/reversible `0024_model_provider_configs`，保存非敏感配置与不可变连接审计行。
+- Verification：backend full 654 passed / 5 Windows symlink skips；migration/API subset 50 passed；frontend 19 files / 52 passed and build；Windows Credential Manager synthetic write/read/delete passed；Ruff/diff passed.
+- Next：bounded read-only GitHub repository analysis and project archive UI; real conversation remains blocked until credentials are explicitly configured.

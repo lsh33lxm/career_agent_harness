@@ -1568,3 +1568,12 @@ mark { padding: 2px 5px; color: var(--green); background: var(--surface-green); 
   .today-panel { padding-inline: 12px; }
   .today-section-title { font-size: 20px; }
 }
+.model-providers { margin-top: 32px; }
+.model-providers__heading { margin-bottom: 18px; }
+.model-provider-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.model-provider-grid .plugin-card { display: grid; gap: 12px; }
+.model-provider-grid label { display: grid; gap: 6px; color: var(--muted); font-size: 0.82rem; }
+.model-provider-grid input:not([type="checkbox"]) { width: 100%; border: 1px solid var(--border); border-radius: 7px; background: var(--paper); color: var(--ink); padding: 9px 10px; }
+.model-provider-notice { color: var(--muted); font-size: 0.8rem; line-height: 1.55; }
+.model-provider-confirm { grid-template-columns: auto 1fr !important; align-items: start; }
+@media (max-width: 900px) { .model-provider-grid { grid-template-columns: 1fr; } }

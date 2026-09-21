@@ -32,3 +32,4 @@
 - Final requirement hardening：补充 Plugin Manifest v1 示例、第三方 source/ref/commit + license/NOTICE/manual-review scan 证据、默认 quarantine、knowledge category scope/敏感字段脱敏、WeKnora `list` blocked contract、Plugins UI manifest/审计/更新策略/卸载影响，以及 migration `0022_job_source_terms_provenance`。
 - Hardening verification：focused backend `32 passed`、Plugins UI `1 passed`；full backend `650 passed, 5 skipped`、frontend `18 files / 59 passed`；Vite build、Ruff `backend tests migrations` 与 `git diff --check` 通过。
 - Independent hardening review：先后修复 quarantine 经 disable/rollback 绕过、旧 scan report 绕过、JSON/Bearer 脱敏遗漏、历史 terms 时间伪造与无效 manifest 示例；最终 APPROVE，P0/P1/P2/P3 none。
+- 新增真实模型服务配置：OpenAI、Anthropic、DeepSeek、OpenAI-compatible，additive `0024`、Windows Credential Manager 密钥边界、脱敏 API/UI 与用户确认后的只读连接测试。合成安全存储 rehearsal、50 backend subset、backend full 654 passed/5 skipped、52 frontend tests/build 通过；无凭据时保持未配置，未伪造外部连接成功。

@@ -13,6 +13,7 @@ from career_harness.api.evidence import EvidenceApi
 from career_harness.api.job_radar import JobRadarApi
 from career_harness.api.knowledge import KnowledgeApi
 from career_harness.api.legacy_import import LegacyImportApi
+from career_harness.api.model_providers import ModelProviderApi
 from career_harness.api.opportunities import OpportunityApi
 from career_harness.api.plugins import PluginApi
 from career_harness.api.project_reads import ProjectReadApi
@@ -24,16 +25,19 @@ from career_harness.db.capability_repository import CapabilityRepository
 from career_harness.db.evidence_repository import EvidenceRepository
 from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.migrations import upgrade_to_head
+from career_harness.db.model_provider_repository import ModelProviderRepository
 from career_harness.db.opportunity_repository import OpportunityRepository
 from career_harness.db.project_repository import ProjectRepository
 from career_harness.db.resume_repository import ResumeRepository
 from career_harness.db.resume_studio_repository import ResumeStudioRepository
 from career_harness.db.session import create_sqlite_engine, sqlite_url
 from career_harness.platform import AppPaths
+from career_harness.platform.secure_store import WindowsCredentialSecretStore
 from career_harness.services.capability_review_service import CapabilityReviewService
 from career_harness.services.capability_workspace_service import CapabilityWorkspaceService
 from career_harness.services.command_service import CommandService
 from career_harness.services.legacy_import_service import LegacyImportService
+from career_harness.services.model_provider_service import ModelProviderService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.plugin_service import PluginLifecycleManager
@@ -92,4 +96,10 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
             OpportunityRadarService(engine, ArtifactStore(active_paths.artifacts))
         ),
         legacy_import_api=LegacyImportApi(legacy_import_service),
+        model_provider_api=ModelProviderApi(
+            ModelProviderService(
+                ModelProviderRepository(engine),
+                WindowsCredentialSecretStore(),
+            )
+        ),
     )

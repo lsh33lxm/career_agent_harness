@@ -51,6 +51,7 @@ it("shows manifest details, policy, audit and uninstall impact without external 
   const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.endsWith("/api/v1/plugins") && (init?.method ?? "GET") === "GET") return response(catalog);
+    if (url.endsWith("/api/v1/model-providers") && (init?.method ?? "GET") === "GET") return response([]);
     if (url.endsWith("/audit")) return response([{ audit_id: "audit_1", plugin_id: "echo-fixture", action: "install", actor: "user", idempotency_key: null, payload: {}, occurred_at: "now" }]);
     if (url.endsWith("/audit-summary")) return response({
       plugin_id: "echo-fixture", run_count: 2, error_count: 0, error_rate: 0,
@@ -70,7 +71,7 @@ it("shows manifest details, policy, audit and uninstall impact without external 
   vi.stubGlobal("fetch", fetcher);
 
   render(<PluginsPage />);
-  expect(await screen.findByRole("heading", { name: "Echo Fixture" })).toBeTruthy();
+  expect(await screen.findByRole("heading", { name: "本地连通性检查" })).toBeTruthy();
   fireEvent.click(screen.getByText("查看详情与权限"));
   expect(screen.getByText("builtin://echo-fixture")).toBeTruthy();
   fireEvent.change(screen.getByLabelText("Echo Fixture更新策略"), { target: { value: "manual" } });

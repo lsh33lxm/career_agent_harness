@@ -40,6 +40,12 @@ _INJECTION_PATTERN = re.compile(
     r"(?i)\b(ignore\s+(?:all\s+)?previous|system\s+prompt|developer\s+message|"
     r"reveal\s+instructions|do\s+not\s+follow)\b"
 )
+_EMAIL_PATTERN = re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b")
+_SECRET_PATTERN = re.compile(
+    r"(?i)(?:\"|')?(?:api[_ -]?key|token|password|secret|authorization)"
+    r"(?:\"|')?\s*[:=]\s*(?:\"|')?(?:bearer\s+)?[^\s,;}\"']+"
+)
+_PHONE_PATTERN = re.compile(r"(?<!\d)(?:\+?\d[\d -]{7,}\d)(?!\d)")
 
 
 class _TextParser(HTMLParser):
@@ -88,6 +94,12 @@ def _clean_content(content: str) -> str:
 
 def _prompt_injection_flag(content: str) -> bool:
     return bool(_INJECTION_PATTERN.search(content))
+
+
+def _redact_sensitive(value: str) -> str:
+    redacted = _EMAIL_PATTERN.sub("[REDACTED_EMAIL]", value)
+    redacted = _SECRET_PATTERN.sub("[REDACTED_SECRET]", redacted)
+    return _PHONE_PATTERN.sub("[REDACTED_PHONE]", redacted)
 
 
 def _hash_text(value: str) -> str:
@@ -443,6 +455,8 @@ class KnowledgeRepository:
         after: str | None = None,
         mode: str = "hybrid",
         include_flagged: bool = False,
+        allowed_categories: tuple[KnowledgeCategory, ...] = (),
+        redact_sensitive: bool = False,
     ) -> KnowledgeSearchPage:
         if not 1 <= limit <= 100:
             raise ValueError("knowledge page limit must be between 1 and 100")
@@ -470,6 +484,10 @@ class KnowledgeRepository:
                 if row["prompt_injection_flag"] and not include_flagged:
                     continue
                 if categories and row["category"] not in {item.value for item in categories}:
+                    continue
+                if allowed_categories and row["category"] not in {
+                    item.value for item in allowed_categories
+                }:
                     continue
                 if statuses and row["status"] not in {item.value for item in statuses}:
                     continue
@@ -506,8 +524,16 @@ class KnowledgeRepository:
                     KnowledgeSearchResult(
                         knowledge_id=row["knowledge_id"],
                         revision=row["current_revision"],
-                        title=row["revision_title"],
-                        snippet=self._snippet(content, terms),
+                        title=(
+                            _redact_sensitive(str(row["revision_title"]))
+                            if redact_sensitive
+                            else row["revision_title"]
+                        ),
+                        snippet=(
+                            _redact_sensitive(self._snippet(content, terms))
+                            if redact_sensitive
+                            else self._snippet(content, terms)
+                        ),
                         score=score,
                         lexical_score=lexical_score,
                         semantic_score=semantic_score,
@@ -519,7 +545,11 @@ class KnowledgeRepository:
                             revision=row["current_revision"],
                             evidence_refs=refs,
                             source_type=row["source_type"],
-                            source_locator=row["source_locator"],
+                            source_locator=(
+                                _redact_sensitive(str(row["source_locator"]))
+                                if redact_sensitive
+                                else row["source_locator"]
+                            ),
                             authority=KnowledgeAuthority(row["revision_authority"]),
                         ),
                     )
@@ -542,12 +572,21 @@ class KnowledgeRepository:
         self, query: str, options: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         options = options or {}
+        raw_categories = options.get("allowed_categories", ())
+        if not isinstance(raw_categories, (list, tuple)):
+            raise ValueError("allowed_categories must be a list")
+        try:
+            allowed_categories = tuple(KnowledgeCategory(str(item)) for item in raw_categories)
+        except ValueError as exc:
+            raise ValueError("allowed_categories contains an unknown category") from exc
         page = self.search(
             query=query,
             limit=int(options.get("limit", 20)),
             after=options.get("after"),
             mode=str(options.get("mode", "hybrid")),
             include_flagged=bool(options.get("include_flagged", False)),
+            allowed_categories=allowed_categories,
+            redact_sensitive=bool(options.get("redact_sensitive", True)),
         )
         return page.model_dump(mode="json")
 

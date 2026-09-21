@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 
 import pytest
+from sqlalchemy import text
 
-from career_harness.core.plugin.contracts import PluginType
+from career_harness.core.plugin.contracts import PluginManifest, PluginType
 from career_harness.core.plugin.runtime import CancellationToken, PluginContext
 from career_harness.db.backup import create_backup, restore_backup, verify_backup
 from career_harness.db.migrations import alembic_config, upgrade_to_head
@@ -23,6 +25,13 @@ def _manager(tmp_path: Path) -> PluginLifecycleManager:
     database_url = sqlite_url(tmp_path / "plugins.db")
     upgrade_to_head(database_url)
     return PluginLifecycleManager(create_sqlite_engine(database_url))
+
+
+def test_manifest_v1_example_passes_the_strict_contract() -> None:
+    example_path = Path(__file__).parents[2] / "schemas" / "plugin-manifest-v1.example.json"
+    manifest = PluginManifest.model_validate(json.loads(example_path.read_text("utf-8")))
+    assert manifest.api_version == "1"
+    assert manifest.id == "example-read-only-plugin"
 
 
 def test_echo_install_invoke_disable_and_rollback_are_audited(tmp_path: Path) -> None:
@@ -126,8 +135,39 @@ def test_unsafe_plugin_is_quarantined_and_cannot_be_enabled(tmp_path: Path) -> N
         registry=PluginRegistry((RegisteredPlugin(unsafe, base.handler),)),
     )
     assert manager.install(unsafe)["status"] == "quarantined"
+    # A pre-hardening frozen report could claim that an external manifest passed.
+    # Keep it for audit, but current policy and the frozen content hash still gate execution.
+    with manager.engine.begin() as connection:
+        connection.execute(text("DROP TRIGGER trg_plugin_releases_no_update"))
+        connection.execute(
+            text(
+                "UPDATE plugin_releases SET scan_report='{\"overall\":\"passed\"}' "
+                "WHERE plugin_id='unsafe-fixture'"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TRIGGER trg_plugin_releases_no_update "
+                "BEFORE UPDATE ON plugin_releases BEGIN "
+                "SELECT RAISE(ABORT, 'plugin_releases is immutable'); END"
+            )
+        )
     with pytest.raises(PluginStateError, match="quarantined"):
         manager.enable("unsafe-fixture")
+    assert manager.disable("unsafe-fixture")["status"] == "quarantined"
+    assert manager.rollback("unsafe-fixture")["status"] == "quarantined"
+    with pytest.raises(PluginStateError, match="quarantined"):
+        manager.enable("unsafe-fixture")
+    with pytest.raises(PluginStateError, match="quarantined"):
+        manager.healthcheck("unsafe-fixture")
+    blocked = manager.invoke(
+        "unsafe-fixture",
+        request_id="unsafe-invoke-001",
+        capability="fixture.echo",
+        payload={"must": "stay blocked"},
+    )
+    assert blocked.error is not None
+    assert blocked.error.code == "plugin_quarantined"
 
 
 def test_permission_capability_timeout_and_cancellation_fail_loudly(tmp_path: Path) -> None:
@@ -308,6 +348,39 @@ def test_update_preview_reports_scan_and_rollback_recommendation(tmp_path: Path)
     assert "candidate_metrics" in preview["tests"]
     assert preview["rollback_recommendation"]["action"] == "rollback"
     assert preview["rollback_recommendation"]["automatic"] is False
+
+
+def test_scan_report_preserves_source_license_notice_and_review_boundary(
+    tmp_path: Path,
+) -> None:
+    base = PluginRegistry().get("echo-fixture")
+    external = base.manifest.model_copy(
+        update={
+            "id": "external-fixture",
+            "source": base.manifest.source.model_copy(
+                update={
+                    "repo": "https://example.invalid/plugin",
+                    "ref": "v2.0.0",
+                    "commit": "abcdef1234567",
+                    "license": "MIT",
+                }
+            ),
+        }
+    )
+    manager = PluginLifecycleManager(
+        _manager(tmp_path).engine,
+        registry=PluginRegistry((RegisteredPlugin(external, base.handler),)),
+    )
+    preview = manager.install_preview(external)
+    report = preview["scan_report"]
+    assert preview["safe_to_install"] is False
+    assert report["overall"] == "quarantined"
+    assert report["license"]["repository"] == "https://example.invalid/plugin"
+    assert report["license"]["ref"] == "v2.0.0"
+    assert report["license"]["commit"] == "abcdef1234567"
+    assert report["license"]["notice_requirement"] == "manual_review_required"
+    assert report["license"]["manual_review_status"] == "pending"
+    assert report["dependencies"]["vulnerability_scan"] == "offline_unavailable"
 
 
 def test_plugin_migration_downgrade_restores_observability_columns_and_trigger(

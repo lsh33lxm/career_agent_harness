@@ -619,6 +619,19 @@ h3 {
   font-size: 12px;
 }
 
+.plugin-details { margin-top: 12px; color: var(--muted); font-size: 12px; }
+.plugin-details summary { color: var(--green); cursor: pointer; }
+.plugin-detail-list { display: grid; gap: 6px; margin: 10px 0 0; }
+.plugin-detail-list div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; }
+.plugin-detail-list dt { color: #89938d; }
+.plugin-detail-list dd { margin: 0; overflow-wrap: anywhere; color: var(--text); }
+.plugin-policy { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--muted); font-size: 12px; }
+.plugin-policy select { min-height: 30px; padding: 4px 8px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-control); }
+.plugin-audit { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+.plugin-audit h3 { margin: 0 0 6px; color: var(--text); font-size: 13px; }
+.plugin-audit p { margin: 5px 0; }
+.plugin-audit ol { margin: 8px 0 0; padding-left: 20px; }
+
 .empty-state {
   display: grid;
   min-height: 250px;

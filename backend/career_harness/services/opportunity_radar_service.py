@@ -120,15 +120,19 @@ class OpportunityRadarService:
                     text(
                         "INSERT INTO job_source_run "
                         "(source_run_id, source_id, query, terms_status, status, record_count, "
-                        "started_at, finished_at, ranking_inputs, ranking_policy_version) "
+                        "terms_note, terms_checked_at, started_at, finished_at, "
+                        "ranking_inputs, ranking_policy_version) "
                         "VALUES (:id, :source_id, :query, :terms, 'completed', :count, "
-                        ":now, :now, :ranking_inputs, :policy_version)"
+                        ":terms_note, :terms_checked_at, :now, :now, "
+                        ":ranking_inputs, :policy_version)"
                     ),
                     {
                         "id": run_id,
                         "source_id": source.source_id,
                         "query": query,
                         "terms": terms.status.value,
+                        "terms_note": terms.note,
+                        "terms_checked_at": terms.checked_at,
                         "count": len(raw_records),
                         "now": now,
                         "ranking_inputs": _json(ranking_inputs),
@@ -158,15 +162,19 @@ class OpportunityRadarService:
                     text(
                         "INSERT OR IGNORE INTO job_source_run "
                         "(source_run_id, source_id, query, terms_status, status, record_count, "
-                        "started_at, finished_at, ranking_inputs, ranking_policy_version) "
+                        "terms_note, terms_checked_at, started_at, finished_at, "
+                        "ranking_inputs, ranking_policy_version) "
                         "VALUES (:id, :source_id, :query, :terms, 'failed', :count, "
-                        ":now, :now, :ranking_inputs, :policy_version)"
+                        ":terms_note, :terms_checked_at, :now, :now, "
+                        ":ranking_inputs, :policy_version)"
                     ),
                     {
                         "id": run_id,
                         "source_id": source.source_id,
                         "query": query,
                         "terms": terms.status.value,
+                        "terms_note": terms.note,
+                        "terms_checked_at": terms.checked_at,
                         "count": len(raw_records),
                         "now": now,
                         "ranking_inputs": _json(ranking_inputs),

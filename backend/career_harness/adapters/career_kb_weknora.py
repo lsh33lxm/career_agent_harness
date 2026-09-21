@@ -47,3 +47,7 @@ class CareerKbWeknoraAdapter:
     def ask(self, question: str) -> dict[str, Any]:
         result = self.search(question)
         return {**result, "question": question}
+
+    def list(self, query: str = "") -> dict[str, Any]:
+        result = self.search(query)
+        return {**result, "query": query, "items": result.get("items", [])}

@@ -67,14 +67,22 @@ UNKNOWN_LICENSES = {"", "UNKNOWN", "NOASSERTION", "UNLICENSED"}
 def _scan_manifest(manifest: PluginManifest) -> dict[str, Any]:
     license_value = manifest.source.license.strip()
     license_upper = license_value.upper()
+    repository_owned = manifest.source.repo.startswith("builtin://")
     license_verified = (
         license_upper not in UNKNOWN_LICENSES
         and license_upper in KNOWN_SPDX_LICENSES
     )
+    notice_requirement = "not_applicable" if repository_owned else "manual_review_required"
+    manual_review_status = "not_required" if repository_owned else "pending"
     license_report = {
         "spdx": license_value,
         "status": "verified" if license_verified else "unknown",
+        "repository": manifest.source.repo,
+        "ref": manifest.source.ref,
+        "commit": manifest.source.commit,
         "commercial_restriction": license_upper in {"GPL-2.0-ONLY", "GPL-3.0-ONLY"},
+        "notice_requirement": notice_requirement,
+        "manual_review_status": manual_review_status,
         "network_lookup": False,
     }
     dependencies: list[dict[str, str]] = []
@@ -92,16 +100,24 @@ def _scan_manifest(manifest: PluginManifest) -> dict[str, Any]:
     dependency_verified = all(item["status"] == "verified" for item in dependencies)
     dependency_report = {
         "status": "verified" if dependency_verified else "unknown",
+        "scan_mode": "declared_license_only",
+        "vulnerability_scan": "offline_unavailable",
         "network_lookup": False,
         "dependencies": dependencies,
     }
     security_report = {
-        "status": "offline_pass",
+        "status": "offline_pass" if repository_owned else "offline_review_required",
         "install_scripts_scanned": False,
+        "install_scripts_status": "not_applicable" if repository_owned else "not_scanned",
         "network_domains": list(manifest.permissions.network),
         "external_write_declared": manifest.permissions.external_write,
+        "network_access": "none" if not manifest.permissions.network else "declared_only",
     }
-    overall = "passed" if license_verified and dependency_verified else "quarantined"
+    overall = (
+        "passed"
+        if repository_owned and license_verified and dependency_verified
+        else "quarantined"
+    )
     return {
         "overall": overall,
         "license": license_report,
@@ -173,6 +189,8 @@ def career_kb_local(payload: dict[str, Any], context: PluginContext) -> dict[str
 def career_kb_weknora(payload: dict[str, Any], _context: PluginContext) -> dict[str, Any]:
     adapter = CareerKbWeknoraAdapter()
     capability = str(payload.get("operation", "search"))
+    if capability == "list":
+        return adapter.list(str(payload.get("query", "")))
     if capability == "read":
         return adapter.read(str(payload.get("passage_id", "")))
     if capability == "ask":
@@ -218,6 +236,7 @@ class PluginRegistry:
                         "knowledge.search",
                         "knowledge.read",
                         "knowledge.ask",
+                        "knowledge.list",
                         "health",
                     ),
                     permissions={
@@ -231,6 +250,7 @@ class PluginRegistry:
                         "compatible_capabilities": (
                             "knowledge.search",
                             "knowledge.read",
+                            "knowledge.list",
                         )
                     },
                     dependencies=(),
@@ -797,6 +817,34 @@ class PluginLifecycleManager:
         )
         return values
 
+    def _release_is_executable(
+        self,
+        connection: Any,
+        plugin_id: str,
+        version: str,
+    ) -> bool:
+        row = connection.execute(
+            text(
+                "SELECT scan_report, content_hash FROM plugin_releases "
+                "WHERE plugin_id=:plugin_id AND version=:version"
+            ),
+            {"plugin_id": plugin_id, "version": version},
+        ).mappings().first()
+        if row is None:
+            return False
+        raw_report = row["scan_report"]
+        report = json.loads(raw_report) if isinstance(raw_report, str) else raw_report
+        try:
+            manifest = self.registry.get(plugin_id, version).manifest
+        except PluginNotFound:
+            return False
+        return bool(
+            isinstance(report, dict)
+            and report.get("overall") == "passed"
+            and row["content_hash"] == manifest.content_hash()
+            and _scan_manifest(manifest)["overall"] == "passed"
+        )
+
     def _set_enabled(
         self,
         plugin_id: str,
@@ -815,9 +863,15 @@ class PluginLifecycleManager:
             ).mappings().first()
             if row is None:
                 raise PluginStateError("plugin is not installed")
-            if enabled and row["status"] == "quarantined":
-                raise PluginStateError("quarantined plugin cannot be enabled")
-            status = "enabled" if enabled else "disabled"
+            release_is_executable = self._release_is_executable(
+                connection, plugin_id, row["current_version"]
+            )
+            if row["status"] == "quarantined" or not release_is_executable:
+                if enabled:
+                    raise PluginStateError("quarantined plugin cannot be enabled")
+                status = "quarantined"
+            else:
+                status = "enabled" if enabled else "disabled"
             connection.execute(
                 text(
                     "UPDATE plugin_installations SET enabled=:enabled, status=:status, "
@@ -846,12 +900,25 @@ class PluginLifecycleManager:
 
     def healthcheck(self, plugin_id: str, *, actor: str = "user") -> PluginEnvelope:
         with self.engine.connect() as connection:
-            version = connection.execute(
-                text("SELECT current_version FROM plugin_installations WHERE plugin_id=:id"),
+            installation = connection.execute(
+                text(
+                    "SELECT current_version, status FROM plugin_installations "
+                    "WHERE plugin_id=:id"
+                ),
                 {"id": plugin_id},
-            ).scalar_one_or_none()
-        if version is None:
+            ).mappings().first()
+            release_is_executable = (
+                self._release_is_executable(
+                    connection, plugin_id, installation["current_version"]
+                )
+                if installation is not None
+                else False
+            )
+        if installation is None:
             raise PluginStateError("plugin is not installed")
+        if installation["status"] == "quarantined" or not release_is_executable:
+            raise PluginStateError("quarantined plugin cannot execute healthcheck")
+        version = installation["current_version"]
         registration = self._registered(plugin_id, version)
         result = self.runner.invoke(
             registration,
@@ -895,15 +962,35 @@ class PluginLifecycleManager:
         with self.engine.connect() as connection:
             installation = connection.execute(
                 text(
-                    "SELECT enabled, current_version FROM plugin_installations "
+                    "SELECT enabled, current_version, status FROM plugin_installations "
                     "WHERE plugin_id=:plugin_id"
                 ),
                 {"plugin_id": plugin_id},
             ).mappings().first()
+            release_is_executable = (
+                self._release_is_executable(
+                    connection, plugin_id, installation["current_version"]
+                )
+                if installation is not None
+                else False
+            )
         registration = self._registered(
             plugin_id,
             installation["current_version"] if installation is not None else None,
         )
+        if installation is not None and not release_is_executable:
+            return PluginEnvelope.error_envelope(
+                request_id=request_id,
+                plugin_id=plugin_id,
+                plugin_version=registration.manifest.version,
+                capability=capability,
+                input_hash=input_hash,
+                started_at=datetime.now(UTC),
+                error=PluginError(
+                    code="plugin_quarantined",
+                    message="plugin release has not passed the frozen scan gate",
+                ),
+            )
         with self.engine.connect() as connection:
             previous_run = connection.execute(
                 text("SELECT * FROM plugin_runs WHERE request_id=:request_id"),
@@ -944,7 +1031,11 @@ class PluginLifecycleManager:
                     else None
                 ),
             )
-        if installation is None or not installation["enabled"]:
+        if (
+            installation is None
+            or not installation["enabled"]
+            or installation["status"] == "quarantined"
+        ):
             result = PluginEnvelope.error_envelope(
                 request_id=request_id,
                 plugin_id=plugin_id,
@@ -1233,6 +1324,8 @@ class PluginLifecycleManager:
             ).first()
             if release is None:
                 raise PluginStateError("candidate release is not installed")
+            if not self._release_is_executable(connection, plugin_id, candidate):
+                raise PluginStateError("candidate release is quarantined")
             plan = connection.execute(
                 text(
                     "SELECT plan_id, tests, approval FROM plugin_update_plans "
@@ -1290,19 +1383,30 @@ class PluginLifecycleManager:
             if row is None:
                 raise PluginStateError("plugin is not installed")
             target = row["previous_version"] or row["current_version"]
+            target_status = (
+                "rolled_back"
+                if self._release_is_executable(connection, plugin_id, target)
+                else "quarantined"
+            )
             connection.execute(
                 text(
                     "UPDATE plugin_installations SET current_version=:target, "
-                    "pinned_release=:target, status='rolled_back', enabled=0, "
+                    "pinned_release=:target, status=:status, enabled=0, "
                     "updated_at=:now WHERE plugin_id=:plugin_id"
                 ),
                 {
                     "target": target,
+                    "status": target_status,
                     "now": datetime.now(UTC),
                     "plugin_id": plugin_id,
                 },
             )
-        result = {"plugin_id": plugin_id, "rolled_back_to": target, "enabled": False}
+        result = {
+            "plugin_id": plugin_id,
+            "rolled_back_to": target,
+            "enabled": False,
+            "status": target_status,
+        }
         self._audit(plugin_id, "rollback", actor, result)
         return result
 

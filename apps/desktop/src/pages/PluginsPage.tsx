@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { HeartPulse, Package, Power, RefreshCw, ShieldCheck, Undo2, XCircle } from "lucide-react";
 
+import {
+  getPluginAuditSummary,
+  listPluginAudit,
+  previewPluginUninstall,
+  setPluginUpdatePolicy,
+  type PluginAuditEvent,
+  type PluginAuditSummary,
+  type PluginCatalogItem,
+  type PluginUninstallPreview,
+} from "../api/plugins";
 import { apiRequest } from "../api/client";
-import type { PluginCatalogItem } from "../api/plugins";
 
 function statusLabel(item: PluginCatalogItem): string {
   if (!item.installed) return "未安装";
@@ -15,6 +24,10 @@ export function PluginsPage() {
   const [message, setMessage] = useState("正在读取插件目录…");
   const [pending, setPending] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [auditPluginId, setAuditPluginId] = useState("");
+  const [auditEvents, setAuditEvents] = useState<PluginAuditEvent[]>([]);
+  const [auditSummary, setAuditSummary] = useState<PluginAuditSummary | null>(null);
+  const [uninstallPreview, setUninstallPreview] = useState<PluginUninstallPreview | null>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -39,6 +52,56 @@ export function PluginsPage() {
       await load();
     } catch (error) {
       setActionMessage(`${item.manifest.name}：${(error as Error).message}`);
+    } finally {
+      setPending("");
+    }
+  }
+
+  async function showAudit(item: PluginCatalogItem) {
+    if (auditPluginId === item.manifest.id) {
+      setAuditPluginId("");
+      setAuditEvents([]);
+      setAuditSummary(null);
+      return;
+    }
+    setPending(`${item.manifest.id}:audit`);
+    setActionMessage("");
+    try {
+      const [events, summary] = await Promise.all([
+        listPluginAudit(item.manifest.id),
+        getPluginAuditSummary(item.manifest.id),
+      ]);
+      setAuditPluginId(item.manifest.id);
+      setAuditEvents(events);
+      setAuditSummary(summary);
+    } catch (error) {
+      setActionMessage(`${item.manifest.name}：审计读取失败：${(error as Error).message}`);
+    } finally {
+      setPending("");
+    }
+  }
+
+  async function showUninstallPreview(item: PluginCatalogItem) {
+    setPending(`${item.manifest.id}:uninstall-preview`);
+    setActionMessage("");
+    try {
+      setUninstallPreview(await previewPluginUninstall(item.manifest.id));
+    } catch (error) {
+      setActionMessage(`${item.manifest.name}：卸载影响读取失败：${(error as Error).message}`);
+    } finally {
+      setPending("");
+    }
+  }
+
+  async function changePolicy(item: PluginCatalogItem, policy: "notify" | "patch_auto" | "manual") {
+    setPending(`${item.manifest.id}:policy`);
+    setActionMessage("");
+    try {
+      await setPluginUpdatePolicy(item.manifest.id, policy);
+      setActionMessage(`${item.manifest.name}：更新策略已设为 ${policy}`);
+      await load();
+    } catch (error) {
+      setActionMessage(`${item.manifest.name}：更新策略保存失败：${(error as Error).message}`);
     } finally {
       setPending("");
     }
@@ -84,6 +147,35 @@ export function PluginsPage() {
               <HeartPulse size={14} />
               {item.manifest.permissions.external_write ? "包含外部写入（需审批）" : "默认无外部写入"}
             </div>
+            <details className="plugin-details">
+              <summary>查看详情与权限</summary>
+              <dl className="plugin-detail-list">
+                <div><dt>仓库</dt><dd>{item.manifest.source.repo}</dd></div>
+                <div><dt>固定 commit</dt><dd>{item.manifest.source.commit}</dd></div>
+                <div><dt>网络</dt><dd>{item.manifest.permissions.network.join(", ") || "无"}</dd></div>
+                <div><dt>文件</dt><dd>{item.manifest.permissions.filesystem.join(", ") || "无"}</dd></div>
+                <div><dt>Secret</dt><dd>{item.manifest.permissions.secrets.join(", ") || "无"}</dd></div>
+                <div><dt>数据范围</dt><dd>{item.manifest.permissions.scope.join(", ") || "无"}</dd></div>
+                <div><dt>License review</dt><dd>{item.release_scan?.license?.manual_review_status ?? "未记录"}</dd></div>
+                <div><dt>NOTICE</dt><dd>{item.release_scan?.license?.notice_requirement ?? "未记录"}</dd></div>
+                <div><dt>依赖扫描</dt><dd>{item.release_scan?.dependencies?.scan_mode ?? "未记录"}</dd></div>
+              </dl>
+            </details>
+            {item.installed && (
+              <label className="plugin-policy">
+                更新策略
+                <select
+                  aria-label={`${item.manifest.name}更新策略`}
+                  value={item.installation?.config?.update_policy ?? "notify"}
+                  disabled={Boolean(pending)}
+                  onChange={(event) => void changePolicy(item, event.target.value as "notify" | "patch_auto" | "manual")}
+                >
+                  <option value="notify">仅提醒</option>
+                  <option value="patch_auto">准备补丁预览</option>
+                  <option value="manual">手动批准</option>
+                </select>
+              </label>
+            )}
             <div className="plugin-actions">
               {!item.installed ? (
                 <button type="button" disabled={Boolean(pending)} onClick={() => void act(item, "install")}><Package size={14} />安装</button>
@@ -93,9 +185,29 @@ export function PluginsPage() {
                   <button type="button" disabled={Boolean(pending)} onClick={() => void act(item, "healthcheck")}><HeartPulse size={14} />健康检查</button>
                   <button type="button" disabled={Boolean(pending)} onClick={() => void act(item, "update-preview")}><RefreshCw size={14} />更新预览</button>
                   <button type="button" disabled={Boolean(pending)} onClick={() => void act(item, "rollback")}><Undo2 size={14} />回滚</button>
+                  <button type="button" disabled={Boolean(pending)} onClick={() => void showAudit(item)}>审计</button>
+                  <button type="button" disabled={Boolean(pending)} onClick={() => void showUninstallPreview(item)}>卸载影响</button>
                 </>
               )}
             </div>
+            {auditPluginId === item.manifest.id && auditSummary && (
+              <section className="plugin-audit" aria-label={`${item.manifest.name}审计`}>
+                <h3>运行与生命周期审计</h3>
+                <p>运行 {auditSummary.run_count} 次 · 错误率 {auditSummary.error_rate} · 平均延迟 {auditSummary.latency.average_ms.toFixed(1)} ms</p>
+                <p>数据范围：{auditSummary.declared_data_scopes.join(", ") || "无"}</p>
+                <ol>
+                  {auditEvents.slice(-8).map((event) => <li key={event.audit_id}>{event.action} · {event.actor} · {event.occurred_at}</li>)}
+                </ol>
+              </section>
+            )}
+            {uninstallPreview?.plugin_id === item.manifest.id && (
+              <section className="plugin-audit" aria-label={`${item.manifest.name}卸载影响`}>
+                <h3>卸载影响预览</h3>
+                <p>{uninstallPreview.removal_allowed ? "停用后可以移除插件指针。" : "插件仍启用，暂不可移除。"}</p>
+                <p>Core truth 删除：{uninstallPreview.core_truth_deleted ? "会" : "不会"}；Artifact bytes 删除：{uninstallPreview.artifact_bytes_deleted ? "会" : "不会"}。</p>
+                <p>保留记录：{uninstallPreview.retained_records.join(", ")}</p>
+              </section>
+            )}
           </article>
         ))}
       </section>

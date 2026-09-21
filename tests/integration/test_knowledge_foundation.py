@@ -149,6 +149,45 @@ def test_standard_document_extractors_and_weknora_are_offline(tmp_path: Path) ->
     blocked = CareerKbWeknoraAdapter().search("anything")
     assert blocked["status"] == "blocked"
     assert blocked["code"] == "weknora_not_configured"
+    listed = CareerKbWeknoraAdapter().list("anything")
+    assert listed["status"] == "blocked"
+    assert listed["items"] == []
+
+
+def test_plugin_knowledge_scope_and_redaction_are_explicit(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    revision = repository.import_document(
+        content=(
+            b'Contact minnn@example.com; token=secret-value; phone +86 138 0013 8000. '
+            b'{"api_key":"synthetic-json-secret"}; '
+            b'Authorization: Bearer synthetic-bearer-secret.'
+        ),
+        media_type="text/plain",
+        source_type="fixture",
+        source_locator="file:///private/minnn@example.com.txt",
+        category=KnowledgeCategory.PROJECT_EVIDENCE,
+        title="Private minnn@example.com evidence",
+        authority=KnowledgeAuthority.DOCUMENT_SUPPORTED,
+    )
+    page = repository.search_for_plugin(
+        "Contact token",
+        {
+            "allowed_categories": ["project_evidence"],
+            "redact_sensitive": True,
+        },
+    )
+    assert page["items"][0]["knowledge_id"] == revision.knowledge_id
+    item = page["items"][0]
+    assert "minnn@example.com" not in item["snippet"]
+    assert "REDACTED_EMAIL" in item["snippet"]
+    assert "secret-value" not in item["snippet"]
+    assert "synthetic-json-secret" not in item["snippet"]
+    assert "synthetic-bearer-secret" not in item["snippet"]
+    assert "REDACTED_SECRET" in item["snippet"]
+    assert "minnn@example.com" not in item["citation"]["source_locator"]
+    assert repository.search_for_plugin(
+        "Contact", {"allowed_categories": ["market_signal"]}
+    )["items"] == []
 
 
 def test_local_kb_plugin_reads_core_and_dangling_refs_fail_loudly(tmp_path: Path) -> None:

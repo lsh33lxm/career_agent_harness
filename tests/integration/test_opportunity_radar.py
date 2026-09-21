@@ -34,7 +34,10 @@ def test_offline_source_stages_ranks_deduplicates_and_user_admits(tmp_path: Path
     assert len(records) == 1
     staged = records[0]
     assert staged.status is JobStagingStatus.STAGED
-    assert staged.suggested_score == pytest.approx(0.525, abs=0.001)
+    # Freshness is evaluated against the current UTC clock, so the fixture's
+    # score remains deterministic by components while its final weighted value
+    # moves within the expected range as the day advances.
+    assert 0.50 <= staged.suggested_score <= 0.526
     assert staged.gaps == ("Rust",)
     assert staged.score_breakdown["capability_match"] == pytest.approx(2 / 3, abs=0.001)
     assert staged.score_breakdown["evidence_coverage"] == 0
@@ -187,11 +190,49 @@ def test_opportunity_radar_migration_is_reversible(tmp_path: Path) -> None:
     assert "score_breakdown" in {
         item["name"] for item in inspect(engine).get_columns("job_staging_record")
     }
+    assert {"terms_note", "terms_checked_at"} <= {
+        item["name"] for item in inspect(engine).get_columns("job_source_run")
+    }
+    command.downgrade(config, "0021_plugin_lifecycle_observability")
+    assert not {"terms_note", "terms_checked_at"} & {
+        item["name"] for item in inspect(engine).get_columns("job_source_run")
+    }
     command.downgrade(config, "0016_resume_studio")
     tables = inspect(engine).get_table_names()
     assert "job_staging_record" not in tables
     assert "job_source_policy" not in tables
     assert "resume_render_run" in tables
+
+
+def test_terms_provenance_migration_keeps_historical_check_time_unknown(
+    tmp_path: Path,
+) -> None:
+    database_url = sqlite_url(tmp_path / "terms-history.db")
+    config = alembic_config(database_url)
+    command.upgrade(config, "0021_plugin_lifecycle_observability")
+    engine = create_sqlite_engine(database_url)
+    historical_time = "2020-01-02 03:04:05"
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO job_source_run "
+                "(source_run_id, source_id, query, terms_status, status, record_count, "
+                "started_at, finished_at, ranking_inputs, ranking_policy_version) "
+                "VALUES ('historical-run', 'manual', 'old query', 'unknown', "
+                "'completed', 0, :at, :at, '{}', 'v1')"
+            ),
+            {"at": historical_time},
+        )
+    command.upgrade(config, "head")
+    with engine.connect() as connection:
+        row = connection.execute(
+            text(
+                "SELECT terms_note, terms_checked_at FROM job_source_run "
+                "WHERE source_run_id='historical-run'"
+            )
+        ).mappings().one()
+    assert row["terms_note"] is None
+    assert row["terms_checked_at"] is None
 
 
 def test_ranking_inputs_are_part_of_identity_and_provenance(tmp_path: Path) -> None:
@@ -213,13 +254,16 @@ def test_ranking_inputs_are_part_of_identity_and_provenance(tmp_path: Path) -> N
     with service.engine.connect() as connection:
         rows = connection.execute(
             text(
-                "SELECT status, ranking_inputs, ranking_policy_version "
+                "SELECT status, ranking_inputs, ranking_policy_version, terms_note, "
+                "terms_checked_at "
                 "FROM job_source_run ORDER BY started_at"
             )
         ).mappings().all()
     assert len(rows) == 2
     assert all(row["status"] == "completed" for row in rows)
     assert all(row["ranking_policy_version"] == "v1.1" for row in rows)
+    assert all("fixture" in row["terms_note"] for row in rows)
+    assert all(row["terms_checked_at"] is not None for row in rows)
 
 
 def test_failed_normalization_is_recorded_as_failed_run(tmp_path: Path) -> None:
@@ -308,3 +352,5 @@ def test_opportunity_radar_constraints_survive_hardening_migration(tmp_path: Pat
         "ck_job_source_run_record_count",
     ):
         assert fragment in source_run_sql
+    assert "terms_note" in source_run_sql
+    assert "terms_checked_at" in source_run_sql

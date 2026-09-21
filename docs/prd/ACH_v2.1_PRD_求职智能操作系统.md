@@ -3,11 +3,11 @@
 版本：v2.1
 
 日期：2026-09-22
-实现基线：`292ad82`（integration worktree）
+实现基线：`58c4b3a`（integration worktree）
 
 ## 1. 本次目标与结论
 
-Agent Career Harness 已从页面原型形成可安装的本地中文职业工作台：Career Core 管理权威状态，Artifact/Evidence 保存来源，Legacy 数据以只读投影进入机会与知识页面，插件、模型、GitHub 项目分析、简历、岗位、能力和 Wiki 通过同一审计边界协作。本轮恢复正确的“观复”桌面图标，并补齐 Wiki graph 与 health governance。
+Agent Career Harness 已从页面原型形成可安装的本地中文职业工作台：Career Core 管理权威状态，Artifact/Evidence 保存来源，Legacy 数据以只读投影进入机会与知识页面，插件、模型、GitHub 项目分析、简历、岗位、能力和 Wiki 通过同一审计边界协作。本轮恢复正确的“观复”桌面图标，并补齐 Wiki graph、长期记忆、持久任务队列、本地资料源同步和 scoped tool governance。
 
 状态定义：**已完成**表示代码、测试和本地构建均存在；**部分完成**表示安全的本地闭环存在但高级能力或外部连接未完成；**阻塞**表示需要凭据、条款许可或用户权威。
 
@@ -20,6 +20,10 @@ Agent Career Harness 已从页面原型形成可安装的本地中文职业工�
 | Opportunity Radar、去重、排名、admission | 已完成（本地/离线来源） | `backend/career_harness/services/opportunity_radar_service.py` |
 | Knowledge 导入、chunk、hybrid retrieval、引用 | 已完成 | `backend/career_harness/db/knowledge_repository.py` |
 | Wiki proposal、revision、diff、rollback、graph、health | 已完成 | `backend/career_harness/api/knowledge.py` |
+| 长期记忆 proposal、确认、revision、tombstone | 已完成（本地作用域） | `backend/career_harness/db/memory_repository.py` |
+| 持久任务队列、retry/cancel/dead-letter/attempt guard | 已完成（本地手动调度） | `backend/career_harness/db/task_repository.py` |
+| SourceConnector、cursor、delete safety、sync log | 部分完成（本地文件夹） | `backend/career_harness/services/source_connector_service.py` |
+| Scoped Tool Registry 与审计 | 部分完成（内置只读工具） | `backend/career_harness/core/tools/registry.py` |
 | Resume proposal、revision、HTML/PDF、ATS 检查 | 已完成（本地 renderer） | `backend/career_harness/services/resume_studio_service.py` |
 | 模型配置与安全密钥 | 已完成；真实连接待凭据 | `backend/career_harness/services/model_provider_service.py` |
 | GitHub 只读项目分析 | 已完成；公网验收受网络影响 | `backend/career_harness/services/github_project_service.py` |
@@ -41,7 +45,11 @@ Agent Career Harness 已从页面原型形成可安装的本地中文职业工�
 
 Wiki 支持 proposal 审核、revision history、line diff、rollback、显式页面 link、当前 graph 和 health score。Health 检查孤立页面、重复标题、过期 revision link、缺少引用和提示注入；检查只读，不自动发布、删除或批量修复。
 
-长期记忆仍为**未完成**：profile/preference/fact/task/interest memory、作用域、确认、tombstone、consolidation 和 affinity 尚无独立持久化契约。实现时必须复用 proposal/approval/audit，不得让记忆授予工具权限或覆盖本轮用户要求。
+长期记忆已支持 profile/preference/fact/task/interest、user/workspace/session scope、候选 proposal、用户确认/拒绝/编辑、revision、检索与 tombstone。LLM 原始创建者与用户确认者分离，未确认候选不能作为强事实；记忆不能授予工具权限或覆盖本轮用户要求。Memory consolidation 与 memory-document affinity 尚未实现。
+
+本地资料源已支持绝对路径连接测试、只读无 symlink 扫描、50 MiB/文件与 10,000 文件上限、SHA-256、内容寻址归档、full/incremental cursor、created/updated/skipped/deleted/failed 统计、暂停/恢复和同步审计。源端删除只标记 `source_deleted`，不删除本地 artifact；扫描失败不推进 cursor，也不误删现有知识。知识页提供同主题的创建、测试、同步与历史状态入口，不显示内部 connector ID。当前只实现 local-folder adapter；GitHub、Legacy 与 Feishu 尚未迁入统一 connector contract。
+
+持久 Task Queue 支持 pending/processing/finalizing/completed/failed/cancelled/retrying/dead-letter 状态、指数退避、取消、恢复、人工重试、stage worker limit、不可变 attempt 和 version/attempt guard。任务 JSON 限制为 1 MB，禁止直接持久化 token/password/API key；异常在写库前脱敏。当前 runtime 提供手动 dispatcher，常驻后台调度与 scheduled sync 尚未实现。
 
 ## 5. 职位、简历、面试与申请流程
 
@@ -72,7 +80,9 @@ Wiki 支持 proposal 审核、revision history、line diff、rollback、显式�
 
 ## 8. 插件、工具与执行安全
 
-Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装预览、quarantine、shadow run、switch 与 rollback 已存在。插件没有裸 SQLite、任意 shell 或隐式外部写权限。MCP scope、SourceConnector 全量/增量同步、通用任务 worker pool 和受控 Codex/Claude/OpenCode Runner 仍为**部分或未完成**。
+Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装预览、quarantine、shadow run、switch 与 rollback 已存在。插件没有裸 SQLite、任意 shell 或隐式外部写权限。
+
+新增 Tool Registry 采用 first-wins 名称冲突策略，固定 source/version，执行前校验 schema、principal、scope 和 permission；deferred handler 仅在授权后加载，输出长度受限，失败分类写入不含参数/输出/approval 值的 DomainEvent。Local API 已注册真实 `knowledge.search` 只读工具，后端固定为 `local-user`、`workspace-local` 和 read 权限；请求文本或 prompt 不能扩大 scope。写工具必须经过后端 approval checker。MCP SSE/HTTP/stdio transport 的认证与连接生命周期、以及受控 Codex/Claude/OpenCode Runner 仍未实现。
 
 外部文本全部按不可信输入处理；URL fetch 必须限制 host/协议/大小/超时并防 SSRF；密钥只进入 Windows Credential Manager；普通日志不得记录密钥、简历正文或 launch token。提示词不能扩大后端权限。
 
@@ -83,27 +93,32 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 | Career Core / Evidence / Audit | 已完成 | 保持兼容并扩展精确引用 |
 | Knowledge import/chunk/hybrid search/citation | 已完成 | 增加真实 embedding/rerank 可选 adapter |
 | Wiki revision/diff/rollback/graph/health | 已完成 | 增加页面编辑、移动和 lint 修复 proposal |
-| Memory governance | 未完成 | 先实现 scoped proposal/confirm/tombstone |
-| SourceConnector/sync cursor/delete safety | 部分完成 | 统一现有 GitHub、Legacy、Feishu adapter 契约 |
-| Task retry/cancel/dead-letter/worker pool | 部分完成 | 建立 version/attempt 防旧任务覆盖 |
+| Memory governance | 已完成本地核心 | 增加 consolidation 与 document affinity |
+| SourceConnector/sync cursor/delete safety | 部分完成 | local-folder 已完成；迁移 GitHub、Legacy、Feishu adapter |
+| Task retry/cancel/dead-letter/worker pool | 已完成本地核心 | 增加后台 dispatcher、scheduled sync 与每模型并发策略 |
 | Opportunity/Resume/Application | 已完成本地核心 | 编排离线端到端任务和公司/面试产物 |
 | 外部 ATS/邮件/Feishu/Notion 写入 | 阻塞 | 需要凭据、条款与逐次用户批准 |
-| MCP/CLI Runner | 部分完成 | 只读默认、写权限审批、sandbox 与审计 |
+| MCP/CLI Runner | 部分完成 | scoped tool registry 已完成；补 transport auth 与 CLI sandbox |
 | 语音面试 | 计划 | 先保持文本面试，feature flag 后置 |
 
 ## 10. 测试与构建结果
 
-- Backend：`658 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制。
-- Frontend：`20 test files, 55 passed`。
+本轮可审计实现提交：`4e8e944`（Memory）、`0caa294`（Task Queue）、`e14d795`（local-folder SourceConnector）、`64374d0`（知识页资料源 UI）、`58c4b3a`（scoped Tool Registry/API）。
+
+- Backend：`676 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制。
+- Frontend：`22 test files, 59 passed`。
 - Ruff：`backend tests migrations` 通过。
 - TypeScript/Vite：production build 通过。
-- Wiki focused：backend `9 passed`，Knowledge 页面测试通过。
-- Desktop：PyInstaller sidecar 与 Tauri NSIS release 构建通过。
+- Task/SourceConnector migration/runtime subset：`60 passed`；Tool/API focused：`6 passed`。
+- Desktop：PyInstaller sidecar、`cargo check --locked` 与 Tauri NSIS release 构建通过；sidecar SHA-256 `23c51e80408dc9f7f7638b7026cf8c410bcc26e4bd2eb3a7bf95a712bc83c8db`。
 - 安装包：`apps/desktop/src-tauri/target/release/bundle/nsis/Agent Career Harness_0.1.0_x64-setup.exe`。
 
 ## 11. 未完成与阻塞
 
-- Memory、统一 SourceConnector、通用 Task queue、MCP scope 和 CLI sandbox 尚未达到本 PRD 的完整目标。
+- Memory 本地治理已完成；consolidation/affinity 仍缺失。
+- SourceConnector 当前只覆盖本地文件夹；GitHub、Legacy、Feishu、Notion、Yuque、DingTalk、RSS、Confluence 尚未统一，scheduled sync 也未实现。
+- Task Queue 当前由 API/业务显式 dispatch；没有常驻后台 worker supervisor 或每模型并发策略。
+- Tool scope 已由后端强制执行；真实 MCP transport auth 和 CLI sandbox 尚未实现。
 - GraphRAG、真实 dense embedding/rerank、OCR/VLM/ASR、表格/图片/Office 全格式解析仍需可替换 adapter。
 - 真实模型对话需要用户配置凭据并明确允许发送的数据；连接测试成功前只能显示“尚未配置/未验证”。
 - 外部 ATS、Gmail、Notion、Feishu 等真实写入需要凭据、目标权限、条款复核和逐次批准。
@@ -112,11 +127,11 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 
 ## 12. 下一阶段具体顺序
 
-1. 实现 scoped Memory proposal → user confirm/reject/edit/delete/tombstone → search/revision。
-2. 抽取统一 SourceConnector，迁移本地文件夹、GitHub 与现有 Legacy importer，加入 cursor、delete safety、sync log。
-3. 建立 versioned Task queue：retry/backoff/cancel/resume/dead-letter/attempt guard/observability。
-4. 将 Opportunity → Resume proposal → ATS → company research → STAR → Application audit 串成离线 E2E。
-5. 补充 MCP scope 与受控 CLI Runner；默认只读，写入必须 approval，网络/文件系统由后端强制。
-6. 在以上契约稳定后接入可选 embedding、rerank、OCR/VLM 和 WeKnora adapter。
+1. 将现有 GitHub read-only、Legacy importer 与 Feishu offline projection 迁入 SourceConnector contract，保持既有 provenance 与 authority。
+2. 增加后台 dispatcher、scheduled sync、per-model concurrency 与 failed-task inspection UI。
+3. 将 Opportunity → Resume proposal → ATS → company research → STAR → Application audit 串成离线 E2E。
+4. 在 scoped Tool Registry 上实现认证的 MCP transport 与受控 CLI Runner；默认只读，写入必须 approval，网络/文件系统由后端强制。
+5. 增加 Memory consolidation/document affinity 与 Wiki 编辑/移动/lint-fix proposal。
+6. 最后接入可选 embedding、rerank、OCR/VLM 和 WeKnora adapter。
 
 需要用户之后确认的事项仅包括：Legacy canonical authority、真实模型数据发送、外部连接凭据/条款、任何真实投递或消息写入，以及受限制许可证的商业授权。

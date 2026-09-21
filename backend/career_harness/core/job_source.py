@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Protocol
+from typing import Any, Protocol
 
 from pydantic import Field
 
@@ -79,6 +79,9 @@ class JobStagingRecord(FrozenModel):
     suggested_reasons: tuple[str, ...]
     gaps: tuple[str, ...]
     score_breakdown: dict[str, float] = Field(default_factory=dict)
+    ranking_inputs: dict[str, Any] = Field(default_factory=dict)
+    ranking_policy_version: str = Field(default="v1", min_length=1, max_length=32)
+    evaluated_at: datetime = Field(default_factory=utc_now)
     admitted_job_id: OpaqueId | None = None
     admitted_opportunity_id: OpaqueId | None = None
     created_at: datetime = Field(default_factory=utc_now)

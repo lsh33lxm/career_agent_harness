@@ -1,8 +1,9 @@
+import hashlib
 from pathlib import Path
 
 import pytest
 from alembic import command
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 from career_harness.adapters.job_sources import ManualJobSource, OfflineFixtureJobSource
 from career_harness.core.job_source import (
@@ -33,7 +34,7 @@ def test_offline_source_stages_ranks_deduplicates_and_user_admits(tmp_path: Path
     assert len(records) == 1
     staged = records[0]
     assert staged.status is JobStagingStatus.STAGED
-    assert staged.suggested_score == pytest.approx(0.475, abs=0.001)
+    assert staged.suggested_score == pytest.approx(0.525, abs=0.001)
     assert staged.gaps == ("Rust",)
     assert staged.score_breakdown["capability_match"] == pytest.approx(2 / 3, abs=0.001)
     assert staged.score_breakdown["evidence_coverage"] == 0
@@ -59,9 +60,9 @@ def test_offline_source_stages_ranks_deduplicates_and_user_admits(tmp_path: Path
     assert duplicate.status is JobStagingStatus.DUPLICATE
     assert duplicate.duplicate_of == staged.staging_id
     with pytest.raises(ValueError, match="duplicate"):
-        service.admit(duplicate.staging_id)
+        service.admit(duplicate.staging_id, actor="user")
 
-    admitted = service.admit(staged.staging_id)
+    admitted = service.admit(staged.staging_id, actor="user")
     assert admitted.admission.opportunity is not None
     persisted = service.repository.get(staged.staging_id)
     assert persisted is not None
@@ -171,7 +172,7 @@ def test_rank_records_location_salary_deadline_and_freshness_components(tmp_path
         minimum_salary=160000,
     )[0]
     assert staged.score_breakdown["location"] == 1
-    assert staged.score_breakdown["salary"] == pytest.approx(1, abs=0.001)
+    assert staged.score_breakdown["salary"] == pytest.approx(0.938, abs=0.001)
     assert staged.score_breakdown["deadline"] > 0
     assert 0 <= staged.score_breakdown["freshness"] <= 1
 
@@ -191,3 +192,119 @@ def test_opportunity_radar_migration_is_reversible(tmp_path: Path) -> None:
     assert "job_staging_record" not in tables
     assert "job_source_policy" not in tables
     assert "resume_render_run" in tables
+
+
+def test_ranking_inputs_are_part_of_identity_and_provenance(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    source = OfflineFixtureJobSource()
+    first = service.collect(source, query="platform", desired_terms=("Python",))[0]
+    second = service.collect(
+        source,
+        query="platform",
+        desired_terms=("Rust",),
+        excluded_terms=("Remote",),
+        preferred_locations=("Shanghai",),
+        minimum_salary=160000,
+    )[0]
+    assert second.staging_id != first.staging_id
+    assert first.ranking_inputs["desired_terms"] == ["Python"]
+    assert second.ranking_inputs["desired_terms"] == ["Rust"]
+    assert second.ranking_inputs["excluded_terms"] == ["Remote"]
+    with service.engine.connect() as connection:
+        rows = connection.execute(
+            text(
+                "SELECT status, ranking_inputs, ranking_policy_version "
+                "FROM job_source_run ORDER BY started_at"
+            )
+        ).mappings().all()
+    assert len(rows) == 2
+    assert all(row["status"] == "completed" for row in rows)
+    assert all(row["ranking_policy_version"] == "v1.1" for row in rows)
+
+
+def test_failed_normalization_is_recorded_as_failed_run(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    source = ManualJobSource(
+        (RawJobRecord(source_ref="manual://invalid", raw_text='{"company":"Missing"}'),)
+    )
+    with pytest.raises(KeyError, match="title"):
+        service.collect(source, query="")
+    with service.engine.connect() as connection:
+        statuses = connection.execute(
+            text("SELECT status FROM job_source_run")
+        ).scalars().all()
+    assert statuses == ["failed"]
+    assert service.repository.list() == ()
+
+
+def test_disabled_source_can_be_reenabled_by_user_policy_action(tmp_path: Path) -> None:
+    class ToggleSource(OfflineFixtureJobSource):
+        available = False
+
+        def search(self, query: str) -> tuple[RawJobRecord, ...]:
+            if not self.available:
+                raise RuntimeError("temporary fixture outage")
+            return super().search(query)
+
+    service = _service(tmp_path)
+    source = ToggleSource()
+    with pytest.raises(RuntimeError, match="temporary fixture outage"):
+        service.collect(source, query="platform")
+    assert service.source_policies()[0].disabled is True
+    source.available = True
+    policy = service.update_source_policy(source.source_id, enabled=True, reset_failures=True)
+    assert policy.disabled is False
+    assert policy.failure_count == 0
+    assert len(service.collect(source, query="platform")) == 1
+
+
+def test_admission_rolls_back_job_when_opportunity_commit_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service = _service(tmp_path)
+    staged = service.collect(OfflineFixtureJobSource(), query="platform")[0]
+
+    def fail(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("opportunity write failed")
+
+    monkeypatch.setattr(service.opportunities, "admit_manually", fail)
+    with pytest.raises(RuntimeError, match="opportunity write failed"):
+        service.admit(staged.staging_id, actor="user")
+    digest = hashlib.sha256(staged.staging_id.encode()).hexdigest()[:32]
+    assert service.jobs.repository.get_job(f"job_{digest}") is None
+    persisted = service.repository.get(staged.staging_id)
+    assert persisted is not None
+    assert persisted.status is JobStagingStatus.STAGED
+
+
+def test_opportunity_radar_constraints_survive_hardening_migration(tmp_path: Path) -> None:
+    database_url = sqlite_url(tmp_path / "radar-schema.db")
+    config = alembic_config(database_url)
+    command.upgrade(config, "head")
+    engine = create_sqlite_engine(database_url)
+    with engine.connect() as connection:
+        staging_sql = connection.execute(
+            text("SELECT sql FROM sqlite_master WHERE type='table' AND name='job_staging_record'")
+        ).scalar_one()
+        source_run_sql = connection.execute(
+            text("SELECT sql FROM sqlite_master WHERE type='table' AND name='job_source_run'")
+        ).scalar_one()
+    for fragment in (
+        "ck_job_staging_terms_status",
+        "ck_job_staging_status",
+        "ck_job_staging_score",
+        "ck_job_staging_normalized",
+        "ck_job_staging_suggested_reasons",
+        "ck_job_staging_gaps",
+        "ck_job_staging_duplicate_ref",
+        "ck_job_staging_admission_refs",
+        "ck_job_staging_score_breakdown",
+        "ck_job_staging_ranking_inputs",
+    ):
+        assert fragment in staging_sql
+    for fragment in (
+        "ck_job_source_run_terms_status",
+        "ck_job_source_run_status",
+        "ck_job_source_run_record_count",
+    ):
+        assert fragment in source_run_sql

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import uuid
 
+from sqlalchemy.orm import Session
+
 from career_harness.core.approval import ActorKind
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, FrozenModel, OpaqueId
@@ -56,6 +58,7 @@ class OpportunityService:
         opportunity_id: OpaqueId,
         decision_id: OpaqueId,
         reason: str | None = None,
+        session: Session | None = None,
     ) -> OpportunityAdmissionCommit:
         self._require_new_user_opportunity(command, opportunity_id)
         admission = admit_opportunity_manually(
@@ -66,7 +69,7 @@ class OpportunityService:
             reason=reason,
             decided_at=command.issued_at,
         )
-        return self._commit_admission(command, admission)
+        return self._commit_admission(command, admission, session=session)
 
     def review_proposal(
         self,
@@ -146,6 +149,7 @@ class OpportunityService:
         admission: OpportunityAdmissionResult,
         *,
         proposal: OpportunityAdmissionProposal | None = None,
+        session: Session | None = None,
     ) -> OpportunityAdmissionCommit:
         opportunity = admission.opportunity
         if opportunity is None:
@@ -162,6 +166,7 @@ class OpportunityService:
                 "path": decision.path.value,
             },
             transactional_write=OpportunityAdmissionWrite(admission, proposal=proposal),
+            session=session,
         )
         return OpportunityAdmissionCommit(admission=admission, commit=commit)
 

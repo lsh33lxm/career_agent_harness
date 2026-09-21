@@ -34,6 +34,8 @@ export interface ManualJobImportRequest {
   query?: string;
   desired_terms?: string[];
   excluded_terms?: string[];
+  preferred_locations?: string[];
+  minimum_salary?: number;
 }
 
 export function listJobStaging(signal?: AbortSignal): Promise<JobStagingRecord[]> {

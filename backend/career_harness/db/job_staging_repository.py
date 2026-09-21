@@ -128,6 +128,59 @@ class JobStagingRepository:
             raise RuntimeError("job source policy disappeared")
         return result
 
+    def update_source_policy(
+        self,
+        source_id: str,
+        *,
+        rate_limit_ms: int | None = None,
+        max_retries: int | None = None,
+        failure_threshold: int | None = None,
+        enabled: bool | None = None,
+        reset_failures: bool = False,
+    ) -> JobSourcePolicy:
+        current = self.ensure_source_policy(source_id)
+        next_rate_limit = current.rate_limit_ms if rate_limit_ms is None else rate_limit_ms
+        next_retries = current.max_retries if max_retries is None else max_retries
+        next_threshold = (
+            current.failure_threshold if failure_threshold is None else failure_threshold
+        )
+        next_disabled = current.disabled if enabled is None else not enabled
+        next_failure_count = 0 if reset_failures or enabled is True else current.failure_count
+        next_error = None if reset_failures or enabled is True else current.last_error
+        policy = JobSourcePolicy(
+            source_id=source_id,
+            rate_limit_ms=next_rate_limit,
+            max_retries=next_retries,
+            failure_threshold=next_threshold,
+            failure_count=next_failure_count,
+            disabled=next_disabled,
+            last_error=next_error,
+            updated_at=current.updated_at,
+        )
+        with self.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE job_source_policy SET rate_limit_ms=:rate_limit_ms, "
+                    "max_retries=:max_retries, failure_threshold=:failure_threshold, "
+                    "failure_count=:failure_count, disabled=:disabled, "
+                    "last_error=:last_error, updated_at=CURRENT_TIMESTAMP "
+                    "WHERE source_id=:source_id"
+                ),
+                {
+                    "source_id": source_id,
+                    "rate_limit_ms": policy.rate_limit_ms,
+                    "max_retries": policy.max_retries,
+                    "failure_threshold": policy.failure_threshold,
+                    "failure_count": policy.failure_count,
+                    "disabled": int(policy.disabled),
+                    "last_error": policy.last_error,
+                },
+            )
+        result = self.get_source_policy(source_id)
+        if result is None:
+            raise RuntimeError("job source policy disappeared")
+        return result
+
     @staticmethod
     def _record(row: Any) -> JobStagingRecord:
         return JobStagingRecord(
@@ -146,6 +199,9 @@ class JobStagingRepository:
             suggested_reasons=tuple(_loads(row["suggested_reasons"], [])),
             gaps=tuple(_loads(row["gaps"], [])),
             score_breakdown=dict(_loads(row["score_breakdown"], {})),
+            ranking_inputs=dict(_loads(row.get("ranking_inputs"), {})),
+            ranking_policy_version=row.get("ranking_policy_version") or "v1",
+            evaluated_at=row.get("evaluated_at") or row["created_at"],
             admitted_job_id=row["admitted_job_id"],
             admitted_opportunity_id=row["admitted_opportunity_id"],
             created_at=row["created_at"],

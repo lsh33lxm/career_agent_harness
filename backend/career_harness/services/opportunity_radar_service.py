@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import time
 import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import Engine, text
+from sqlalchemy.engine import Connection
+from sqlalchemy.orm import Session
 
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef
@@ -41,6 +44,9 @@ def _slug_url(value: str) -> str:
     return re.sub(r"[#?].*$", "", value.strip().lower()).rstrip("/")
 
 
+RANKING_POLICY_VERSION = "v1.1"
+
+
 class OpportunityRadarService:
     def __init__(self, engine: Engine, artifact_store: ArtifactStore) -> None:
         self.engine = engine
@@ -60,13 +66,13 @@ class OpportunityRadarService:
         preferred_locations: tuple[str, ...] = (),
         minimum_salary: float | None = None,
     ) -> tuple[JobStagingRecord, ...]:
+        policy = self.repository.ensure_source_policy(source.source_id)
+        if policy.disabled:
+            raise ValueError(f"job source is disabled after repeated failures: {source.source_id}")
         health = source.health()
         terms = source.terms()
         if health.status != "ok" or terms.status.value == "blocked":
             raise ValueError(f"job source is blocked: {health.message}")
-        policy = self.repository.ensure_source_policy(source.source_id)
-        if policy.disabled:
-            raise ValueError(f"job source is disabled after repeated failures: {source.source_id}")
         raw_records: tuple[RawJobRecord, ...] | None = None
         last_error: Exception | None = None
         for attempt in range(policy.max_retries + 1):
@@ -86,39 +92,105 @@ class OpportunityRadarService:
                 raise RuntimeError("job source failed without an error")
             raise last_error
         now = datetime.now(UTC)
-        run_seed = source.source_id + query + "".join(item.raw_text for item in raw_records)
+        ranking_inputs = self._ranking_inputs(
+            query=query,
+            desired_terms=desired_terms,
+            excluded_terms=excluded_terms,
+            preferred_locations=preferred_locations,
+            minimum_salary=minimum_salary,
+        )
+        run_seed = json.dumps(
+            {
+                "source_id": source.source_id,
+                "query": query,
+                "raw_sha256": [_digest(item.raw_text) for item in raw_records],
+                "ranking_inputs": ranking_inputs,
+                "policy_version": RANKING_POLICY_VERSION,
+                "started_at": now.isoformat(),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
         run_id = f"source_run_{_digest(run_seed)[:32]}"
-        results: list[JobStagingRecord] = []
-        with self.engine.begin() as connection:
-            connection.execute(
-                text(
-                    "INSERT OR IGNORE INTO job_source_run "
-                    "(source_run_id, source_id, query, terms_status, status, record_count, "
-                    "started_at, finished_at) VALUES (:id, :source_id, :query, :terms, "
-                    "'completed', :count, :now, :now)"
-                ),
-                {
-                    "id": run_id,
-                    "source_id": source.source_id,
-                    "query": query,
-                    "terms": terms.status.value,
-                    "count": len(raw_records),
-                    "now": now,
-                },
-            )
-        for raw in raw_records:
-            results.append(
-                self._stage(
-                    source,
-                    run_id,
-                    raw,
-                    desired_terms=desired_terms,
-                    excluded_terms=excluded_terms,
-                    preferred_locations=preferred_locations,
-                    minimum_salary=minimum_salary,
+        try:
+            normalized_records = tuple((raw, source.normalize(raw)) for raw in raw_records)
+            results: list[JobStagingRecord] = []
+            with self.engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "INSERT INTO job_source_run "
+                        "(source_run_id, source_id, query, terms_status, status, record_count, "
+                        "started_at, finished_at, ranking_inputs, ranking_policy_version) "
+                        "VALUES (:id, :source_id, :query, :terms, 'completed', :count, "
+                        ":now, :now, :ranking_inputs, :policy_version)"
+                    ),
+                    {
+                        "id": run_id,
+                        "source_id": source.source_id,
+                        "query": query,
+                        "terms": terms.status.value,
+                        "count": len(raw_records),
+                        "now": now,
+                        "ranking_inputs": _json(ranking_inputs),
+                        "policy_version": RANKING_POLICY_VERSION,
+                    },
                 )
-            )
-        return tuple(results)
+                for raw, normalized in normalized_records:
+                    results.append(
+                        self._stage(
+                            source,
+                            run_id,
+                            raw,
+                            desired_terms=desired_terms,
+                            excluded_terms=excluded_terms,
+                            preferred_locations=preferred_locations,
+                            minimum_salary=minimum_salary,
+                            normalized=normalized,
+                            ranking_inputs=ranking_inputs,
+                            evaluated_at=now,
+                            connection=connection,
+                        )
+                    )
+            return tuple(results)
+        except Exception:
+            with self.engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "INSERT OR IGNORE INTO job_source_run "
+                        "(source_run_id, source_id, query, terms_status, status, record_count, "
+                        "started_at, finished_at, ranking_inputs, ranking_policy_version) "
+                        "VALUES (:id, :source_id, :query, :terms, 'failed', :count, "
+                        ":now, :now, :ranking_inputs, :policy_version)"
+                    ),
+                    {
+                        "id": run_id,
+                        "source_id": source.source_id,
+                        "query": query,
+                        "terms": terms.status.value,
+                        "count": len(raw_records),
+                        "now": now,
+                        "ranking_inputs": _json(ranking_inputs),
+                        "policy_version": RANKING_POLICY_VERSION,
+                    },
+                )
+            raise
+
+    @staticmethod
+    def _ranking_inputs(
+        *,
+        query: str,
+        desired_terms: tuple[str, ...],
+        excluded_terms: tuple[str, ...],
+        preferred_locations: tuple[str, ...],
+        minimum_salary: float | None,
+    ) -> dict[str, object]:
+        return {
+            "query": query,
+            "desired_terms": list(desired_terms),
+            "excluded_terms": list(excluded_terms),
+            "preferred_locations": list(preferred_locations),
+            "minimum_salary": minimum_salary,
+        }
 
     def _stage(
         self,
@@ -130,15 +202,38 @@ class OpportunityRadarService:
         excluded_terms: tuple[str, ...],
         preferred_locations: tuple[str, ...],
         minimum_salary: float | None,
+        normalized: NormalizedJobRecord | None = None,
+        ranking_inputs: dict[str, object] | None = None,
+        evaluated_at: datetime | None = None,
+        connection: Connection | None = None,
     ) -> JobStagingRecord:
-        normalized = source.normalize(raw)
+        normalized = normalized or source.normalize(raw)
+        ranking_inputs = ranking_inputs or self._ranking_inputs(
+            query="",
+            desired_terms=desired_terms,
+            excluded_terms=excluded_terms,
+            preferred_locations=preferred_locations,
+            minimum_salary=minimum_salary,
+        )
+        evaluated_at = evaluated_at or datetime.now(UTC)
         raw_bytes = raw.raw_text.encode("utf-8")
         raw_sha = _digest(raw_bytes)
         url_fingerprint = _digest(_slug_url(normalized.source_url or raw.source_ref))
         normalized_json = normalized.model_dump(mode="json")
         content_fingerprint = _digest(_json(normalized_json))
         duplicate_of = self.repository.find_duplicate(url_fingerprint, content_fingerprint)
-        staging_id = f"staging_{_digest(source.source_id + raw.source_ref + raw_sha)[:32]}"
+        staging_seed = json.dumps(
+            {
+                "source_id": source.source_id,
+                "source_ref": raw.source_ref,
+                "raw_sha256": raw_sha,
+                "ranking_inputs": ranking_inputs,
+                "policy_version": RANKING_POLICY_VERSION,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        staging_id = f"staging_{_digest(staging_seed)[:32]}"
         existing = self.repository.get(staging_id)
         if existing is not None:
             return existing
@@ -155,11 +250,13 @@ class OpportunityRadarService:
             captured_at=raw.captured_at,
             preferred_locations=preferred_locations,
             minimum_salary=minimum_salary,
+            evaluated_at=evaluated_at,
         )
         status = JobStagingStatus.DUPLICATE if duplicate_of else JobStagingStatus.STAGED
         now = raw.captured_at
-        with self.engine.begin() as connection:
-            connection.execute(
+
+        def persist(target: Connection) -> None:
+            target.execute(
                 text(
                     "INSERT OR IGNORE INTO evidence_artifact "
                     "(artifact_id, sha256, media_type, artifact_class, byte_length) "
@@ -167,14 +264,14 @@ class OpportunityRadarService:
                 ),
                 {"id": artifact_id, "sha": artifact.sha256, "length": artifact.byte_length},
             )
-            connection.execute(
+            target.execute(
                 text(
                     "INSERT OR IGNORE INTO evidence_source (source_id, source_type, locator) "
                     "VALUES (:id, :type, :locator)"
                 ),
                 {"id": source_id, "type": source.source_id, "locator": raw.source_ref},
             )
-            connection.execute(
+            target.execute(
                 text(
                     "INSERT OR IGNORE INTO source_snapshot "
                     "(snapshot_id, source_id, captured_at, artifact_id) "
@@ -187,7 +284,7 @@ class OpportunityRadarService:
                     "artifact_id": artifact_id,
                 },
             )
-            connection.execute(
+            target.execute(
                 text(
                     "INSERT OR IGNORE INTO evidence_ref "
                     "(evidence_ref_id, snapshot_id, artifact_id, selector) "
@@ -195,17 +292,18 @@ class OpportunityRadarService:
                 ),
                 {"id": evidence_ref_id, "snapshot_id": snapshot_id, "artifact_id": artifact_id},
             )
-            connection.execute(
+            target.execute(
                 text(
                     "INSERT INTO job_staging_record "
                     "(staging_id, source_run_id, source_id, source_ref, raw_artifact_id, "
                     "raw_sha256, url_fingerprint, content_fingerprint, normalized, terms_status, "
                     "status, duplicate_of, suggested_score, suggested_reasons, gaps, "
-                    "score_breakdown, "
+                    "score_breakdown, ranking_inputs, ranking_policy_version, evaluated_at, "
                     "admitted_job_id, admitted_opportunity_id, created_at) VALUES "
                     "(:id, :run_id, :source_id, :source_ref, :artifact_id, :raw_sha, :url_fp, "
                     ":content_fp, :normalized, :terms, :status, :duplicate_of, :score, :reasons, "
-                    ":gaps, :score_breakdown, NULL, NULL, :created_at)"
+                    ":gaps, :score_breakdown, :ranking_inputs, :policy_version, :evaluated_at, "
+                    "NULL, NULL, :created_at)"
                 ),
                 {
                     "id": staging_id,
@@ -224,8 +322,38 @@ class OpportunityRadarService:
                     "reasons": _json(list(reasons)),
                     "gaps": _json(list(gaps)),
                     "score_breakdown": _json(score_breakdown),
+                    "ranking_inputs": _json(ranking_inputs),
+                    "policy_version": RANKING_POLICY_VERSION,
+                    "evaluated_at": evaluated_at,
                     "created_at": now,
                 },
+            )
+        if connection is None:
+            with self.engine.begin() as owned_connection:
+                persist(owned_connection)
+        else:
+            persist(connection)
+        if connection is not None:
+            return JobStagingRecord(
+                staging_id=staging_id,
+                source_id=source.source_id,
+                source_ref=raw.source_ref,
+                raw_artifact_id=artifact_id,
+                raw_sha256=raw_sha,
+                url_fingerprint=url_fingerprint,
+                content_fingerprint=content_fingerprint,
+                normalized=normalized,
+                terms_status=source.terms().status,
+                status=status,
+                duplicate_of=duplicate_of,
+                suggested_score=score,
+                suggested_reasons=reasons,
+                gaps=gaps,
+                score_breakdown=score_breakdown,
+                ranking_inputs=ranking_inputs,
+                ranking_policy_version=RANKING_POLICY_VERSION,
+                evaluated_at=evaluated_at,
+                created_at=now,
             )
         result = self.repository.get(staging_id)
         if result is None:
@@ -235,16 +363,33 @@ class OpportunityRadarService:
     def source_policies(self) -> tuple[JobSourcePolicy, ...]:
         return self.repository.list_source_policies()
 
-    def admit(self, staging_id: str, *, actor: str = "user") -> OpportunityAdmissionCommit:
+    def update_source_policy(
+        self,
+        source_id: str,
+        *,
+        rate_limit_ms: int | None = None,
+        max_retries: int | None = None,
+        failure_threshold: int | None = None,
+        enabled: bool | None = None,
+        reset_failures: bool = False,
+    ) -> JobSourcePolicy:
+        return self.repository.update_source_policy(
+            source_id,
+            rate_limit_ms=rate_limit_ms,
+            max_retries=max_retries,
+            failure_threshold=failure_threshold,
+            enabled=enabled,
+            reset_failures=reset_failures,
+        )
+
+    def admit(self, staging_id: str, *, actor: str | None = None) -> OpportunityAdmissionCommit:
         if actor != "user":
             raise ValueError("only the user may admit a staged job")
         record = self.repository.get(staging_id)
         if record is None:
             raise KeyError("job staging record not found")
-        if record.status is JobStagingStatus.DUPLICATE:
-            raise ValueError("duplicate staging record cannot be admitted")
-        if record.status is JobStagingStatus.ADMITTED:
-            raise ValueError("staging record has already been admitted")
+        if record.status is not JobStagingStatus.STAGED:
+            raise ValueError(f"only staged records can be admitted (status={record.status.value})")
         digest = _digest(staging_id)
         job_id = f"job_{digest[:32]}"
         opportunity_id = f"opportunity_{digest[:32]}"
@@ -253,29 +398,32 @@ class OpportunityRadarService:
         job_command = self._command(
             f"command_job_{digest[:32]}", EntityKind.JOB, job_id, "radar-job"
         )
-        job_commit = self.jobs.record_revision(
-            job_command,
-            content_sha256=record.raw_sha256,
-            source_evidence_refs=(evidence_ref_id,),
-        )
         opportunity_command = self._command(
             f"command_opportunity_{digest[:32]}",
             EntityKind.OPPORTUNITY,
             opportunity_id,
             "radar-opportunity",
         )
-        admitted = self.opportunities.admit_manually(
-            opportunity_command,
-            JobRef(job_id=job_id, revision=job_commit.job.revision),
-            opportunity_id=opportunity_id,
-            decision_id=decision_id,
-            reason=f"User admitted staging record {staging_id}",
-        )
-        with self.engine.begin() as connection:
-            connection.execute(
+        with Session(self.engine) as session, session.begin():
+            job_commit = self.jobs.record_revision(
+                job_command,
+                content_sha256=record.raw_sha256,
+                source_evidence_refs=(evidence_ref_id,),
+                session=session,
+            )
+            admitted = self.opportunities.admit_manually(
+                opportunity_command,
+                JobRef(job_id=job_id, revision=job_commit.job.revision),
+                opportunity_id=opportunity_id,
+                decision_id=decision_id,
+                reason=f"User admitted staging record {staging_id}",
+                session=session,
+            )
+            session.execute(
                 text(
                     "UPDATE job_staging_record SET status='admitted', admitted_job_id=:job_id, "
-                    "admitted_opportunity_id=:opportunity_id WHERE staging_id=:id"
+                    "admitted_opportunity_id=:opportunity_id WHERE staging_id=:id "
+                    "AND status='staged'"
                 ),
                 {"job_id": job_id, "opportunity_id": opportunity_id, "id": staging_id},
             )
@@ -309,6 +457,7 @@ class OpportunityRadarService:
         captured_at: datetime,
         preferred_locations: tuple[str, ...],
         minimum_salary: float | None,
+        evaluated_at: datetime,
     ) -> tuple[float, tuple[str, ...], tuple[str, ...], dict[str, float]]:
         fields = (
             normalized.title,
@@ -324,7 +473,7 @@ class OpportunityRadarService:
         deal_breakers = tuple(term for term in excluded_terms if term.lower() in haystack)
         deal_breaker_score = 0.0 if deal_breakers else 1.0
         capability_score = 0.5 if not desired_terms else len(matched) / len(desired_terms)
-        location_score = 0.5 if not normalized.location else 0.0
+        location_score = 0.5
         if preferred_locations:
             location_score = (
                 1.0
@@ -339,7 +488,7 @@ class OpportunityRadarService:
                 for value in re.findall(r"\d[\d,]*(?:\.\d+)?", normalized.salary or "")
             ]
             salary_score = (
-                min(1.0, max(amounts, default=0.0) / minimum_salary)
+                min(1.0, min(amounts, default=0.0) / minimum_salary)
                 if minimum_salary > 0
                 else 0.0
             )
@@ -347,7 +496,7 @@ class OpportunityRadarService:
         if normalized.deadline_at is not None:
             days = (normalized.deadline_at - captured_at).total_seconds() / 86400
             deadline_score = 0.0 if days < 0 else max(0.0, min(1.0, 1 / (1 + days / 7)))
-        age_days = max(0.0, (datetime.now(UTC) - captured_at).total_seconds() / 86400)
+        age_days = max(0.0, (evaluated_at - captured_at).total_seconds() / 86400)
         freshness_score = max(0.0, min(1.0, 1 - age_days / 30))
         breakdown = {
             "deal_breaker": round(deal_breaker_score, 3),

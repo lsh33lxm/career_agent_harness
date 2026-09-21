@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from sqlalchemy.orm import Session
+
 from career_harness.core.capability import CapabilityEvidenceScope
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, FrozenModel, OpaqueId
@@ -39,6 +41,7 @@ class JobService:
         content_sha256: str,
         source_evidence_refs: tuple[OpaqueId, ...],
         schema_version: int = 1,
+        session: Session | None = None,
     ) -> JobRevisionCommit:
         self._require_target(command, EntityKind.JOB)
         job = JobRevision(
@@ -59,8 +62,14 @@ class JobService:
                 "source_evidence_count": len(source_evidence_refs),
             },
             transactional_write=JobRevisionWrite(job),
+            session=session,
         )
-        return JobRevisionCommit(job=self._require_job(job.job_id, commit.revision), commit=commit)
+        persisted = (
+            job
+            if session is not None
+            else self._require_job(job.job_id, commit.revision)
+        )
+        return JobRevisionCommit(job=persisted, commit=commit)
 
     def propose_requirement(
         self,

@@ -53,6 +53,8 @@ export function JobRadarPanel() {
         raw_text: String(data.get("rawText")),
         desired_terms: terms(data.get("desiredTerms")),
         excluded_terms: terms(data.get("excludedTerms")),
+        preferred_locations: terms(data.get("preferredLocations")),
+        minimum_salary: data.get("minimumSalary") ? Number(data.get("minimumSalary")) : undefined,
       });
       form.reset();
       await load();
@@ -89,6 +91,8 @@ export function JobRadarPanel() {
         <label><span>来源</span><input name="sourceRef" required placeholder="https://… 或 manual://…" /></label>
         <label><span>希望匹配</span><input name="desiredTerms" placeholder="Python, SQLite" /></label>
         <label><span>排除条件</span><input name="excludedTerms" placeholder="On-site" /></label>
+        <label><span>偏好地点</span><input name="preferredLocations" placeholder="Remote, Shanghai" /></label>
+        <label><span>最低薪资</span><input name="minimumSalary" type="number" min="1" step="1" placeholder="160000" /></label>
         <label className="radar-import__text"><span>职位原文</span><textarea name="rawText" required rows={4} /></label>
         <button className="primary-command" type="submit" disabled={importing}>
           <Plus size={16} aria-hidden="true" />{importing ? "暂存中…" : "导入暂存区"}
@@ -103,7 +107,7 @@ export function JobRadarPanel() {
             <article className="radar-record" key={record.staging_id}>
               <div><h3>{record.normalized.title}</h3><p>{record.normalized.company}{record.normalized.location ? ` · ${record.normalized.location}` : ""}</p></div>
               <div className="radar-score"><strong>{Math.round(record.suggested_score * 100)}</strong><span>建议匹配</span></div>
-              <div className="radar-notes"><span>{record.status}</span><span>能力 {Math.round((record.score_breakdown.capability_match ?? 0) * 100)} · 证据 {Math.round((record.score_breakdown.evidence_coverage ?? 0) * 100)}</span>{record.gaps.length > 0 && <span>缺口：{record.gaps.join("、")}</span>}{record.duplicate_of && <span>重复：{record.duplicate_of}</span>}</div>
+              <div className="radar-notes"><span>{record.status}</span><span>能力 {Math.round((record.score_breakdown.capability_match ?? 0) * 100)} · 证据 {Math.round((record.score_breakdown.evidence_coverage ?? 0) * 100)} · 地点 {Math.round((record.score_breakdown.location ?? 0) * 100)} · 薪资 {Math.round((record.score_breakdown.salary ?? 0) * 100)}</span><span>截止 {Math.round((record.score_breakdown.deadline ?? 0) * 100)} · 新鲜度 {Math.round((record.score_breakdown.freshness ?? 0) * 100)}</span>{record.gaps.length > 0 && <span>缺口：{record.gaps.join("、")}</span>}{record.duplicate_of && <span>重复：{record.duplicate_of}</span>}</div>
               {record.status === "staged" && <button className="secondary-command" type="button" disabled={admitting === record.staging_id} onClick={() => void admit(record)}><Check size={15} />{admitting === record.staging_id ? "纳入中…" : "纳入机会"}</button>}
             </article>
           ))}

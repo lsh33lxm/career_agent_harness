@@ -37,6 +37,14 @@ class FixtureSearchRequest(FrozenModel):
     minimum_salary: float | None = Field(default=None, gt=0)
 
 
+class SourcePolicyUpdateRequest(FrozenModel):
+    rate_limit_ms: int | None = Field(default=None, ge=0, le=300_000)
+    max_retries: int | None = Field(default=None, ge=0, le=5)
+    failure_threshold: int | None = Field(default=None, ge=1, le=20)
+    enabled: bool | None = None
+    reset_failures: bool = False
+
+
 @dataclass(frozen=True, slots=True)
 class JobRadarApi:
     service: OpportunityRadarService
@@ -99,6 +107,36 @@ def create_job_radar_router(api: JobRadarApi) -> APIRouter:
     @router.get("/source-policies", response_model=list[JobSourcePolicy])
     def source_policies() -> tuple[JobSourcePolicy, ...]:
         return api.service.source_policies()
+
+    @router.post("/source-policies/{source_id}", response_model=JobSourcePolicy)
+    def update_source_policy(
+        request: SourcePolicyUpdateRequest,
+        source_id: str = Path(min_length=3, max_length=128),
+    ) -> JobSourcePolicy:
+        try:
+            return api.service.update_source_policy(
+                source_id,
+                rate_limit_ms=request.rate_limit_ms,
+                max_retries=request.max_retries,
+                failure_threshold=request.failure_threshold,
+                enabled=request.enabled,
+                reset_failures=request.reset_failures,
+            )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/source-policies/{source_id}/enable", response_model=JobSourcePolicy)
+    def enable_source_policy(
+        source_id: str = Path(min_length=3, max_length=128),
+    ) -> JobSourcePolicy:
+        try:
+            return api.service.update_source_policy(
+                source_id,
+                enabled=True,
+                reset_failures=True,
+            )
+        except Exception as error:
+            raise _error(error) from error
 
     @router.post(
         "/staging/{staging_id}/admit",

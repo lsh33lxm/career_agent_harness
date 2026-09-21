@@ -103,3 +103,19 @@
 - 状态：ACCEPTED
 - 决定：Job staging 只保存 explainable score breakdown；deal-breaker、能力匹配、证据覆盖、兴趣/用户优先级分离、地点、薪资、截止期和新鲜度均为建议投影。未提供个人证据时 evidence coverage 为 0，source 连续失败按独立 policy retry 后禁用；不改变 Job/Opportunity canonical truth。
 - 原因：让排序可解释、可重放、可安全降级，避免外部职位输入或出现次数自动提升职业事实与 User Priority。
+
+## D-2.0-015 — Opportunity hardening binds ranking inputs to source provenance and user admission
+
+- 状态：`ACCEPTED`
+- 日期：2026-09-21
+- 决定：ranking 的 deadline、location、salary、freshness、deal-breaker、capability match、evidence coverage 和 interest/user-priority 输入进入 staging/source-run provenance；采集失败不创建 completed run 或 staging record。source policy 的 rate limit、retry budget、failure threshold、disabled state 和 last error 按来源独立持久化并可恢复。只有显式 `actor=user` 的原子 admission 能创建 Job/Opportunity。
+- 原因：外部职位输入与排序结果只能是可解释的建议投影，不能伪造采集成功、提升个人事实或改变 User Priority；原子 admission 还要避免重复/部分写入。
+- 影响：`0019`/`0020` additive migration 保留既有 CHECK 约束；manual/offline source 可重放，第三方 crawler 仍需单独条款、许可和网络授权。
+
+## D-2.0-016 — Lifecycle observability gates replacement and recommends, but never performs, rollback
+
+- 状态：`ACCEPTED`
+- 日期：2026-09-21
+- 决定：每次 plugin run 持久化 latency、output/provenance hash、error code 和 output size；candidate update preview 离线扫描 SPDX/license、依赖许可证、声明权限和安全边界，并在 deterministic shadow run 中比较 structured output、error behavior、provenance 和 latency。审计摘要与 observation window 生成 rollback recommendation；recommendation 的 `automatic` 永远为 `false`，实际 switch/rollback 仍需显式用户动作。
+- 原因：替换决策必须有可见、可重放的质量证据，同时不能让 telemetry 或 scan 结果越过用户授权边界自动接管 active pin。
+- 影响：`0021_plugin_lifecycle_observability` 为 additive/reversible migration；未知许可证、扫描失败、权限升级、shadow mismatch 或 latency regression 会 quarantine/reject，旧 release、run、audit 和 artifact 保留以支持恢复。

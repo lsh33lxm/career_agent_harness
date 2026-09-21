@@ -18,7 +18,17 @@
 | B Career Knowledge | DONE (completion audit passed) | deterministic hybrid search + flagged-content quarantine |
 | C Resume Studio | DONE (completion audit passed) | sandbox renderer、draft proposal/review、immutable render review 与 provenance |
 | D Opportunity Radar | DONE (completion audit passed) | explainable multi-dimensional ranking + per-source retry/rate/disable policy |
-| E Lifecycle / Replacement | AUDIT REQUIRED | shadow metrics、license/dependency scan 与 rollback recommendation 尚需核验/补齐 |
+| E Lifecycle / Replacement | DONE (completion audit passed) | shadow metrics、license/dependency scan、preview-gated switch 与 rollback recommendation |
+
+## Final audit
+
+- 状态：DONE — Slice A–E 均已完成 local/offline Definition of Done；当前没有阻塞本地继续工作的 P0/P1。
+- Backend：`646 passed, 5 skipped`；跳过项均是 Windows symlink 创建权限/能力限制。
+- Frontend：`17 test files, 58 passed`；Vite production build passed。
+- Quality：Ruff `backend tests migrations` passed；`git diff --check` passed。
+- Recovery：migration upgrade/downgrade、backup/restore、plugin lifecycle rehearsal 均通过；Legacy Agent Radar 仍只读。
+- External boundary：真实 marketplace 下载、第三方 crawler/portal、Typst compiler、Feishu/Gmail/Notion/ATS 写入仍按 blocker ledger 保持隔离或 proposal-only。
+- 当前入口：A–E 已收口；后续工作只从已登记 external boundary 获得授权后继续，或由新的产品授权开启下一切片。
 
 ## Slice A checklist
 
@@ -80,7 +90,7 @@
 - External actions：JobSpy/WebMagic/portal crawler remains quarantined until license/ToS/network authority; manual/offline sources are the only active adapters
 - Next：Slice E completion audit
 
-## Recovery entry
+## Recovery entry (historical)
 
 Start with `git status --short --branch`, inspect this file, then continue at the current Slice entry. Record every blocker in `BLOCKERS.md` and every architectural decision in `DECISIONS.md`.
 
@@ -104,11 +114,11 @@ Start with `git status --short --branch`, inspect this file, then continue at th
 - Review：APPROVE；P0/P1 none。真实 marketplace 下载与 external-write adapters 仍需单独授权
 - Next：A-E final audit；后续只处理已登记 external blockers 或新的产品授权
 
-## Completion audit correction
+## Completion audit correction (resolved)
 
 - 2026-09-21：逐条对照长期执行提示词后，确认先前 A-E `DONE` 结论使用了弱于文档要求的验收证据。
 - 已确认缺口：Slice B 只有 lexical search；Slice C 尚未证明第二隔离 renderer、自动保存与 drafter-reviewer；Slice D 尚未完整覆盖 deadline/location/salary/evidence ranking 和 per-source policy；Slice E 尚未完整覆盖 latency/provenance/error comparison、license/dependency scan 与 automatic rollback recommendation。
-- 处理：保留所有已通过实现与提交，从 Slice B 开始按原顺序补齐；在完成审计通过前不再声称 A-E 全部完成。
+- 处理：保留所有已通过实现与提交，按原顺序补齐 B–E 审计缺口；B–E completion audit 已全部通过，最终状态见上方 Final audit。
 
 ## Slice B completion audit
 
@@ -116,4 +126,4 @@ Start with `git status --short --branch`, inspect this file, then continue at th
 - 补齐：deterministic local character n-gram vector cosine + lexical hybrid score；API/result 显式返回 lexical/semantic 分量和 search mode。
 - 安全：prompt-injection flagged revision 默认不进入搜索或 plugin result；只有显式本地审核请求可包含。
 - Verification：focused knowledge/API/contract `11 passed`；backend full `630 passed, 5 skipped`；frontend `58 passed`；Ruff、build、diff check 通过。
-- Next：Slice C completion audit。
+- Next：Slice C completion audit（已在后续 checkpoint 完成）。

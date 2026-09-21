@@ -24,3 +24,8 @@
 - A-E local/offline slices 全部完成；真实 marketplace、第三方 crawler 与 external-write adapters 保持 blocked，等待独立授权。
 - Completion audit correction：上述“全部完成”结论撤回。逐条审计发现 B-E 仍有权威执行提示词明确要求但未被实现或验证的项目；从 Slice B deterministic hybrid search 继续补齐。
 - Slice B completion audit 补齐 deterministic hybrid lexical/vector scoring、可解释 score 分量与 prompt-injection 默认 quarantine；focused knowledge/API/contract `11 passed`，backend full `630 passed, 5 skipped`，frontend `58 passed`，Ruff/build/diff check 通过。
+- Slice C completion audit 补齐隔离 renderer contract、compiler provenance、local draft 的 EvidenceRef promotion gate 和 immutable render review；Typst 在无 sandbox/compiler 时明确 disabled，不伪造成功。
+- Slice D hardening 补齐 deadline/location/salary/freshness 与 evidence-aware ranking provenance、per-source retry/rate/disable policy、失败采集 fail-loud，以及显式 user-only atomic admission。
+- Slice E completion audit 补齐 run latency/output/provenance/error metrics、离线 license/dependency/security scan、shadow output/error/provenance/latency comparison、audit summary 和 non-automatic rollback recommendation；migration `0021_plugin_lifecycle_observability` upgrade/downgrade 与 lifecycle rehearsal 通过。
+- 最终独立回归：backend `646 passed, 5 skipped`；frontend `17 test files, 58 passed`；Vite build、Ruff `backend tests migrations`、`git diff --check` 全部通过。A–E 当前状态为 DONE（local/offline），真实 marketplace、第三方 crawler 与 external-write adapters 继续按 blocker ledger 隔离。
+- 自治记录完成收口：更新 `AUTONOMOUS_EXECUTION_STATE.md`、`DECISIONS.md`、`BLOCKERS.md`，Git HEAD 保持 `164c440`。

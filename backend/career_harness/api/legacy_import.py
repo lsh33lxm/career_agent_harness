@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi import Path as ApiPath
 
 from career_harness.core.common import FrozenModel
+from career_harness.core.connectors.models import SyncMode
 from career_harness.services.legacy_import_service import (
     LegacyImportReport,
     LegacyImportService,
@@ -15,6 +16,9 @@ from career_harness.services.legacy_import_service import (
     LegacyJobDetail,
     LegacyJobSummary,
     LegacyKnowledgeOverview,
+)
+from career_harness.services.source_connector_service import (
+    LegacyAgentRadarConnectorService,
 )
 
 
@@ -25,6 +29,7 @@ class LegacyImportRunRequest(FrozenModel):
 @dataclass(frozen=True, slots=True)
 class LegacyImportApi:
     service: LegacyImportService
+    connector_service: LegacyAgentRadarConnectorService | None = None
 
 
 def _error(error: Exception) -> HTTPException:
@@ -53,6 +58,17 @@ def create_legacy_import_router(api: LegacyImportApi) -> APIRouter:
     )
     def run_import(request: LegacyImportRunRequest) -> LegacyImportReport:
         try:
+            if api.connector_service is not None:
+                root = api.service.resolve_source_root(request.source_root)
+                connector = api.connector_service.get_or_create(
+                    display_name="Legacy Agent Radar 历史数据",
+                    root_path=str(root),
+                )
+                api.connector_service.sync(connector.connector_id, SyncMode.INCREMENTAL)
+                report = api.service.latest_report()
+                if report is None:
+                    raise RuntimeError("Legacy import completed without an audit report")
+                return report
             return api.service.run(request.source_root)
         except Exception as error:
             raise _error(error) from error

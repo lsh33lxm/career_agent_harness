@@ -16,6 +16,7 @@ from career_harness.core.connectors.models import (
 )
 from career_harness.core.evidence.models import ArtifactClass
 from career_harness.db.source_connector_repository import SourceConnectorRepository
+from career_harness.services.legacy_import_service import LegacyImportService
 from career_harness.storage import ArtifactStore
 
 MAX_FILES_PER_SYNC = 10_000
@@ -41,12 +42,16 @@ class LocalFolderConnectorService:
 
     def test_connection(self, connector_id: str) -> dict[str, Any]:
         connector = self.repository.get(connector_id)
+        if connector.connector_type != "local_folder":
+            raise ValueError("source connector is not a local folder")
         root = self._root(str(connector.config["root_path"]))
         self._verify_root(root)
         return {"ok": True, "connector_type": connector.connector_type, "root": str(root)}
 
     def sync(self, connector_id: str, mode: SyncMode = SyncMode.INCREMENTAL) -> SyncRun:
         connector = self.repository.get(connector_id)
+        if connector.connector_type != "local_folder":
+            raise ValueError("source connector is not a local folder")
         if connector.status is ConnectorStatus.PAUSED:
             raise ValueError("paused source connector cannot sync")
         run = self.repository.start_run(connector, mode)
@@ -155,3 +160,100 @@ class LocalFolderConnectorService:
                         if len(result) > MAX_FILES_PER_SYNC:
                             raise ValueError("source connector exceeds the 10000 file limit")
         return tuple(sorted(result, key=lambda item: item.as_posix().casefold()))
+
+
+class LegacyAgentRadarConnectorService:
+    def __init__(
+        self,
+        repository: SourceConnectorRepository,
+        legacy_import: LegacyImportService,
+    ) -> None:
+        self.repository = repository
+        self.legacy_import = legacy_import
+
+    def create(self, *, display_name: str, root_path: str) -> SourceConnector:
+        cleaned_name = display_name.strip()
+        if not cleaned_name:
+            raise ValueError("connector display name is required")
+        requested_root = Path(root_path)
+        if not requested_root.is_absolute():
+            raise ValueError("Legacy Agent Radar connector requires an absolute path")
+        inspection = self.legacy_import.inspect_source(requested_root)
+        return self.repository.create_legacy_agent_radar(
+            display_name=cleaned_name,
+            root_path=str(inspection["root"]),
+        )
+
+    def get_or_create(self, *, display_name: str, root_path: str) -> SourceConnector:
+        cleaned_name = display_name.strip()
+        if not cleaned_name:
+            raise ValueError("connector display name is required")
+        requested_root = Path(root_path)
+        if not requested_root.is_absolute():
+            raise ValueError("Legacy Agent Radar connector requires an absolute path")
+        inspection = self.legacy_import.inspect_source(requested_root)
+        canonical_root = os.path.normcase(str(inspection["root"]))
+        for connector in self.repository.list():
+            if connector.connector_type != "legacy_agent_radar":
+                continue
+            configured_root = os.path.normcase(str(connector.config.get("root_path", "")))
+            if configured_root == canonical_root:
+                return connector
+        return self.repository.create_legacy_agent_radar(
+            display_name=cleaned_name,
+            root_path=str(inspection["root"]),
+        )
+
+    def test_connection(self, connector_id: str) -> dict[str, Any]:
+        connector = self._connector(connector_id)
+        inspection = self.legacy_import.inspect_source(
+            Path(str(connector.config["root_path"]))
+        )
+        return {
+            "ok": True,
+            "connector_type": connector.connector_type,
+            **inspection,
+        }
+
+    def sync(self, connector_id: str, mode: SyncMode = SyncMode.INCREMENTAL) -> SyncRun:
+        connector = self._connector(connector_id)
+        if connector.status is ConnectorStatus.PAUSED:
+            raise ValueError("paused source connector cannot sync")
+        run = self.repository.start_run(connector, mode)
+        try:
+            report = self.legacy_import.run(Path(str(connector.config["root_path"])))
+            totals = report.totals
+            if totals["failed_count"]:
+                failures = [
+                    reason
+                    for file_report in report.files
+                    for reason in file_report.failures
+                ]
+                detail = failures[0] if failures else "unknown import failure"
+                raise RuntimeError(f"Legacy import reported failures: {detail}")
+            cursor = {
+                "batch_id": report.batch_id,
+                "completed_at": report.finished_at.isoformat(),
+                "source_signature": report.source_signature_after,
+                "read_count": totals["read_count"],
+                "duplicate_count": totals["duplicate_count"],
+            }
+            return self.repository.complete_run(
+                run.sync_run_id,
+                cursor,
+                SyncStats(
+                    created=totals["new_count"],
+                    updated=totals["updated_count"],
+                    skipped=totals["unchanged_count"],
+                    failed=totals["failed_count"],
+                ),
+            )
+        except Exception as error:
+            self.repository.fail_run(run.sync_run_id, str(error))
+            raise
+
+    def _connector(self, connector_id: str) -> SourceConnector:
+        connector = self.repository.get(connector_id)
+        if connector.connector_type != "legacy_agent_radar":
+            raise ValueError("source connector is not Legacy Agent Radar")
+        return connector

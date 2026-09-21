@@ -58,6 +58,37 @@ class SourceConnectorRepository:
         conflict_policy: ConflictPolicy = ConflictPolicy.DEFER,
         delete_policy: DeletePolicy = DeletePolicy.MARK_DELETED,
     ) -> SourceConnector:
+        return self._create(
+            connector_type="local_folder",
+            display_name=display_name,
+            config={"root_path": root_path},
+            conflict_policy=conflict_policy,
+            delete_policy=delete_policy,
+        )
+
+    def create_legacy_agent_radar(
+        self,
+        *,
+        display_name: str,
+        root_path: str,
+    ) -> SourceConnector:
+        return self._create(
+            connector_type="legacy_agent_radar",
+            display_name=display_name,
+            config={"root_path": root_path},
+            conflict_policy=ConflictPolicy.DEFER,
+            delete_policy=DeletePolicy.KEEP,
+        )
+
+    def _create(
+        self,
+        *,
+        connector_type: str,
+        display_name: str,
+        config: dict[str, Any],
+        conflict_policy: ConflictPolicy,
+        delete_policy: DeletePolicy,
+    ) -> SourceConnector:
         connector_id = f"connector_{uuid.uuid4().hex}"
         now = datetime.now(UTC)
         with self.engine.begin() as connection:
@@ -66,18 +97,25 @@ class SourceConnectorRepository:
                     "INSERT INTO source_connector "
                     "(connector_id,connector_type,display_name,status,config,auth_schema,"
                     "conflict_policy,delete_policy,created_at,updated_at) VALUES "
-                    "(:id,'local_folder',:name,'active',:config,'{}',:conflict,:delete,:now,:now)"
+                    "(:id,:type,:name,'active',:config,'{}',:conflict,:delete,:now,:now)"
                 ),
                 {
                     "id": connector_id,
+                    "type": connector_type,
                     "name": display_name.strip(),
-                    "config": _json({"root_path": root_path}),
+                    "config": _json(config),
                     "conflict": conflict_policy.value,
                     "delete": delete_policy.value,
                     "now": now,
                 },
             )
-            self._event(connection, "source.connector.created", connector_id, {}, now)
+            self._event(
+                connection,
+                "source.connector.created",
+                connector_id,
+                {"connector_type": connector_type},
+                now,
+            )
         return self.get(connector_id)
 
     def get(self, connector_id: str) -> SourceConnector:

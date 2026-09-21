@@ -60,7 +60,10 @@ from career_harness.services.opportunity_radar_service import OpportunityRadarSe
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.plugin_service import PluginLifecycleManager
 from career_harness.services.resume_studio_service import ResumeStudioService
-from career_harness.services.source_connector_service import LocalFolderConnectorService
+from career_harness.services.source_connector_service import (
+    LegacyAgentRadarConnectorService,
+    LocalFolderConnectorService,
+)
 from career_harness.services.task_service import RegisteredTaskHandler, TaskService
 from career_harness.services.today_service import TodayService
 from career_harness.storage import ArtifactStore
@@ -93,6 +96,9 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
     source_connector_service = LocalFolderConnectorService(
         source_connector_repository, ArtifactStore(active_paths.artifacts)
     )
+    legacy_connector_service = LegacyAgentRadarConnectorService(
+        source_connector_repository, legacy_import_service
+    )
     task_service = TaskService(
         task_repository,
         handlers=(
@@ -105,6 +111,14 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
                 task_type="source.local_folder_sync",
                 stage="source_sync",
                 handler=lambda payload: source_connector_service.sync(
+                    str(payload["connector_id"]),
+                    SyncMode(str(payload.get("mode", "incremental"))),
+                ).model_dump(mode="json"),
+            ),
+            RegisteredTaskHandler(
+                task_type="source.legacy_agent_radar_sync",
+                stage="source_sync",
+                handler=lambda payload: legacy_connector_service.sync(
                     str(payload["connector_id"]),
                     SyncMode(str(payload.get("mode", "incremental"))),
                 ).model_dump(mode="json"),
@@ -163,7 +177,9 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         job_radar_api=JobRadarApi(
             OpportunityRadarService(engine, ArtifactStore(active_paths.artifacts))
         ),
-        legacy_import_api=LegacyImportApi(legacy_import_service),
+        legacy_import_api=LegacyImportApi(
+            legacy_import_service, legacy_connector_service
+        ),
         model_provider_api=ModelProviderApi(
             ModelProviderService(
                 ModelProviderRepository(engine),
@@ -180,7 +196,10 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         memory_api=MemoryApi(MemoryRepository(engine)),
         task_api=TaskApi(task_service, task_repository),
         source_connector_api=SourceConnectorApi(
-            source_connector_service, source_connector_repository, task_service
+            source_connector_service,
+            source_connector_repository,
+            task_service,
+            legacy_connector_service,
         ),
         tool_api=ToolApi(
             registry=tool_registry,

@@ -441,6 +441,23 @@ class LegacyImportService:
             raise ValueError("Legacy Agent Radar 路径不是目录")
         return root
 
+    def inspect_source(self, source_root: Path) -> dict[str, Any]:
+        if source_root.is_symlink():
+            raise ValueError("Legacy Agent Radar 根目录不能是符号链接")
+        root = self.resolve_source_root(source_root)
+        for spec in SOURCE_SPECS:
+            path = root / Path(spec.relative_path)
+            if path.is_symlink():
+                raise ValueError(f"Legacy 文件不能是符号链接：{spec.relative_path}")
+            if not path.is_file():
+                raise FileNotFoundError(f"缺少 Legacy 文件：{spec.relative_path}")
+            path.resolve(strict=True).relative_to(root)
+        return {
+            "root": str(root),
+            "source_signature": source_metadata_signature(root),
+            "required_file_count": len(SOURCE_SPECS),
+        }
+
     def status(self) -> LegacyImportStatus:
         latest = self.latest_report()
         configured = (

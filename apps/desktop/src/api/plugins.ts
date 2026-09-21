@@ -26,4 +26,10 @@ export interface PluginCatalogItem {
   manifest: PluginManifest;
   installed: boolean;
   installation: PluginInstallation | null;
+  release_scan?: {
+    overall: string;
+    license?: { status?: string; spdx?: string };
+    dependencies?: { status?: string };
+    security?: { status?: string };
+  };
 }

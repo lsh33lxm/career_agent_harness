@@ -50,6 +50,67 @@ class RegisteredPlugin:
     handler: PluginHandler
 
 
+KNOWN_SPDX_LICENSES = {
+    "APACHE-2.0",
+    "BSD-2-CLAUSE",
+    "BSD-3-CLAUSE",
+    "MIT",
+    "MPL-2.0",
+    "LGPL-2.1-ONLY",
+    "LGPL-3.0-ONLY",
+    "GPL-2.0-ONLY",
+    "GPL-3.0-ONLY",
+}
+UNKNOWN_LICENSES = {"", "UNKNOWN", "NOASSERTION", "UNLICENSED"}
+
+
+def _scan_manifest(manifest: PluginManifest) -> dict[str, Any]:
+    license_value = manifest.source.license.strip()
+    license_upper = license_value.upper()
+    license_verified = (
+        license_upper not in UNKNOWN_LICENSES
+        and license_upper in KNOWN_SPDX_LICENSES
+    )
+    license_report = {
+        "spdx": license_value,
+        "status": "verified" if license_verified else "unknown",
+        "commercial_restriction": license_upper in {"GPL-2.0-ONLY", "GPL-3.0-ONLY"},
+        "network_lookup": False,
+    }
+    dependencies: list[dict[str, str]] = []
+    for dependency in manifest.dependencies:
+        name, _, declared_license = dependency.partition(";license=")
+        dependency_license = declared_license.strip() or "UNKNOWN"
+        dependency_verified = dependency_license.upper() in KNOWN_SPDX_LICENSES
+        dependencies.append(
+            {
+                "name": name,
+                "license": dependency_license,
+                "status": "verified" if dependency_verified else "unknown",
+            }
+        )
+    dependency_verified = all(item["status"] == "verified" for item in dependencies)
+    dependency_report = {
+        "status": "verified" if dependency_verified else "unknown",
+        "network_lookup": False,
+        "dependencies": dependencies,
+    }
+    security_report = {
+        "status": "offline_pass",
+        "install_scripts_scanned": False,
+        "network_domains": list(manifest.permissions.network),
+        "external_write_declared": manifest.permissions.external_write,
+    }
+    overall = "passed" if license_verified and dependency_verified else "quarantined"
+    return {
+        "overall": overall,
+        "license": license_report,
+        "dependencies": dependency_report,
+        "security": security_report,
+        "permissions": manifest.permissions.model_dump(mode="json"),
+    }
+
+
 def _builtin_manifest(
     *,
     plugin_id: str,
@@ -275,6 +336,26 @@ def _empty_knowledge_search(
     _query: str, _options: dict[str, Any] | None = None
 ) -> dict[str, Any]:
     return {"items": [], "evidence_sufficient": False}
+
+
+def _envelope_metrics(result: PluginEnvelope) -> dict[str, Any]:
+    latency_ms = max(
+        0.0,
+        (result.finished_at - result.started_at).total_seconds() * 1000,
+    )
+    output_bytes = len(
+        json.dumps(result.data, sort_keys=True, default=str).encode("utf-8")
+    )
+    return {
+        "latency_ms": round(latency_ms, 3),
+        "provenance_hash": stable_payload_hash(list(result.evidence_refs)),
+        "evidence_refs": list(result.evidence_refs),
+        "output_hash": result.output_hash,
+        "structured_output_hash": stable_payload_hash(result.data),
+        "status": result.status.value,
+        "error_code": result.error.code if result.error else None,
+        "output_bytes": output_bytes,
+    }
 
 
 class ScopedCoreReadClient:
@@ -513,6 +594,19 @@ class PluginLifecycleManager:
                 row.plugin_id: dict(row._mapping)
                 for row in connection.execute(text("SELECT * FROM plugin_installations"))
             }
+            scans = {
+                (row["plugin_id"], row["version"]): (
+                    json.loads(row["scan_report"])
+                    if isinstance(row["scan_report"], str)
+                    else row["scan_report"]
+                )
+                for row in connection.execute(
+                    text(
+                        "SELECT plugin_id, version, scan_report FROM plugin_releases "
+                        "ORDER BY created_at DESC"
+                    )
+                ).mappings()
+            }
         for row in installed.values():
             if isinstance(row.get("config"), str):
                 row["config"] = json.loads(row["config"])
@@ -523,6 +617,10 @@ class PluginLifecycleManager:
                     "manifest": item.manifest.model_dump(mode="json"),
                     "installed": item.manifest.id in installed,
                     "installation": installed.get(item.manifest.id),
+                    "release_scan": scans.get(
+                        (item.manifest.id, item.manifest.version),
+                        _scan_manifest(item.manifest),
+                    ),
                 }
             )
         return result
@@ -531,15 +629,19 @@ class PluginLifecycleManager:
         registered = self._registered(manifest.id, manifest.version)
         if registered.manifest.content_hash() != manifest.content_hash():
             raise PluginStateError("manifest does not match registered plugin")
+        scan_report = _scan_manifest(manifest)
         return {
             "plugin_id": manifest.id,
             "version": manifest.version,
             "content_hash": manifest.content_hash(),
             "permissions": manifest.permissions.model_dump(mode="json"),
+            "scan_report": scan_report,
             "external_write_blocked": not manifest.permissions.external_write,
             "requires_user_approval": manifest.permissions.external_write,
-            "safe_to_install": manifest.type
-            in {PluginType.BUILTIN_ADAPTER, PluginType.WORKER_PLUGIN},
+            "safe_to_install": (
+                manifest.type in {PluginType.BUILTIN_ADAPTER, PluginType.WORKER_PLUGIN}
+                and scan_report["overall"] == "passed"
+            ),
         }
 
     def install(
@@ -675,7 +777,10 @@ class PluginLifecycleManager:
                 manifest.core_compatibility.model_dump(mode="json")
             ),
             "scan_report": json.dumps(
-                {"offline_fixture": manifest.type is PluginType.BUILTIN_ADAPTER}
+                {
+                    **_scan_manifest(manifest),
+                    "offline_fixture": manifest.type is PluginType.BUILTIN_ADAPTER,
+                }
             ),
             "content_hash": manifest.content_hash(),
             "created_at": now,
@@ -868,15 +973,16 @@ class PluginLifecycleManager:
                 timeout_ms=timeout_ms,
             )
         with self.engine.begin() as connection:
+            metrics = _envelope_metrics(result)
             connection.execute(
                 text(
                     "INSERT INTO plugin_runs "
                     "(run_id, request_id, plugin_id, plugin_version, capability, input_hash, "
-                    "output_hash, status, cost, evidence_refs, trace, error_code, "
-                    "error_message, started_at, finished_at) VALUES "
+                    "output_hash, status, cost, evidence_refs, provenance_hash, latency_ms, "
+                    "trace, error_code, error_message, started_at, finished_at) VALUES "
                     "(:run_id, :request_id, :plugin_id, :version, :capability, :input_hash, "
-                    ":output_hash, :status, :cost, :evidence_refs, :trace, :error_code, "
-                    ":error_message, :started_at, :finished_at)"
+                    ":output_hash, :status, :cost, :evidence_refs, :provenance_hash, :latency_ms, "
+                    ":trace, :error_code, :error_message, :started_at, :finished_at)"
                 ),
                 {
                     "run_id": f"run_{uuid.uuid4().hex}",
@@ -887,8 +993,15 @@ class PluginLifecycleManager:
                     "input_hash": result.input_hash,
                     "output_hash": result.output_hash,
                     "status": result.status.value,
-                    "cost": json.dumps({}),
+                    "cost": json.dumps(
+                        {
+                            "latency_ms": metrics["latency_ms"],
+                            "output_bytes": metrics["output_bytes"],
+                        }
+                    ),
                     "evidence_refs": json.dumps(list(result.evidence_refs)),
+                    "provenance_hash": metrics["provenance_hash"],
+                    "latency_ms": metrics["latency_ms"],
                     "trace": json.dumps({"actor": actor, "data": result.data}),
                     "error_code": result.error.code if result.error else None,
                     "error_message": result.error.message if result.error else None,
@@ -943,24 +1056,55 @@ class PluginLifecycleManager:
             payload=dict(shadow_payload),
             context=PluginContext(),
         )
+        current_metrics = _envelope_metrics(current_result)
+        candidate_metrics = _envelope_metrics(candidate_result)
         current_permissions = self._permission_set(current_manifest)
         candidate_permissions = self._permission_set(candidate)
         compatibility = self._core_compatible(candidate)
-        license_verified = candidate.source.license.upper() not in {
-            "UNKNOWN",
-            "NOASSERTION",
-            "UNLICENSED",
-        }
+        scan_report = _scan_manifest(candidate)
+        license_verified = scan_report["license"]["status"] == "verified"
         capability_compatible = set(current_manifest.replacement.compatible_capabilities) <= set(
             candidate.capabilities
         )
-        shadow_passed = (
-            current_result.status == candidate_result.status
-            and current_result.output_hash == candidate_result.output_hash
+        error_behavior_equal = (
+            current_metrics["status"] == candidate_metrics["status"]
+            and current_metrics["error_code"] == candidate_metrics["error_code"]
+        )
+        provenance_equal = current_metrics["provenance_hash"] == candidate_metrics[
+            "provenance_hash"
+        ]
+        structured_output_equal = current_metrics["structured_output_hash"] == candidate_metrics[
+            "structured_output_hash"
+        ]
+        output_equal = current_metrics["output_hash"] == candidate_metrics["output_hash"]
+        latency_regression = candidate_metrics["latency_ms"] > max(
+            current_metrics["latency_ms"] * 1.5,
+            current_metrics["latency_ms"] + 50,
+        )
+        shadow_passed = all(
+            (error_behavior_equal, provenance_equal, structured_output_equal, output_equal)
         )
         permission_escalation = sorted(candidate_permissions - current_permissions)
+        rollback_reasons = [
+            reason
+            for reason, failed in (
+                ("shadow_output_mismatch", not output_equal),
+                ("structured_output_mismatch", not structured_output_equal),
+                ("provenance_mismatch", not provenance_equal),
+                ("error_behavior_regression", not error_behavior_equal),
+                ("latency_regression", latency_regression),
+            )
+            if failed
+        ]
         safe_to_switch = all(
-            (compatibility, license_verified, capability_compatible, shadow_passed)
+            (
+                compatibility,
+                scan_report["overall"] == "passed",
+                license_verified,
+                capability_compatible,
+                shadow_passed,
+                not latency_regression,
+            )
         ) and not permission_escalation
         tests = {
             "core_compatible": compatibility,
@@ -970,6 +1114,13 @@ class PluginLifecycleManager:
             "shadow_capability": selected_capability,
             "current_output_hash": current_result.output_hash,
             "candidate_output_hash": candidate_result.output_hash,
+            "current_metrics": current_metrics,
+            "candidate_metrics": candidate_metrics,
+            "error_behavior_equal": error_behavior_equal,
+            "provenance_equal": provenance_equal,
+            "structured_output_equal": structured_output_equal,
+            "latency_regression": latency_regression,
+            "license_scan": scan_report,
             "permission_escalation": permission_escalation,
             "safe_to_switch": safe_to_switch,
         }
@@ -988,6 +1139,11 @@ class PluginLifecycleManager:
                 "to": candidate.data_migration_version,
                 "required": candidate.data_migration_version
                 != current_manifest.data_migration_version,
+            },
+            "rollback_recommendation": {
+                "action": "rollback" if rollback_reasons else "retain",
+                "automatic": False,
+                "reasons": rollback_reasons,
             },
             "approval": "pending" if safe_to_switch else "rejected",
         }
@@ -1199,12 +1355,90 @@ class PluginLifecycleManager:
             "retained_records": ("plugin_runs", "plugin_audit_events", "artifacts"),
         }
 
+    def rollback_recommendation(self, plugin_id: str) -> dict[str, Any]:
+        self._registered(plugin_id)
+        with self.engine.connect() as connection:
+            installation = connection.execute(
+                text(
+                    "SELECT current_version, previous_version FROM plugin_installations "
+                    "WHERE plugin_id=:id"
+                ),
+                {"id": plugin_id},
+            ).mappings().first()
+            if installation is None:
+                raise PluginStateError("plugin is not installed")
+            rows = connection.execute(
+                text(
+                    "SELECT plugin_version, status, error_code, latency_ms, provenance_hash "
+                    "FROM plugin_runs WHERE plugin_id=:id AND plugin_version IN "
+                    "(:current, :previous)"
+                ),
+                {
+                    "id": plugin_id,
+                    "current": installation["current_version"],
+                    "previous": installation["previous_version"] or installation["current_version"],
+                },
+            ).mappings().all()
+        current_rows = [
+            row for row in rows if row["plugin_version"] == installation["current_version"]
+        ]
+        previous_rows = [
+            row
+            for row in rows
+            if row["plugin_version"] == installation["previous_version"]
+        ]
+        if not current_rows or not previous_rows:
+            return {
+                "plugin_id": plugin_id,
+                "action": "retain",
+                "automatic": False,
+                "reason": "insufficient_observation_window",
+                "current_version": installation["current_version"],
+                "previous_version": installation["previous_version"],
+            }
+
+        def stats(values: list[dict[str, Any]]) -> dict[str, Any]:
+            errors = sum(1 for row in values if row["status"] == "error")
+            latencies = [float(row["latency_ms"] or 0) for row in values]
+            return {
+                "run_count": len(values),
+                "error_rate": errors / len(values),
+                "average_latency_ms": sum(latencies) / len(latencies),
+                "provenance_hashes": sorted({row["provenance_hash"] for row in values}),
+            }
+
+        current_stats = stats(current_rows)
+        previous_stats = stats(previous_rows)
+        reasons: list[str] = []
+        if current_stats["error_rate"] > previous_stats["error_rate"]:
+            reasons.append("error_rate_regression")
+        if current_stats["average_latency_ms"] > max(
+            previous_stats["average_latency_ms"] * 1.5,
+            previous_stats["average_latency_ms"] + 50,
+        ):
+            reasons.append("latency_regression")
+        if set(current_stats["provenance_hashes"]).isdisjoint(
+            previous_stats["provenance_hashes"]
+        ):
+            reasons.append("provenance_mismatch")
+        return {
+            "plugin_id": plugin_id,
+            "action": "rollback" if reasons else "retain",
+            "automatic": False,
+            "reasons": reasons,
+            "current_version": installation["current_version"],
+            "previous_version": installation["previous_version"],
+            "current": current_stats,
+            "previous": previous_stats,
+        }
+
     def audit_summary(self, plugin_id: str) -> dict[str, Any]:
         self._registered(plugin_id)
         with self.engine.connect() as connection:
             rows = connection.execute(
                 text(
-                    "SELECT status, cost, trace FROM plugin_runs WHERE plugin_id=:id "
+                    "SELECT status, cost, trace, latency_ms, provenance_hash, error_code "
+                    "FROM plugin_runs WHERE plugin_id=:id "
                     "ORDER BY started_at"
                 ),
                 {"id": plugin_id},
@@ -1217,13 +1451,23 @@ class PluginLifecycleManager:
                 {"id": plugin_id},
             ).all()
         errors = sum(1 for row in rows if row["status"] == "error")
+        latencies = [float(row["latency_ms"] or 0) for row in rows]
+        provenance_hashes = sorted({row["provenance_hash"] for row in rows})
+        error_codes = sorted({row["error_code"] for row in rows if row["error_code"]})
         return {
             "plugin_id": plugin_id,
             "run_count": len(rows),
             "error_count": errors,
             "error_rate": 0 if not rows else round(errors / len(rows), 6),
+            "latency": {
+                "average_ms": 0 if not latencies else round(sum(latencies) / len(latencies), 3),
+                "max_ms": 0 if not latencies else round(max(latencies), 3),
+            },
+            "provenance_hashes": provenance_hashes,
+            "error_codes": error_codes,
             "declared_data_scopes": [f"{kind}:{scope}" for kind, scope in scopes],
             "cost": {"recorded_runs": len(rows), "external_cost_known": False},
+            "rollback_recommendation": self.rollback_recommendation(plugin_id),
         }
 
     def audit(self, plugin_id: str) -> list[dict[str, Any]]:

@@ -28,6 +28,7 @@ async def test_plugin_api_echo_acceptance(tmp_path: Path) -> None:
             headers=headers,
         )
         assert preview.status_code == 200
+        assert preview.json()["scan_report"]["overall"] == "passed"
         installed = await client.post(
             "/api/v1/plugins/install",
             json={"manifest": manifest},
@@ -77,6 +78,11 @@ async def test_plugin_api_echo_acceptance(tmp_path: Path) -> None:
         )
         assert summary.status_code == 200
         assert summary.json()["run_count"] >= 1
+        recommendation = await client.get(
+            "/api/v1/plugins/echo-fixture/rollback-recommendation", headers=headers
+        )
+        assert recommendation.status_code == 200
+        assert recommendation.json()["automatic"] is False
         assert (
             await client.post("/api/v1/plugins/echo-fixture/disable", headers=headers)
         ).json()["enabled"] is False

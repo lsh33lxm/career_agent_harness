@@ -160,6 +160,15 @@ def create_plugin_router(api: PluginApi) -> APIRouter:
         except Exception as error:
             raise _error(error) from error
 
+    @router.get("/{plugin_id}/rollback-recommendation")
+    def rollback_recommendation(
+        plugin_id: str = Path(min_length=3, max_length=64),
+    ) -> dict[str, Any]:
+        try:
+            return api.service.rollback_recommendation(plugin_id)
+        except Exception as error:
+            raise _error(error) from error
+
     @router.post("/{plugin_id}/uninstall-preview")
     def uninstall_preview(plugin_id: str = Path(min_length=3, max_length=64)) -> dict[str, Any]:
         try:

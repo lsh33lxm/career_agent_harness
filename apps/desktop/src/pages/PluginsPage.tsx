@@ -75,6 +75,7 @@ export function PluginsPage() {
               <div><dt>许可证</dt><dd>{item.manifest.source.license}</dd></div>
               <div><dt>固定来源</dt><dd title={item.manifest.source.commit}>{item.manifest.source.ref}</dd></div>
               <div><dt>健康</dt><dd>{item.installation?.last_health_status ?? "未检查"}</dd></div>
+              <div><dt>离线扫描</dt><dd>{item.release_scan?.overall === "passed" ? "通过" : "隔离"}</dd></div>
             </dl>
             <div className="plugin-chips">
               {item.manifest.capabilities.map((capability) => <span key={capability}>{capability}</span>)}

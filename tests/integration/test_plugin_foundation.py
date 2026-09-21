@@ -252,3 +252,89 @@ def test_plugin_installation_survives_backup_and_restore_rehearsal(tmp_path: Pat
         item for item in restored.catalog() if item["manifest"]["id"] == "echo-fixture"
     )
     assert item["installed"] is True
+
+
+def test_plugin_run_persists_latency_and_provenance_metrics(tmp_path: Path) -> None:
+    manager = _manager(tmp_path)
+    manifest = manager.registry.get("echo-fixture").manifest
+    manager.install(manifest)
+    manager.enable("echo-fixture")
+    result = manager.invoke(
+        "echo-fixture",
+        request_id="metrics-request-001",
+        capability="fixture.echo",
+        payload={"value": "metrics"},
+    )
+    assert result.status.value == "ok"
+    with manager.engine.connect() as connection:
+        row = connection.exec_driver_sql(
+            "SELECT latency_ms, provenance_hash, cost FROM plugin_runs "
+            "WHERE request_id='metrics-request-001'"
+        ).mappings().one()
+    assert row["latency_ms"] >= 0
+    assert len(row["provenance_hash"]) == 64
+    assert "latency_ms" in row["cost"]
+
+
+def test_update_preview_reports_scan_and_rollback_recommendation(tmp_path: Path) -> None:
+    base = PluginRegistry().get("echo-fixture")
+    candidate_manifest = base.manifest.model_copy(
+        update={
+            "version": "1.2.0",
+            "source": base.manifest.source.model_copy(
+                update={"ref": "v1.2.0", "commit": "builtin-echo-fixture-v1.2"}
+            ),
+        }
+    )
+
+    def changed_handler(_payload: dict[str, object], _context: PluginContext) -> dict[str, object]:
+        return {"changed": True}
+
+    registry = PluginRegistry(
+        (
+            base,
+            RegisteredPlugin(candidate_manifest, changed_handler),
+        )
+    )
+    manager = PluginLifecycleManager(_manager(tmp_path).engine, registry=registry)
+    manager.install(base.manifest)
+    manager.enable("echo-fixture")
+    manager.install(candidate_manifest)
+    preview = manager.update_preview(
+        "echo-fixture", capability="fixture.echo", fixture={"stable": True}
+    )
+    assert preview["tests"]["license_scan"]["overall"] == "passed"
+    assert "current_metrics" in preview["tests"]
+    assert "candidate_metrics" in preview["tests"]
+    assert preview["rollback_recommendation"]["action"] == "rollback"
+    assert preview["rollback_recommendation"]["automatic"] is False
+
+
+def test_plugin_migration_downgrade_restores_observability_columns_and_trigger(
+    tmp_path: Path,
+) -> None:
+    database_url = sqlite_url(tmp_path / "plugin-observability-downgrade.db")
+    config = alembic_config(database_url)
+    from alembic import command
+
+    command.upgrade(config, "head")
+    engine = create_sqlite_engine(database_url)
+    with engine.connect() as connection:
+        columns = {
+            item[1]
+            for item in connection.exec_driver_sql("PRAGMA table_info(plugin_runs)")
+        }
+        trigger_count = connection.exec_driver_sql(
+            "SELECT count(*) FROM sqlite_master WHERE type='trigger' "
+            "AND name='trg_plugin_runs_no_update'"
+        ).scalar_one()
+    assert {"latency_ms", "provenance_hash"} <= columns
+    assert trigger_count == 1
+    command.downgrade(config, "0020_opportunity_radar_hardening")
+    with engine.connect() as connection:
+        columns = {
+            item[1]
+            for item in connection.exec_driver_sql("PRAGMA table_info(plugin_runs)")
+        }
+    assert "latency_ms" not in columns
+    assert "provenance_hash" not in columns

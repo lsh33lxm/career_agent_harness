@@ -86,6 +86,29 @@ cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
 npm --prefix apps/desktop exec -- tauri build --debug --no-bundle
 ```
 
+## Windows Desktop Packaging
+
+The Tauri application owns the packaged Python sidecar lifecycle. Each launch selects a
+free loopback port, creates an in-memory token, injects the connection configuration into
+the webview, and terminates the complete PyInstaller process tree when the desktop window
+closes. Runtime data persists under `%LOCALAPPDATA%\AgentCareerHarness` unless
+`ACH_DATA_DIR` is set. Sidecar diagnostics are written to
+`<data-root>\logs\desktop-sidecar.log`; the launch token is never written to that log or
+the process command line.
+
+Build the sidecar and NSIS installer with:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-desktop-build.lock
+.\scripts\build_desktop_sidecar.ps1 -Python .\.venv\Scripts\python.exe
+npm --prefix apps/desktop exec -- tauri build
+```
+
+The installer is generated at
+`apps\desktop\src-tauri\target\release\bundle\nsis\Agent Career Harness_0.1.0_x64-setup.exe`.
+The sidecar executable is generated locally under `apps\desktop\src-tauri\binaries` and
+is excluded from Git.
+
 ## Legacy Read-only Inventory
 
 ```powershell

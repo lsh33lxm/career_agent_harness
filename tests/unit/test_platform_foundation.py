@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from career_harness.db import migrations
 from career_harness.platform import AppPaths, EnvironmentSecretProvider
 
 
@@ -30,4 +31,15 @@ def test_missing_required_secret_names_key_without_value() -> None:
 
     with pytest.raises(LookupError, match="missing-key"):
         provider.require("missing-key")
+
+
+def test_migration_resources_resolve_from_pyinstaller_bundle(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(migrations.sys, "_MEIPASS", str(tmp_path), raising=False)
+
+    config = migrations.alembic_config("sqlite:///C:/tmp/example.db")
+
+    assert config.config_file_name == str(tmp_path / "alembic.ini")
+    assert config.get_main_option("script_location") == str(tmp_path / "migrations")
 

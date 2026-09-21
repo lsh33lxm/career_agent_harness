@@ -1,6 +1,6 @@
 # Agent Career Harness 当前状态
 
-更新时间：2026-09-21；分支：`refactor/v1.4-integration`；最新 v2.0 功能提交：`db7efc2`。
+更新时间：2026-09-22；分支：`refactor/v1.4-integration`；最新集成基线：`936f518`。
 
 ## 当前结论
 
@@ -13,14 +13,17 @@
 - 历史岗位与面试关联已可查询；legacy authority → canonical Job/Fact/Capability 映射仍为 **NEEDS USER AUTHORITY**。
 - Feishu external write：**BLOCKED_EXTERNAL_ACTION**（credentials、destination permission、sync contract）。
 - 中文桌面工作台第二阶段：**DONE for current routes**。Project、Resume 与 Capability 入口改为列表、搜索和选择，不再要求用户在首屏填写内部 ID；导航、错误、空状态和当前内置工具目录已中文化。
-- 模型服务配置：**IMPLEMENTED, CONNECTION UNVERIFIED WITHOUT USER CREDENTIALS**。OpenAI、Anthropic、DeepSeek 与 OpenAI-compatible 的非敏感配置进入 Core DB，密钥只进入 Windows Credential Manager；只有真实 `/models` 测试成功才显示“已连接”。受控 CLI Runner 与 Windows 安装包仍未实现。
+- 模型服务配置：**IMPLEMENTED, CONNECTION UNVERIFIED WITHOUT USER CREDENTIALS**。OpenAI、Anthropic、DeepSeek 与 OpenAI-compatible 的非敏感配置进入 Core DB，密钥只进入 Windows Credential Manager；只有真实 `/models` 测试成功才显示“已连接”。受控 CLI Runner 仍未实现。
 - GitHub 项目分析：**IMPLEMENTED / LIVE FETCH BLOCKED BY NETWORK**。只读有界 clone、静态档案、Project 关联、私有 token 安全存储与 UI 已完成；合成仓库链路通过。当前机器访问 `github.com:443` 失败，未伪造真实公开仓库验收结果。
+- Windows 桌面交付：**IMPLEMENTED / CLEAN-INSTALL ACCEPTANCE PASSED**。Tauri 2 自动管理 PyInstaller sidecar、随机 loopback 端口与每次启动临时令牌；令牌不进入命令行或日志，退出时回收完整进程树。NSIS 安装包已生成并在全新安装目录/数据目录完成首次启动、建库、重启持久化与 sidecar 日志验收。
 
 ## 最新验证
 
-- Backend：`656 passed, 5 skipped`；GitHub/Project/migration subset：`52 passed`。
+- Backend：`657 passed, 5 skipped`；GitHub/Project/migration subset：`52 passed`。
 - Frontend：`19 test files, 53 passed`，`npm run build` 通过；旧内部 ID 输入用例已由列表/选择流程用例替代。
 - Legacy preview：读取 7,575、新增 0、更新 0、未变化 7,575、重复 684、失败 0；FK errors 0，源 metadata signature 不变。
+- Clean-install migration：首轮读取 7,575、新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575，导入前后源签名一致；`Python` 查询返回 10 条并抽样核对源文件、SHA-256、行号、批次与 JD。
+- Desktop packaging：PyInstaller one-file smoke、Cargo check、Vite production build、Tauri debug no-bundle 与 release NSIS bundle 均通过；隔离安装版首次建库后监听随机端口，窗口关闭后 sidecar 进程数归零。
 - v2.0 hardening focused：backend `32 passed`、Plugins UI `1 passed`；Ruff `backend tests migrations` 与 `git diff --check` 通过。
 
 ## 下一阶段与授权依赖

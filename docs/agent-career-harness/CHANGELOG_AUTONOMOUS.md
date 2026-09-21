@@ -1,5 +1,11 @@
 # v2.0 Autonomous Changelog
 
+## 2026-09-22
+
+- 完成 Windows Tauri 2 桌面产品化：PyInstaller one-file sidecar、bundle migration resources、随机 loopback 端口、临时 token 注入、Data Root 日志与完整进程树回收。
+- 生成 NSIS 安装包并完成隔离干净安装；首次启动自动建库，重启后数据持久，窗口关闭后 sidecar 与监听端口均释放。
+- 在干净安装数据库执行真实 Legacy 只读导入：首轮读取/新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575；导入前后源签名一致，Python 岗位查询与 provenance 抽样通过。
+
 ## 2026-09-21
 
 - 开始 Slice A Plugin Foundation。

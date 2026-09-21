@@ -1,6 +1,6 @@
 # v2.0 Autonomous Execution State
 
-更新时间：2026-09-21
+更新时间：2026-09-22
 
 ## Authority
 
@@ -29,6 +29,17 @@
 - Recovery：migration upgrade/downgrade、backup/restore、plugin lifecycle rehearsal 均通过；Legacy Agent Radar 仍只读。
 - External boundary：真实 marketplace 下载、第三方 crawler/portal、Typst compiler、Feishu/Gmail/Notion/ATS 写入仍按 blocker ledger 保持隔离或 proposal-only。
 - 当前入口：A–E 已收口；后续工作只从已登记 external boundary 获得授权后继续，或由新的产品授权开启下一切片。
+
+## Desktop productization checkpoint (2026-09-22)
+
+- 状态：Windows NSIS desktop lifecycle and clean-install acceptance passed。
+- Tauri 2 启动打包的 Python sidecar，使用随机 loopback 端口与仅存在于内存/子进程环境的临时 token；前端配置通过 initialization script 注入。
+- PyInstaller bundle 内含 Alembic 配置和 migration resources；全新 Data Root 自动升级到 `0025`。
+- 首次安装等待窗口按 one-file 解包/安全扫描延长到 90 秒；sidecar stdout/stderr 保存到 Data Root `logs/desktop-sidecar.log`，不记录 token。
+- 关闭桌面窗口会回收 PyInstaller bootloader 与 Python 子进程；重复验收确认监听端口释放。
+- 干净安装数据库 Legacy 导入首轮 `7,575 new / 684 duplicate / 0 failed`，第二轮 `0 new / 7,575 unchanged`，源签名前后一致；未修改 Legacy。
+- 构建：PyInstaller sidecar、Cargo check、Vite production、Tauri debug no-bundle、release NSIS 全部通过。
+- 回归：backend `657 passed, 5 skipped`；frontend `19 files / 53 passed`；Ruff、Cargo check、Vite build 与 diff check 通过。
 
 ## Final requirement hardening
 

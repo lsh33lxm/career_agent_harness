@@ -241,3 +241,10 @@ path validation, not OS isolation or real executor replacement; see pluggability
 ## 2026-09-21 current-state reconciliation
 
 The historical entries above are retained for audit. Current integration is `f760053` and the following supersede older counts: visual baseline `babf9c0`; archive/rehearsal `b13d0f3`; evidence projection `f760053`; data baseline `64dba1e`. Backend regression is 602 passed / 5 Windows symlink skips; frontend is 56 passed/build. Legacy preservation is complete for the reversible subset, while canonical authority mapping and cutover remain user-gated. Projects and Resume narrow desktop clients are integrated (`12315f4`); Feishu external write is BLOCKED_EXTERNAL_ACTION.
+
+## Legacy structured projection and job visibility — 2026-09-21
+
+- Added additive migration `0023`, immutable import batches/file versions/history projections and row-level staging provenance.
+- Added repeatable CLI/API import over the approved Legacy source set. Legacy stayed read-only; first preview produced 1,028 job staging rows plus 6,547 historical projections from 7,575 records. Idempotent rerun produced 0 new/updated, 7,575 unchanged, 684 duplicates and 0 failures.
+- Desktop Opportunities now defaults to real imported jobs, supports Chinese search/filter/detail/provenance and explicit user admission; internal Job/proposal IDs are removed from the first-screen flow.
+- Verification: backend focused 16 passed, full 652 passed / 5 Windows symlink skips; frontend 55 passed/build; Ruff and diff check passed; `0022 → 0023 → 0022 → 0023` passed. Canonical authority mapping/cutover remains user-gated.

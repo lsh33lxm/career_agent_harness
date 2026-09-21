@@ -7,15 +7,17 @@
 - v2.0 Slice A–E（Plugin Foundation、Career Knowledge、Resume Studio、Opportunity Radar、Lifecycle / Replacement）：**DONE for local/offline scope**。
 - Career Core 与 Capability Visualization：**DONE**，真实读模型、evidence provenance 与用户 authority 边界保持。
 - Plugin Marketplace：manifest/schema、scoped runtime、生命周期、scan/quarantine、审计、更新策略、卸载影响与桌面页面已实现；第三方执行仍隔离。
-- Legacy inventory/archive/rehearsal/backup restore：**DONE for reversible subset**；2,426 files、2,205 preserved、17 deferred，未执行 canonical cutover。
+- Legacy inventory/archive/rehearsal/backup restore：**DONE for reversible subset**；2,426 files、2,205 preserved、17 deferred。
+- Legacy structured projection：**DONE for historical/unconfirmed scope**；真实演练读取 7,575 条，形成 1,028 条岗位 staging 与 6,547 条历史投影；重复 684、失败 0，未执行 canonical cutover。
 - Evidence provenance、History、Feishu offline projection：**DONE / offline only**。
-- 真实 legacy Job/Interview/Capability authority mapping：**BLOCKED / NEEDS USER AUTHORITY**。
+- 历史岗位与面试关联已可查询；legacy authority → canonical Job/Fact/Capability 映射仍为 **NEEDS USER AUTHORITY**。
 - Feishu external write：**BLOCKED_EXTERNAL_ACTION**（credentials、destination permission、sync contract）。
 
 ## 最新验证
 
-- Backend：`650 passed, 5 skipped`；跳过为 Windows symlink privilege/availability。
-- Frontend：`18 test files, 59 passed`，`npm run build` 通过。
+- Backend：`652 passed, 5 skipped`；本轮结构化导入/Radar/API 聚焦：`16 passed`。
+- Frontend：`18 test files, 55 passed`，`npm run build` 通过。
+- Legacy preview：读取 7,575、新增 0、更新 0、未变化 7,575、重复 684、失败 0；FK errors 0，源 metadata signature 不变。
 - v2.0 hardening focused：backend `32 passed`、Plugins UI `1 passed`；Ruff `backend tests migrations` 与 `git diff --check` 通过。
 
 ## 下一阶段与授权依赖

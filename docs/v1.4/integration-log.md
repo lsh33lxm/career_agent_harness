@@ -84,3 +84,14 @@ Independent review APPROVE, P0–P3 none; reviewer 12 Project + 2 Career API pas
 frontend 56 passed/build. `2e279ba` labels Context/Settings unavailable, replacing false zero counts;
 frontend 56/build rechecked. Ruff backend/tests/migrations/importers/logo tool and diff check passed.
 PRD independent review APPROVE; three P3 wording issues corrected (states, test scope, trend UI).
+
+### Legacy structured projection and Opportunities visibility
+
+Current integration working tree after `0bb1ba1`: additive migration `0023`, deterministic read-only
+Legacy importer, authenticated status/import/job list/detail APIs, row-level provenance, and real-data
+desktop Opportunities browser. A disposable preview imported 7,575 records into 1,028 job staging rows
+and 6,547 historical projections; idempotent rerun returned 7,575 unchanged, 684 duplicate/review rows,
+0 failures and 0 FK errors. Source metadata signature was unchanged. Focused backend 16 passed;
+full backend 652 passed / 5 Windows symlink skips;
+frontend 18 files / 55 tests passed and production build passed; Ruff/diff check and
+`0022 → 0023 → 0022 → 0023` passed. No canonical cutover, Legacy write, main merge or push.

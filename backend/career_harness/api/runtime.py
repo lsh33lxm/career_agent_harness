@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 
 from career_harness.api.app import create_app
@@ -9,6 +12,7 @@ from career_harness.api.career_reads import CareerReadApi
 from career_harness.api.evidence import EvidenceApi
 from career_harness.api.job_radar import JobRadarApi
 from career_harness.api.knowledge import KnowledgeApi
+from career_harness.api.legacy_import import LegacyImportApi
 from career_harness.api.opportunities import OpportunityApi
 from career_harness.api.plugins import PluginApi
 from career_harness.api.project_reads import ProjectReadApi
@@ -29,6 +33,7 @@ from career_harness.platform import AppPaths
 from career_harness.services.capability_review_service import CapabilityReviewService
 from career_harness.services.capability_workspace_service import CapabilityWorkspaceService
 from career_harness.services.command_service import CommandService
+from career_harness.services.legacy_import_service import LegacyImportService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.plugin_service import PluginLifecycleManager
@@ -52,6 +57,12 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
     plugin_service = PluginLifecycleManager(
         engine,
         knowledge_search=knowledge_repository.search_for_plugin,
+    )
+    configured_legacy_root = os.getenv("ACH_LEGACY_AGENT_RADAR_ROOT")
+    legacy_import_service = LegacyImportService(
+        engine,
+        ArtifactStore(active_paths.artifacts),
+        default_source_root=Path(configured_legacy_root) if configured_legacy_root else None,
     )
     return create_app(
         settings,
@@ -80,4 +91,5 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         job_radar_api=JobRadarApi(
             OpportunityRadarService(engine, ArtifactStore(active_paths.artifacts))
         ),
+        legacy_import_api=LegacyImportApi(legacy_import_service),
     )

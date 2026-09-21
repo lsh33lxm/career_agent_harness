@@ -4,6 +4,7 @@ import json
 from typing import Any
 
 from sqlalchemy import Engine, text
+from sqlalchemy.engine import Connection
 
 from career_harness.core.job_source import (
     JobSourcePolicy,
@@ -26,12 +27,20 @@ class JobStagingRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
 
-    def get(self, staging_id: str) -> JobStagingRecord | None:
-        with self.engine.connect() as connection:
+    def get(
+        self, staging_id: str, *, connection: Connection | None = None
+    ) -> JobStagingRecord | None:
+        if connection is not None:
             row = connection.execute(
                 text("SELECT * FROM job_staging_record WHERE staging_id=:id"),
                 {"id": staging_id},
             ).mappings().first()
+        else:
+            with self.engine.connect() as owned_connection:
+                row = owned_connection.execute(
+                    text("SELECT * FROM job_staging_record WHERE staging_id=:id"),
+                    {"id": staging_id},
+                ).mappings().first()
         return self._record(row) if row else None
 
     def list(self, *, status: JobStagingStatus | None = None) -> tuple[JobStagingRecord, ...]:
@@ -52,15 +61,25 @@ class JobStagingRepository:
             ).mappings().all()
         return tuple(self._policy(row) for row in rows)
 
-    def find_duplicate(self, url_fingerprint: str, content_fingerprint: str) -> str | None:
-        with self.engine.connect() as connection:
-            return connection.execute(
-                text(
-                    "SELECT staging_id FROM job_staging_record WHERE "
-                    "url_fingerprint=:url OR content_fingerprint=:content "
-                    "ORDER BY created_at LIMIT 1"
-                ),
-                {"url": url_fingerprint, "content": content_fingerprint},
+    def find_duplicate(
+        self,
+        url_fingerprint: str,
+        content_fingerprint: str,
+        *,
+        connection: Connection | None = None,
+    ) -> str | None:
+        statement = text(
+            "SELECT staging_id FROM job_staging_record WHERE "
+            "url_fingerprint=:url OR content_fingerprint=:content "
+            "ORDER BY created_at LIMIT 1"
+        )
+        params = {"url": url_fingerprint, "content": content_fingerprint}
+        if connection is not None:
+            return connection.execute(statement, params).scalar_one_or_none()
+        with self.engine.connect() as owned_connection:
+            return owned_connection.execute(
+                statement,
+                params,
             ).scalar_one_or_none()
 
     def get_source_policy(self, source_id: str) -> JobSourcePolicy | None:

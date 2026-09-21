@@ -1,37 +1,128 @@
-import { AlertCircle, Check, Inbox, Plus, RefreshCw } from "lucide-react";
-import { FormEvent, useCallback, useEffect, useState } from "react";
-
 import {
-  admitStagedJob,
-  importManualJob,
-  listJobStaging,
-  type JobStagingRecord,
-} from "../api/jobRadar";
+  AlertCircle,
+  Building2,
+  Check,
+  Database,
+  ExternalLink,
+  FileText,
+  Inbox,
+  MapPin,
+  RefreshCw,
+  Search,
+  Upload,
+  X,
+} from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+
+import { admitStagedJob } from "../api/jobRadar";
+import {
+  getLegacyImportStatus,
+  getLegacyJob,
+  listLegacyJobs,
+  runLegacyImport,
+  type LegacyImportStatus,
+  type LegacyJobDetail,
+  type LegacyJobSummary,
+} from "../api/legacy";
+
+type LoadState = "loading" | "ready" | "error";
+
+const statusLabels: Record<LegacyJobSummary["status"], string> = {
+  staged: "待选择",
+  duplicate: "重复待复核",
+  admitted: "已加入求职流程",
+  rejected: "已忽略",
+};
+
+const reviewLabels: Record<LegacyJobSummary["review_status"], string> = {
+  historical_unconfirmed: "历史记录 · 未确认",
+  needs_review: "内容变化 · 待复核",
+  duplicate: "重复记录 · 待复核",
+};
 
 function message(error: unknown): string {
-  return error instanceof Error ? error.message : "职位暂存请求失败";
+  return error instanceof Error ? error.message : "本地服务请求失败";
 }
 
-function terms(value: FormDataEntryValue | null): string[] {
-  return String(value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+function shortHash(value: string): string {
+  return `${value.slice(0, 10)}…${value.slice(-8)}`;
+}
+
+function displayText(value: string | null): string {
+  if (!value) return "";
+  let parts = [value];
+  if (value.trim().startsWith("[") && value.trim().endsWith("]")) {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) parts = parsed.map(String);
+    } catch {
+      parts = [value];
+    }
+  }
+  return parts
+    .map((item) => item.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("、");
+}
+
+function displayTags(values: string[]): string[] {
+  const result: string[] = [];
+  for (const value of values) {
+    const normalized = displayText(value);
+    for (const item of normalized.split("、")) {
+      const tag = item.trim();
+      if (tag && tag.length <= 42 && !result.includes(tag)) result.push(tag);
+    }
+  }
+  return result.slice(0, 5);
+}
+
+function displayJd(value: string): string {
+  return value
+    .split("\n")
+    .map((line) => displayText(line))
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function interviewLabel(value: Record<string, unknown>): string {
+  const title = value.title ?? value.round ?? "历史面试记录";
+  const date = value.interview_date ?? value.effective_event_date ?? value.published_at;
+  return date ? `${String(title)} · ${String(date)}` : String(title);
 }
 
 export function JobRadarPanel() {
-  const [records, setRecords] = useState<JobStagingRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [jobs, setJobs] = useState<LegacyJobSummary[]>([]);
+  const [importStatus, setImportStatus] = useState<LegacyImportStatus | null>(null);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [company, setCompany] = useState("");
+  const [location, setLocation] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [sourceRoot, setSourceRoot] = useState("");
   const [importing, setImporting] = useState(false);
+  const [selected, setSelected] = useState<LegacyJobDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [admitting, setAdmitting] = useState<string | null>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true);
+    setLoadState("loading");
     setError("");
     try {
-      setRecords(await listJobStaging(signal));
+      const [nextStatus, nextJobs] = await Promise.all([
+        getLegacyImportStatus(signal),
+        listLegacyJobs({ limit: 100 }, signal),
+      ]);
+      setImportStatus(nextStatus);
+      setSourceRoot((current) => current || nextStatus.configured_source_root || "");
+      setJobs(nextJobs);
+      setLoadState("ready");
     } catch (caught) {
-      if (!signal?.aborted) setError(message(caught));
-    } finally {
-      if (!signal?.aborted) setLoading(false);
+      if (!signal?.aborted) {
+        setError(message(caught));
+        setLoadState("error");
+      }
     }
   }, []);
 
@@ -41,23 +132,38 @@ export function JobRadarPanel() {
     return () => controller.abort();
   }, [load]);
 
-  async function handleImport(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
+  async function searchJobs(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    setLoadState("loading");
+    setError("");
+    try {
+      setJobs(
+        await listLegacyJobs({
+          query: query.trim(),
+          company: company.trim(),
+          location: location.trim(),
+          status: statusFilter,
+          limit: 100,
+        }),
+      );
+      setLoadState("ready");
+    } catch (caught) {
+      setError(message(caught));
+      setLoadState("error");
+    }
+  }
+
+  async function importHistory() {
     setImporting(true);
     setError("");
     try {
-      await importManualJob({
-        source_ref: String(data.get("sourceRef")),
-        raw_text: String(data.get("rawText")),
-        desired_terms: terms(data.get("desiredTerms")),
-        excluded_terms: terms(data.get("excludedTerms")),
-        preferred_locations: terms(data.get("preferredLocations")),
-        minimum_salary: data.get("minimumSalary") ? Number(data.get("minimumSalary")) : undefined,
-      });
-      form.reset();
-      await load();
+      const report = await runLegacyImport(sourceRoot.trim() || undefined);
+      setImportStatus((current) => ({
+        configured_source_root: sourceRoot.trim() || current?.configured_source_root || null,
+        source_accessible: true,
+        latest_report: report,
+      }));
+      await searchJobs();
     } catch (caught) {
       setError(message(caught));
     } finally {
@@ -65,12 +171,27 @@ export function JobRadarPanel() {
     }
   }
 
-  async function admit(record: JobStagingRecord) {
-    setAdmitting(record.staging_id);
+  async function openDetail(job: LegacyJobSummary) {
+    setDetailLoading(true);
     setError("");
     try {
-      await admitStagedJob(record.staging_id);
-      await load();
+      setSelected(await getLegacyJob(job.staging_id));
+    } catch (caught) {
+      setError(message(caught));
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  async function admit(job: LegacyJobSummary) {
+    setAdmitting(job.staging_id);
+    setError("");
+    try {
+      await admitStagedJob(job.staging_id);
+      await searchJobs();
+      if (selected?.job.staging_id === job.staging_id) {
+        setSelected(await getLegacyJob(job.staging_id));
+      }
     } catch (caught) {
       setError(message(caught));
     } finally {
@@ -78,39 +199,216 @@ export function JobRadarPanel() {
     }
   }
 
+  const report = importStatus?.latest_report;
+  const importedJobCount = useMemo(
+    () => jobs.filter((item) => item.review_status !== "duplicate").length,
+    [jobs],
+  );
+
   return (
-    <section className="radar-panel" aria-labelledby="radar-title">
-      <div className="section-heading">
+    <section className="radar-panel legacy-jobs" aria-labelledby="legacy-jobs-title">
+      <div className="section-heading legacy-jobs__heading">
         <div>
-          <p className="eyebrow">Local staging</p>
-          <h2 id="radar-title">Opportunity Radar</h2>
+          <p className="eyebrow">本地历史数据</p>
+          <h2 id="legacy-jobs-title">历史岗位库</h2>
+          <p>从只读 Agent Radar 导入；导入记录不是个人事实，也不会自动进入求职流程。</p>
         </div>
-        <span>建议排序与用户优先级分离</span>
+        <div className="legacy-jobs__summary" aria-label="历史岗位概况">
+          <strong>{report?.totals.read_count ?? importedJobCount}</strong>
+          <span>{report ? "条源记录" : "条可见岗位"}</span>
+        </div>
       </div>
-      <form className="radar-import" onSubmit={(event) => void handleImport(event)}>
-        <label><span>来源</span><input name="sourceRef" required placeholder="https://… 或 manual://…" /></label>
-        <label><span>希望匹配</span><input name="desiredTerms" placeholder="Python, SQLite" /></label>
-        <label><span>排除条件</span><input name="excludedTerms" placeholder="On-site" /></label>
-        <label><span>偏好地点</span><input name="preferredLocations" placeholder="Remote, Shanghai" /></label>
-        <label><span>最低薪资</span><input name="minimumSalary" type="number" min="1" step="1" placeholder="160000" /></label>
-        <label className="radar-import__text"><span>职位原文</span><textarea name="rawText" required rows={4} /></label>
-        <button className="primary-command" type="submit" disabled={importing}>
-          <Plus size={16} aria-hidden="true" />{importing ? "暂存中…" : "导入暂存区"}
+
+      <div className="legacy-import-bar">
+        <label>
+          <span>Legacy 数据目录</span>
+          <input
+            aria-label="Legacy 数据目录"
+            value={sourceRoot}
+            onChange={(event) => setSourceRoot(event.target.value)}
+            placeholder="请选择或输入旧 Agent Radar 目录"
+          />
+        </label>
+        <button
+          className="secondary-command"
+          type="button"
+          onClick={() => void importHistory()}
+          disabled={importing || !sourceRoot.trim()}
+        >
+          <Upload size={16} aria-hidden="true" />
+          {importing ? "正在核验并导入…" : report ? "重新核验导入" : "导入历史数据"}
+        </button>
+        {report && (
+          <div className="legacy-import-result">
+            <Database size={16} aria-hidden="true" />
+            <span>
+              最近批次：读取 {report.totals.read_count ?? 0} · 新增 {report.totals.new_count ?? 0}
+              {" · "}重复 {report.totals.duplicate_count ?? 0} · 失败 {report.totals.failed_count ?? 0}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <form className="legacy-job-filters" onSubmit={(event) => void searchJobs(event)}>
+        <label className="legacy-job-filters__query">
+          <span>搜索岗位、公司或技能</span>
+          <div>
+            <Search size={16} aria-hidden="true" />
+            <input
+              aria-label="搜索岗位、公司或技能"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="例如：Python、推荐系统、字节跳动"
+            />
+          </div>
+        </label>
+        <label>
+          <span>公司</span>
+          <input value={company} onChange={(event) => setCompany(event.target.value)} />
+        </label>
+        <label>
+          <span>地点</span>
+          <input value={location} onChange={(event) => setLocation(event.target.value)} />
+        </label>
+        <label>
+          <span>状态</span>
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <option value="">全部状态</option>
+            <option value="staged">待选择</option>
+            <option value="duplicate">重复待复核</option>
+            <option value="admitted">已加入求职流程</option>
+            <option value="rejected">已忽略</option>
+          </select>
+        </label>
+        <button className="primary-command" type="submit">
+          <Search size={16} aria-hidden="true" />搜索
         </button>
       </form>
-      {error && <p className="inline-error radar-error" role="alert"><AlertCircle size={16} />{error}<button className="secondary-command" type="button" onClick={() => void load()}><RefreshCw size={14} />重试</button></p>}
-      {loading && <div className="radar-state" aria-live="polite"><span className="status-spinner" /><p>正在读取暂存职位…</p></div>}
-      {!loading && records.length === 0 && <div className="radar-state"><Inbox size={22} /><p>暂存区为空</p></div>}
-      {!loading && records.length > 0 && (
-        <div className="radar-records">
-          {records.map((record) => (
-            <article className="radar-record" key={record.staging_id}>
-              <div><h3>{record.normalized.title}</h3><p>{record.normalized.company}{record.normalized.location ? ` · ${record.normalized.location}` : ""}</p></div>
-              <div className="radar-score"><strong>{Math.round(record.suggested_score * 100)}</strong><span>建议匹配</span></div>
-              <div className="radar-notes"><span>{record.status}</span><span>能力 {Math.round((record.score_breakdown.capability_match ?? 0) * 100)} · 证据 {Math.round((record.score_breakdown.evidence_coverage ?? 0) * 100)} · 地点 {Math.round((record.score_breakdown.location ?? 0) * 100)} · 薪资 {Math.round((record.score_breakdown.salary ?? 0) * 100)}</span><span>截止 {Math.round((record.score_breakdown.deadline ?? 0) * 100)} · 新鲜度 {Math.round((record.score_breakdown.freshness ?? 0) * 100)}</span>{record.gaps.length > 0 && <span>缺口：{record.gaps.join("、")}</span>}{record.duplicate_of && <span>重复：{record.duplicate_of}</span>}</div>
-              {record.status === "staged" && <button className="secondary-command" type="button" disabled={admitting === record.staging_id} onClick={() => void admit(record)}><Check size={15} />{admitting === record.staging_id ? "纳入中…" : "纳入机会"}</button>}
-            </article>
-          ))}
+
+      {error && (
+        <p className="inline-error radar-error" role="alert">
+          <AlertCircle size={16} aria-hidden="true" />
+          {error}
+          <button className="secondary-command" type="button" onClick={() => void load()}>
+            <RefreshCw size={14} aria-hidden="true" />重试
+          </button>
+        </p>
+      )}
+
+      {loadState === "loading" && (
+        <div className="radar-state" aria-live="polite">
+          <span className="status-spinner" aria-hidden="true" />
+          <p>正在读取历史岗位…</p>
+        </div>
+      )}
+
+      {loadState === "ready" && jobs.length === 0 && (
+        <div className="radar-state legacy-jobs__empty">
+          <Inbox size={24} aria-hidden="true" />
+          <h3>还没有可展示的历史岗位</h3>
+          <p>确认上方 Legacy 数据目录后点击“导入历史数据”，或调整搜索条件。</p>
+        </div>
+      )}
+
+      {loadState === "ready" && jobs.length > 0 && (
+        <div className="legacy-job-layout">
+          <div className="legacy-job-list" aria-label={`历史岗位，共 ${jobs.length} 条`}>
+            <div className="legacy-job-list__count">当前显示 {jobs.length} 条</div>
+            {jobs.map((job) => (
+              <article
+                className={`legacy-job-card${selected?.job.staging_id === job.staging_id ? " is-selected" : ""}`}
+                key={job.staging_id}
+              >
+                <button type="button" className="legacy-job-card__main" onClick={() => void openDetail(job)}>
+                  <div className="legacy-job-card__title">
+                    <h3>{job.title}</h3>
+                    <span className={`record-status record-status--${job.status}`}>
+                      {statusLabels[job.status]}
+                    </span>
+                  </div>
+                  <p><Building2 size={14} aria-hidden="true" />{job.company}</p>
+                  <p><MapPin size={14} aria-hidden="true" />{displayText(job.location) || "地点未记录"}{job.salary ? ` · ${job.salary}` : ""}</p>
+                  {displayTags(job.tags).length > 0 && (
+                    <div className="legacy-job-tags">
+                      {displayTags(job.tags).map((tag) => <span key={tag}>{tag}</span>)}
+                    </div>
+                  )}
+                  <small>{reviewLabels[job.review_status]} · {job.source_class}</small>
+                </button>
+                <div className="legacy-job-card__actions">
+                  <button className="secondary-command" type="button" onClick={() => void openDetail(job)}>
+                    <FileText size={15} aria-hidden="true" />查看详情
+                  </button>
+                  {job.status === "staged" && (
+                    <button
+                      className="primary-command"
+                      type="button"
+                      disabled={admitting === job.staging_id}
+                      onClick={() => void admit(job)}
+                    >
+                      <Check size={15} aria-hidden="true" />
+                      {admitting === job.staging_id ? "正在加入…" : "加入求职流程"}
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <aside className="legacy-job-detail" aria-label="岗位详情">
+            {detailLoading && <div className="radar-state"><span className="status-spinner" /><p>正在读取岗位详情…</p></div>}
+            {!detailLoading && !selected && (
+              <div className="radar-state">
+                <FileText size={22} aria-hidden="true" />
+                <p>选择一个岗位，查看 JD、来源证据和关联面试。</p>
+              </div>
+            )}
+            {!detailLoading && selected && (
+              <>
+                <header>
+                  <div>
+                    <p className="eyebrow">岗位详情</p>
+                    <h3>{selected.job.title}</h3>
+                    <p>{selected.job.company} · {displayText(selected.job.location) || "地点未记录"}</p>
+                  </div>
+                  <button className="icon-command" type="button" aria-label="关闭岗位详情" onClick={() => setSelected(null)}>
+                    <X size={17} aria-hidden="true" />
+                  </button>
+                </header>
+                <section>
+                  <h4>职位描述</h4>
+                  <div className="legacy-job-jd">{displayJd(selected.jd_text) || "源记录未提供完整 JD 文本。"}</div>
+                  {selected.job.source_url && (
+                    <a href={selected.job.source_url} target="_blank" rel="noreferrer">
+                      查看原始来源 <ExternalLink size={14} aria-hidden="true" />
+                    </a>
+                  )}
+                </section>
+                <section>
+                  <h4>来源与溯源</h4>
+                  <dl className="legacy-provenance">
+                    <div><dt>源文件</dt><dd>{selected.job.source_path}</dd></div>
+                    <div><dt>行号</dt><dd>{selected.job.row_number}</dd></div>
+                    <div><dt>SHA-256</dt><dd title={selected.job.source_sha256}>{shortHash(selected.job.source_sha256)}</dd></div>
+                    <div><dt>导入批次</dt><dd>{selected.batch_id}</dd></div>
+                    <div><dt>复核状态</dt><dd>{reviewLabels[selected.job.review_status]}</dd></div>
+                  </dl>
+                </section>
+                <section>
+                  <h4>关联面试信息</h4>
+                  {selected.related_interviews.length === 0 ? (
+                    <p className="muted-copy">暂未找到公司与岗位同时匹配的历史面试记录。</p>
+                  ) : (
+                    <ul className="legacy-interviews">
+                      {selected.related_interviews.map((item, index) => (
+                        <li key={`${index}-${interviewLabel(item)}`}>{interviewLabel(item)}</li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </>
+            )}
+          </aside>
         </div>
       )}
     </section>

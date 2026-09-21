@@ -5,6 +5,12 @@ Reversible preservation/rehearsal is complete for the subset in
 [reconciliation](LEGACY_RECONCILIATION_REPORT.md), and may be used for explicitly
 historical/unconfirmed evidence projection.
 
+The structured importer and desktop historical job browser are now implemented and
+verified against a disposable preview database; see
+[structured import report](LEGACY_STRUCTURED_IMPORT_REPORT.md). This does not cross
+the gate: staging/projection rows remain historical and unconfirmed, and admission
+to a Job/Opportunity requires an explicit user action.
+
 Before promoting structured history into the user's canonical career workspace:
 
 1. Decide the handling of 35 duplicate JD URLs and their conflicting S/C source grades.

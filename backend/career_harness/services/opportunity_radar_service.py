@@ -229,7 +229,11 @@ class OpportunityRadarService:
         url_fingerprint = _digest(_slug_url(normalized.source_url or raw.source_ref))
         normalized_json = normalized.model_dump(mode="json")
         content_fingerprint = _digest(_json(normalized_json))
-        duplicate_of = self.repository.find_duplicate(url_fingerprint, content_fingerprint)
+        duplicate_of = self.repository.find_duplicate(
+            url_fingerprint,
+            content_fingerprint,
+            connection=connection,
+        )
         staging_seed = json.dumps(
             {
                 "source_id": source.source_id,
@@ -242,7 +246,7 @@ class OpportunityRadarService:
             separators=(",", ":"),
         )
         staging_id = f"staging_{_digest(staging_seed)[:32]}"
-        existing = self.repository.get(staging_id)
+        existing = self.repository.get(staging_id, connection=connection)
         if existing is not None:
             return existing
         artifact = self.artifact_store.put(raw_bytes, ArtifactClass.PUBLIC_SOURCE)

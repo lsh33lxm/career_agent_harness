@@ -5,6 +5,7 @@ import {
   Gauge,
   History,
   Network,
+  Package,
   Settings,
   Target,
   type LucideIcon,
@@ -25,4 +26,5 @@ export const navigation: NavigationItem[] = [
   { path: "/history", label: "历史", icon: History },
   { path: "/context", label: "我的", icon: CircleUserRound },
   { path: "/settings", label: "设置", icon: Settings },
+  { path: "/plugins", label: "插件", icon: Package },
 ];

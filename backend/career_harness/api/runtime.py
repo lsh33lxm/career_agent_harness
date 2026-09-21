@@ -8,6 +8,7 @@ from career_harness.api.capability_inbox import CapabilityInboxApi
 from career_harness.api.career_reads import CareerReadApi
 from career_harness.api.evidence import EvidenceApi
 from career_harness.api.opportunities import OpportunityApi
+from career_harness.api.plugins import PluginApi
 from career_harness.api.project_reads import ProjectReadApi
 from career_harness.api.today import TodayApi
 from career_harness.config import Settings
@@ -24,6 +25,7 @@ from career_harness.services.capability_review_service import CapabilityReviewSe
 from career_harness.services.capability_workspace_service import CapabilityWorkspaceService
 from career_harness.services.command_service import CommandService
 from career_harness.services.opportunity_service import OpportunityService
+from career_harness.services.plugin_service import PluginLifecycleManager
 from career_harness.services.today_service import TodayService
 
 
@@ -33,6 +35,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
     database_url = sqlite_url(active_paths.database)
     upgrade_to_head(database_url)
     engine = create_sqlite_engine(database_url)
+    plugin_service = PluginLifecycleManager(engine)
     return create_app(
         settings,
         project_read_api=ProjectReadApi(ProjectRepository(engine)),
@@ -54,4 +57,5 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
             commands=CommandService(engine),
             service=CapabilityReviewService(CommandService(engine), CapabilityRepository(engine)),
         ),
+        plugin_api=PluginApi(plugin_service),
     )

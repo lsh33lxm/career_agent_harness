@@ -11,6 +11,7 @@ import { EvidencePage } from "../pages/EvidencePage";
 import { HistoryPage } from "../pages/HistoryPage";
 import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { PluginsPage } from "../pages/PluginsPage";
 
 const sections = [
   ["context", "Me / Context", "个人上下文页面尚未接入，未查询个人记录。"],
@@ -31,6 +32,7 @@ export function App() {
             <Route path="capabilities/inbox" element={<CapabilityInboxPage />} />
             <Route path="history" element={<HistoryPage />} />
             <Route path="history/evidence" element={<EvidencePage />} />
+            <Route path="plugins" element={<PluginsPage />} />
             {sections.map(([path, title, emptyLabel]) => (
               <Route
                 key={path}

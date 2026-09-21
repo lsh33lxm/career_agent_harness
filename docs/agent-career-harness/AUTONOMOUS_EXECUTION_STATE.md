@@ -14,21 +14,21 @@
 
 | Slice | 状态 | 当前入口 |
 | --- | --- | --- |
-| A Plugin Foundation | DONE (local/offline) | Slice B entry: local knowledge schema → proposal-only provenance |
-| B Career Knowledge | NOT STARTED | 等待 Slice A DoD |
-| C Resume Studio | NOT STARTED | 等待 Slice B DoD |
+| A Plugin Foundation | DONE (local/offline) | Slice A commit `e2f2807` |
+| B Career Knowledge | DONE (local/offline) | Slice C entry: ResumeBase → proposal-only render chain |
+| C Resume Studio | IN PROGRESS | 先冻结 Core-backed contract、fixture 和测试 |
 | D Opportunity Radar | NOT STARTED | 等待 Slice C DoD |
 | E Lifecycle / Replacement | NOT STARTED | 等待 Slice D DoD |
 
 ## Slice A checklist
 
-- [ ] Manifest v1 schema、Python/TypeScript types、validator
-- [ ] Registry、lifecycle、permission gate、runner、envelope
-- [ ] Reversible plugin foundation migration
-- [ ] `echo-fixture` worker and `career-kb-local` read-only adapter
-- [ ] Plugin API and `/plugins` page
-- [ ] Failure/timeout/cancellation/idempotency/provenance/rollback tests
-- [ ] Full backend/frontend regression and backup/restore rehearsal
+- [x] Manifest v1 schema、Python/TypeScript types、validator
+- [x] Registry、lifecycle、permission gate、runner、envelope
+- [x] Reversible plugin foundation migration
+- [x] `echo-fixture` worker and `career-kb-local` read-only adapter
+- [x] Plugin API and `/plugins` page
+- [x] Failure/timeout/cancellation/idempotency/provenance/rollback tests
+- [x] Full backend/frontend regression and backup/restore rehearsal
 
 ## Safety boundaries
 
@@ -48,6 +48,18 @@
 - External actions：none；real Feishu/Gmail/Notion/ATS writes remain blocked by policy
 - Next slice：Slice B — Career Knowledge / Wiki，starting with local knowledge schema and proposal-only provenance
 
+## Slice B checkpoint
+
+- 状态：DONE — local/offline Slice B
+- Migration：`0015_knowledge_foundation`，upgrade/downgrade passed；backup/restore rehearsal passed
+- Backend focused：6 passed；migration/backup focused：50 passed
+- Backend full regression：619 passed, 5 skipped (Windows symlink permission limitations)
+- Frontend：56 passed；`npm run build` passed
+- Ruff：`backend tests migrations` passed；`git diff --check` passed
+- Acceptance：document import → Artifact/Evidence provenance → local search/citation → proposal review → revision diff/rollback/index rebuild passed
+- External adapter：`career-kb-weknora` is read-only and blocked until endpoint, credentials, license and terms are verified
+- Next slice：Slice C — Resume Studio，starting with Core-backed Base/Target/Revision proposal chain
+
 ## Recovery entry
 
-Start with `git status --short --branch`, inspect this file, then continue at the first unchecked Slice A item. Record every blocker in `BLOCKERS.md` and every architectural decision in `DECISIONS.md`.
+Start with `git status --short --branch`, inspect this file, then continue at the current Slice entry. Record every blocker in `BLOCKERS.md` and every architectural decision in `DECISIONS.md`.

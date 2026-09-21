@@ -6,6 +6,7 @@ import {
   History,
   Network,
   Package,
+  Library,
   Settings,
   Target,
   type LucideIcon,
@@ -27,4 +28,5 @@ export const navigation: NavigationItem[] = [
   { path: "/context", label: "我的", icon: CircleUserRound },
   { path: "/settings", label: "设置", icon: Settings },
   { path: "/plugins", label: "插件", icon: Package },
+  { path: "/knowledge", label: "知识", icon: Library },
 ];

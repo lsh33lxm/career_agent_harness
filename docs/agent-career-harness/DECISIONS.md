@@ -35,3 +35,19 @@
 - 日期：2026-09-21
 - 决定：插件上下文只暴露 ScopedCoreClient 协议和受限 read-model allowlist；底层 Engine 由闭包捕获，插件对象没有 engine 或 connection 属性。
 - 原因：满足“插件不得取得裸 DB 连接”的安全边界，同时允许 evidence provenance fail-loud 校验。
+
+## D-2.0-006 — Knowledge imports are artifact-backed and proposal-first
+
+- 状态：ACCEPTED
+- 日期：2026-09-21
+- 决定：知识导入先把原始 bytes 写入现有 Artifact Store，并创建 Evidence provenance；`knowledge_revision`、chunk、link 和 evidence ref immutable。导入记录默认 `proposed`，只有用户审阅 proposal 后才产生 `approved` revision。
+- 原因：知识页面、外部资料和 LLM 推断不能绕过 Career Core 的 authority 边界；原始证据必须可重放、可验证、可回滚。
+- 影响：local KB 可以返回 exact citation；悬空 evidence ref 直接失败；WeKnora 只作为 read-only adapter。
+
+## D-2.0-007 — Slice B search uses deterministic lexical indexing first
+
+- 状态：ACCEPTED FOR IMPLEMENTATION
+- 日期：2026-09-21
+- 决定：首期 `career-kb-local` 使用可重建的 SQLite chunk 索引和确定性关键词评分；向量/图检索保留为后续 adapter，不引入运行时网络或不可复现模型依赖。
+- 原因：保持 local-first、离线可验收和结果可重放，同时不改变知识的 canonical/provenance 语义。
+- 影响：当前搜索能力是轻量 lexical baseline；WeKnora 的远程 hybrid search 仍需单独配置与授权。

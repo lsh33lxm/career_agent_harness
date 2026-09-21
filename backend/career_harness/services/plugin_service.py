@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from typing import Any
 
 from sqlalchemy import Engine, text
 
+from career_harness.adapters.career_kb_weknora import CareerKbWeknoraAdapter
 from career_harness.core.plugin.contracts import (
     PluginEnvelope,
     PluginEnvelopeStatus,
@@ -89,6 +91,14 @@ def _builtin_manifest(
 def career_kb_local(payload: dict[str, Any], context: PluginContext) -> dict[str, Any]:
     context.cancellation.raise_if_cancelled()
     query = str(payload.get("query", "")).strip()
+    options = payload.get("options")
+    if context.core is not None:
+        result = context.core.search_read_model(
+            "knowledge",
+            query,
+            options if isinstance(options, dict) else None,
+        )
+        return {**result, "read_only": True}
     return {
         "query": query,
         "items": [],
@@ -96,6 +106,16 @@ def career_kb_local(payload: dict[str, Any], context: PluginContext) -> dict[str
         "evidence_refs": [],
         "message": "local knowledge index is empty" if not query else "no local matches",
     }
+
+
+def career_kb_weknora(payload: dict[str, Any], _context: PluginContext) -> dict[str, Any]:
+    adapter = CareerKbWeknoraAdapter()
+    capability = str(payload.get("operation", "search"))
+    if capability == "read":
+        return adapter.read(str(payload.get("passage_id", "")))
+    if capability == "ask":
+        return adapter.ask(str(payload.get("question", "")))
+    return adapter.search(str(payload.get("query", "")))
 
 
 class PluginRegistry:
@@ -118,6 +138,52 @@ class PluginRegistry:
                     description="Read-only local knowledge adapter; it cannot change Core truth.",
                 ),
                 career_kb_local,
+            ),
+            RegisteredPlugin(
+                PluginManifest(
+                    id="career-kb-weknora",
+                    name="Career Knowledge / WeKnora",
+                    version="0.1.0",
+                    api_version="1",
+                    type=PluginType.MCP_PLUGIN,
+                    source={
+                        "repo": "https://github.com/Tencent/WeKnora",
+                        "ref": "v0.8.0",
+                        "commit": "immutable-sha-v08",
+                        "license": "Apache-2.0",
+                    },
+                    capabilities=(
+                        "knowledge.search",
+                        "knowledge.read",
+                        "knowledge.ask",
+                        "health",
+                    ),
+                    permissions={
+                        "network": ("configured-weknora-host",),
+                        "filesystem": ("artifact-store:read",),
+                        "secrets": ("weknora-api-key",),
+                    },
+                    data_contracts=("EvidenceRef", "KnowledgePassage", "PluginEnvelope"),
+                    healthcheck={"command": "health", "timeout_ms": 5000},
+                    replacement={
+                        "compatible_capabilities": (
+                            "knowledge.search",
+                            "knowledge.read",
+                        )
+                    },
+                    dependencies=(),
+                    core_compatibility={"min_version": "0.1.0", "max_version": "0.x"},
+                    config_schema={},
+                    data_migration_version=0,
+                    cost_limits={"max_runtime_ms": 5000, "max_output_bytes": 1_000_000},
+                    user_visible_description=(
+                        "Read-only WeKnora adapter; blocked until endpoint, credentials "
+                        "and terms are verified."
+                    ),
+                    security_url="https://github.com/Tencent/WeKnora/security",
+                    terms_url="https://github.com/Tencent/WeKnora",
+                ),
+                career_kb_weknora,
             ),
         )
         self._plugins = {item.manifest.id: item for item in defaults}
@@ -185,19 +251,39 @@ def _scoped_read_model(
     return dict(row) if row is not None else None
 
 
+def _empty_knowledge_search(
+    _query: str, _options: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    return {"items": [], "evidence_sufficient": False}
+
+
 class ScopedCoreReadClient:
     """A scoped read facade; the plugin cannot access an Engine or Connection."""
 
-    __slots__ = ("_reader",)
+    __slots__ = ("_reader", "_knowledge_search")
 
-    def __init__(self, engine: Engine) -> None:
+    def __init__(
+        self,
+        engine: Engine,
+        knowledge_search: Callable[
+            [str, dict[str, Any] | None], dict[str, Any]
+        ] | None = None,
+    ) -> None:
         def reader(name: str, identifier: str) -> dict[str, Any] | None:
             return _scoped_read_model(engine, name, identifier)
 
         self._reader = reader
+        self._knowledge_search = knowledge_search or _empty_knowledge_search
 
     def get_read_model(self, name: str, identifier: str) -> dict[str, Any] | None:
         return self._reader(name, identifier)
+
+    def search_read_model(
+        self, name: str, query: str, options: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        if name != "knowledge":
+            raise ValueError("read model is outside plugin scope")
+        return self._knowledge_search(query, options)
 
 
 class PluginRunner:
@@ -332,10 +418,14 @@ class PluginLifecycleManager:
         engine: Engine,
         registry: PluginRegistry | None = None,
         runner: PluginRunner | None = None,
+        knowledge_search: Callable[
+            [str, dict[str, Any] | None], dict[str, Any]
+        ] | None = None,
     ) -> None:
         self.engine = engine
         self.registry = registry or PluginRegistry()
         self.runner = runner or PluginRunner()
+        self.knowledge_search = knowledge_search
 
     def _registered(self, plugin_id: str) -> RegisteredPlugin:
         return self.registry.get(plugin_id)
@@ -735,7 +825,7 @@ class PluginLifecycleManager:
         else:
             token = cancellation or CancellationToken(Event())
             context = PluginContext(
-                core=ScopedCoreReadClient(self.engine),
+                core=ScopedCoreReadClient(self.engine, self.knowledge_search),
                 cancellation=token,
             )
             result = self.runner.invoke(

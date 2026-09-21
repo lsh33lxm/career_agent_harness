@@ -16,6 +16,10 @@ class ScopedCoreClient(Protocol):
 
     def get_read_model(self, name: str, identifier: str) -> dict[str, Any] | None: ...
 
+    def search_read_model(
+        self, name: str, query: str, options: dict[str, Any] | None = None
+    ) -> dict[str, Any]: ...
+
 
 class ScopedArtifactClient(Protocol):
     def get_metadata(self, artifact_id: str) -> dict[str, Any] | None: ...

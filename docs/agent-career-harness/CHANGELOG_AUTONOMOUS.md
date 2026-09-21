@@ -20,3 +20,5 @@
 - 完成 Slice E Plugin Lifecycle / Replacement：versioned registry、candidate staging、compatibility/license/permission diff、deterministic shadow run、preview-gated switch、manual rollback、update policy、audit summary、uninstall data-impact preview 与插件页生命周期控制。
 - Slice E focused backend/API `9 passed`；backend full `629 passed, 5 skipped`；backup/restore/lifecycle rehearsal `9 passed`；frontend `58 passed`；Vite build、Ruff、diff check 通过。
 - A-E local/offline slices 全部完成；真实 marketplace、第三方 crawler 与 external-write adapters 保持 blocked，等待独立授权。
+- Completion audit correction：上述“全部完成”结论撤回。逐条审计发现 B-E 仍有权威执行提示词明确要求但未被实现或验证的项目；从 Slice B deterministic hybrid search 继续补齐。
+- Slice B completion audit 补齐 deterministic hybrid lexical/vector scoring、可解释 score 分量与 prompt-injection 默认 quarantine；focused knowledge/API/contract `11 passed`，backend full `630 passed, 5 skipped`，frontend `58 passed`，Ruff/build/diff check 通过。

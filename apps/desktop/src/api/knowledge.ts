@@ -13,6 +13,9 @@ export interface KnowledgeSearchResult {
   title: string;
   snippet: string;
   score: number;
+  lexical_score: number;
+  semantic_score: number;
+  search_mode: "lexical" | "hybrid";
   category: string;
   status: string;
   citation: KnowledgeCitation;

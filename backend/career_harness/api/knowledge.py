@@ -52,6 +52,8 @@ class KnowledgeSearchRequest(FrozenModel):
     )
     limit: int = Field(default=20, ge=1, le=100)
     after: str | None = Field(default=None, max_length=128)
+    mode: str = Field(default="hybrid", pattern=r"^(lexical|hybrid)$")
+    include_flagged: bool = False
 
 
 class KnowledgeProposalRequest(FrozenModel):
@@ -126,6 +128,8 @@ def create_knowledge_router(api: KnowledgeApi) -> APIRouter:
                 statuses=request.statuses,
                 limit=request.limit,
                 after=request.after,
+                mode=request.mode,
+                include_flagged=request.include_flagged,
             )
         except Exception as error:
             raise _error(error) from error

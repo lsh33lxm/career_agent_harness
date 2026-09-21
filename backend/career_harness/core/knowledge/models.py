@@ -128,6 +128,9 @@ class KnowledgeSearchResult(FrozenModel):
     title: str
     snippet: str
     score: float = Field(ge=0)
+    lexical_score: float = Field(ge=0)
+    semantic_score: float = Field(ge=0, le=1)
+    search_mode: str = Field(pattern=r"^(lexical|hybrid)$")
     category: KnowledgeCategory
     status: KnowledgeStatus
     citation: KnowledgeCitation

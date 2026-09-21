@@ -83,3 +83,11 @@
 - 决定：同一 plugin ID 可注册多个 immutable release；installation 始终 pin 到一个版本。候选先 staging，再执行 Core compatibility、license、capability、permission diff 与 deterministic shadow fixture；只有全部通过后，用户 switch 才能改变 active pin。
 - 原因：更新和替换必须可恢复，候选代码不能因被发现或下载就接管运行路径。
 - 影响：`patch_auto` 仅自动准备 preview；不自动 switch。rollback 恢复 previous pin 并默认停用，保留 run/audit/artifact 以便重放。
+
+## D-2.0-012 — Local hybrid search is deterministic and flagged content is quarantined
+
+- 状态：ACCEPTED
+- 日期：2026-09-21
+- 决定：`career-kb-local` 将 lexical frequency 与本地字符 n-gram cosine vector score 合并，返回可解释的两个分量；不依赖外部 embedding 服务。检测到 prompt injection 的 revision 默认从搜索和 plugin result 排除，仅允许显式本地审核查询。
+- 原因：满足首期轻量 hybrid search，同时保持 local-first、可重放与恶意文档隔离。
+- 影响：后续真实 embedding adapter 可替换 vector provider，但不得改变 evidence citation、authority 或默认 quarantine 语义。

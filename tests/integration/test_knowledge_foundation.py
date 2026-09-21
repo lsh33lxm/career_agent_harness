@@ -46,7 +46,9 @@ def test_import_search_provenance_and_prompt_injection_flag(tmp_path: Path) -> N
     assert revision.status.value == "proposed"
     assert revision.prompt_injection_flag is True
     assert revision.artifact_id is not None
-    page = repository.search(query="evidence pipeline")
+    quarantined = repository.search(query="evidence pipeline")
+    assert quarantined.evidence_sufficient is False
+    page = repository.search(query="evidence pipeline", include_flagged=True)
     assert page.evidence_sufficient is True
     result = page.items[0]
     assert result.citation.knowledge_id == revision.knowledge_id
@@ -55,6 +57,26 @@ def test_import_search_provenance_and_prompt_injection_flag(tmp_path: Path) -> N
     empty = repository.search(query="zzzzzz")
     assert empty.evidence_sufficient is False
     assert empty.message is not None
+
+
+def test_hybrid_search_uses_deterministic_local_vector_similarity(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    revision = repository.import_document(
+        content=b"Designed an orchestration service for reliable workloads.",
+        media_type="text/plain",
+        source_type="fixture",
+        source_locator="fixture://semantic-search",
+        category=KnowledgeCategory.PROJECT_EVIDENCE,
+        title="Platform work",
+        authority=KnowledgeAuthority.DOCUMENT_SUPPORTED,
+    )
+    lexical = repository.search(query="orchestrating reliability", mode="lexical")
+    hybrid = repository.search(query="orchestrating reliability", mode="hybrid")
+    assert lexical.items == ()
+    assert hybrid.items[0].knowledge_id == revision.knowledge_id
+    assert hybrid.items[0].lexical_score == 0
+    assert hybrid.items[0].semantic_score > 0
+    assert hybrid.items[0].search_mode == "hybrid"
 
 
 def test_proposal_review_diff_rollback_and_index_rebuild(tmp_path: Path) -> None:

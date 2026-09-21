@@ -4,8 +4,10 @@ import difflib
 import hashlib
 import io
 import json
+import math
 import re
 import uuid
+from collections import Counter
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
@@ -90,6 +92,21 @@ def _prompt_injection_flag(content: str) -> bool:
 
 def _hash_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _vector_features(value: str) -> Counter[str]:
+    normalized = re.sub(r"\s+", " ", value.casefold()).strip()
+    compact = f"  {normalized}  "
+    return Counter(compact[index : index + 3] for index in range(max(0, len(compact) - 2)))
+
+
+def _cosine_similarity(left: Counter[str], right: Counter[str]) -> float:
+    if not left or not right:
+        return 0.0
+    dot = sum(value * right.get(key, 0) for key, value in left.items())
+    left_norm = math.sqrt(sum(value * value for value in left.values()))
+    right_norm = math.sqrt(sum(value * value for value in right.values()))
+    return dot / (left_norm * right_norm) if left_norm and right_norm else 0.0
 
 
 def _json(value: Any) -> str:
@@ -424,10 +441,15 @@ class KnowledgeRepository:
         ),
         limit: int = 20,
         after: str | None = None,
+        mode: str = "hybrid",
+        include_flagged: bool = False,
     ) -> KnowledgeSearchPage:
         if not 1 <= limit <= 100:
             raise ValueError("knowledge page limit must be between 1 and 100")
+        if mode not in {"lexical", "hybrid"}:
+            raise ValueError("knowledge search mode must be lexical or hybrid")
         terms = tuple(term.lower() for term in re.findall(r"\w+", query.lower()))
+        query_vector = _vector_features(query)
         with self.engine.connect() as connection:
             rows = connection.execute(
                 text(
@@ -445,6 +467,8 @@ class KnowledgeRepository:
             ).mappings().all()
             results: list[KnowledgeSearchResult] = []
             for row in rows:
+                if row["prompt_injection_flag"] and not include_flagged:
+                    continue
                 if categories and row["category"] not in {item.value for item in categories}:
                     continue
                 if statuses and row["status"] not in {item.value for item in statuses}:
@@ -453,8 +477,14 @@ class KnowledgeRepository:
                     continue
                 content = str(row["content"])
                 haystack = f"{row['title']} {content}".lower()
-                score = float(sum(haystack.count(term) for term in terms))
-                if terms and score == 0:
+                lexical_score = float(sum(haystack.count(term) for term in terms))
+                semantic_score = (
+                    _cosine_similarity(query_vector, _vector_features(haystack))
+                    if mode == "hybrid" and query.strip()
+                    else 0.0
+                )
+                score = lexical_score + semantic_score * 2.0
+                if terms and score <= 0.05:
                     continue
                 refs = tuple(
                     connection.execute(
@@ -479,6 +509,9 @@ class KnowledgeRepository:
                         title=row["revision_title"],
                         snippet=self._snippet(content, terms),
                         score=score,
+                        lexical_score=lexical_score,
+                        semantic_score=semantic_score,
+                        search_mode=mode,
                         category=KnowledgeCategory(row["category"]),
                         status=KnowledgeStatus(row["status"]),
                         citation=KnowledgeCitation(
@@ -513,6 +546,8 @@ class KnowledgeRepository:
             query=query,
             limit=int(options.get("limit", 20)),
             after=options.get("after"),
+            mode=str(options.get("mode", "hybrid")),
+            include_flagged=bool(options.get("include_flagged", False)),
         )
         return page.model_dump(mode="json")
 

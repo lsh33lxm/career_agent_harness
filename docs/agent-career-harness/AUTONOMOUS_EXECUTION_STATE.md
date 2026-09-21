@@ -15,10 +15,10 @@
 | Slice | 状态 | 当前入口 |
 | --- | --- | --- |
 | A Plugin Foundation | DONE (local/offline) | Slice A commit `e2f2807` |
-| B Career Knowledge | DONE (local/offline) | Slice C entry: ResumeBase → proposal-only render chain |
-| C Resume Studio | DONE (local/offline) | Migration `0016_resume_studio` |
-| D Opportunity Radar | DONE (local/offline) | Migration `0017_opportunity_radar` |
-| E Lifecycle / Replacement | DONE (local/offline) | versioned registry → shadow preview → switch/rollback |
+| B Career Knowledge | DONE (completion audit passed) | deterministic hybrid search + flagged-content quarantine |
+| C Resume Studio | IN PROGRESS (completion audit) | 第二 renderer、自动保存、drafter-reviewer 与输出 metadata |
+| D Opportunity Radar | AUDIT REQUIRED | 多维 ranking 与 source policy 尚需核验/补齐 |
+| E Lifecycle / Replacement | AUDIT REQUIRED | shadow metrics、license/dependency scan 与 rollback recommendation 尚需核验/补齐 |
 
 ## Slice A checklist
 
@@ -93,3 +93,17 @@ Start with `git status --short --branch`, inspect this file, then continue at th
 - Verification：focused backend/API `9 passed`；backend full `629 passed, 5 skipped`；backup/restore/lifecycle rehearsal `9 passed`；frontend `58 passed`；Vite build、Ruff、diff check 通过
 - Review：APPROVE；P0/P1 none。真实 marketplace 下载与 external-write adapters 仍需单独授权
 - Next：A-E final audit；后续只处理已登记 external blockers 或新的产品授权
+
+## Completion audit correction
+
+- 2026-09-21：逐条对照长期执行提示词后，确认先前 A-E `DONE` 结论使用了弱于文档要求的验收证据。
+- 已确认缺口：Slice B 只有 lexical search；Slice C 尚未证明第二隔离 renderer、自动保存与 drafter-reviewer；Slice D 尚未完整覆盖 deadline/location/salary/evidence ranking 和 per-source policy；Slice E 尚未完整覆盖 latency/provenance/error comparison、license/dependency scan 与 automatic rollback recommendation。
+- 处理：保留所有已通过实现与提交，从 Slice B 开始按原顺序补齐；在完成审计通过前不再声称 A-E 全部完成。
+
+## Slice B completion audit
+
+- 状态：DONE — completion audit passed
+- 补齐：deterministic local character n-gram vector cosine + lexical hybrid score；API/result 显式返回 lexical/semantic 分量和 search mode。
+- 安全：prompt-injection flagged revision 默认不进入搜索或 plugin result；只有显式本地审核请求可包含。
+- Verification：focused knowledge/API/contract `11 passed`；backend full `630 passed, 5 skipped`；frontend `58 passed`；Ruff、build、diff check 通过。
+- Next：Slice C completion audit。

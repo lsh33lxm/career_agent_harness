@@ -5,6 +5,7 @@ import {
   getTask,
   listTasks,
   retryTask,
+  runTaskStage,
   type TaskDetail,
   type TaskRecord,
   type TaskStatus,
@@ -76,10 +77,17 @@ export function TaskQueuePanel() {
   async function retry(task: TaskRecord) {
     setBusy(`${task.task_id}:retry`);
     try {
-      const retried = await retryTask(task.task_id);
-      setMessage(`“${taskName(task)}”已进入人工重试队列。`);
+      await retryTask(task.task_id);
+      const results = await runTaskStage(task.stage);
+      const retried = results.find((item) => item.task_id === task.task_id);
+      const outcomeMessage = (
+        retried?.status === "completed"
+          ? `“${taskName(task)}”人工重试已完成。`
+          : `“${taskName(task)}”已执行人工重试，请查看最新状态。`
+      );
       setDetail(null);
-      setTasks((current) => current.map((item) => item.task_id === retried.task_id ? retried : item));
+      await load();
+      setMessage(outcomeMessage);
     } catch (error) {
       setMessage(`人工重试失败：${(error as Error).message}`);
     } finally {

@@ -50,3 +50,6 @@ export const getTask = (taskId: string) =>
 
 export const retryTask = (taskId: string) =>
   apiRequest<TaskRecord>(`/api/v1/tasks/${encodeURIComponent(taskId)}/retry`, { method: "POST" });
+
+export const runTaskStage = (stage: string) =>
+  apiRequest<TaskRecord[]>(`/api/v1/tasks/stages/${encodeURIComponent(stage)}/run`, { method: "POST" });

@@ -2,10 +2,15 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { getTask, listTasks, retryTask } from "../api/tasks";
+import { getTask, listTasks, retryTask, runTaskStage } from "../api/tasks";
 import { TaskQueuePanel } from "./TaskQueuePanel";
 
-vi.mock("../api/tasks", () => ({ getTask: vi.fn(), listTasks: vi.fn(), retryTask: vi.fn() }));
+vi.mock("../api/tasks", () => ({
+  getTask: vi.fn(),
+  listTasks: vi.fn(),
+  retryTask: vi.fn(),
+  runTaskStage: vi.fn(),
+}));
 
 const failedTask = {
   task_id: "task_sync_1",
@@ -46,6 +51,15 @@ beforeEach(() => {
     version: 2,
     last_error: null,
   });
+  vi.mocked(runTaskStage).mockResolvedValue([{
+    ...failedTask,
+    status: "completed",
+    progress: 1,
+    current_attempt: 3,
+    max_attempts: 3,
+    version: 2,
+    last_error: null,
+  }]);
 });
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
@@ -61,5 +75,6 @@ it("展示失败原因、尝试记录并允许人工重试", async () => {
 
   fireEvent.click(screen.getByRole("button", { name: "人工重试" }));
   await waitFor(() => expect(retryTask).toHaveBeenCalledWith("task_sync_1"));
-  expect(screen.getByRole("status").textContent).toContain("已进入人工重试队列");
+  await waitFor(() => expect(runTaskStage).toHaveBeenCalledWith("source_sync"));
+  expect(screen.getByRole("status").textContent).toContain("人工重试已完成");
 });

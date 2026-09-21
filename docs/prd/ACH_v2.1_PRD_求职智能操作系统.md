@@ -7,7 +7,7 @@
 
 ## 1. 本次目标与结论
 
-Agent Career Harness 已从页面原型形成可安装的本地中文职业工作台：Career Core 管理权威状态，Artifact/Evidence 保存来源，Legacy 数据以只读投影进入机会与知识页面，插件、模型、GitHub 项目分析、简历、岗位、能力和 Wiki 通过同一审计边界协作。本轮恢复正确的“观复”桌面图标，并补齐 Wiki graph、长期记忆、持久任务队列、本地资料源同步和 scoped tool governance。
+Agent Career Harness 已从页面原型形成可安装的本地中文职业工作台：Career Core 管理权威状态，Artifact/Evidence 保存来源，Legacy 数据以只读投影进入机会与知识页面，插件、模型、GitHub 项目分析、简历、岗位、能力和 Wiki 通过同一审计边界协作。本轮恢复正确的“观复”桌面图标，并补齐 Wiki graph、长期记忆、持久任务队列、本地/Legacy/GitHub 资料源治理、Feishu 离线预览和 scoped tool governance。
 
 状态定义：**已完成**表示代码、测试和本地构建均存在；**部分完成**表示安全的本地闭环存在但高级能力或外部连接未完成；**阻塞**表示需要凭据、条款许可或用户权威。
 
@@ -22,11 +22,12 @@ Agent Career Harness 已从页面原型形成可安装的本地中文职业工�
 | Wiki proposal、revision、diff、rollback、graph、health | 已完成 | `backend/career_harness/api/knowledge.py` |
 | 长期记忆 proposal、确认、revision、tombstone | 已完成（本地作用域） | `backend/career_harness/db/memory_repository.py` |
 | 持久任务队列、retry/cancel/dead-letter/attempt guard | 已完成（本地手动调度） | `backend/career_harness/db/task_repository.py` |
-| SourceConnector、cursor、delete safety、sync log | 部分完成（本地文件夹、Legacy） | `backend/career_harness/services/source_connector_service.py` |
+| SourceConnector、cursor、delete safety、sync log | 部分完成（本地文件夹、Legacy、GitHub） | `backend/career_harness/services/source_connector_service.py` |
 | Scoped Tool Registry 与审计 | 部分完成（内置只读工具） | `backend/career_harness/core/tools/registry.py` |
 | Resume proposal、revision、HTML/PDF、ATS 检查 | 已完成（本地 renderer） | `backend/career_harness/services/resume_studio_service.py` |
 | 模型配置与安全密钥 | 已完成；真实连接待凭据 | `backend/career_harness/services/model_provider_service.py` |
 | GitHub 只读项目分析 | 已完成；公网验收受网络影响 | `backend/career_harness/services/github_project_service.py` |
+| Feishu Today 离线预览 | 已完成 dry-run；真实写入阻塞 | `backend/career_harness/adapters/feishu_projection.py` |
 | Windows 桌面/sidecar/NSIS | 已完成 | `apps/desktop/src-tauri/` |
 | “观复”主题与正确图标 | 已完成 | `apps/desktop/src/styles.css`、`apps/desktop/src-tauri/icons/` |
 
@@ -47,7 +48,9 @@ Wiki 支持 proposal 审核、revision history、line diff、rollback、显式�
 
 长期记忆已支持 profile/preference/fact/task/interest、user/workspace/session scope、候选 proposal、用户确认/拒绝/编辑、revision、检索与 tombstone。LLM 原始创建者与用户确认者分离，未确认候选不能作为强事实；记忆不能授予工具权限或覆盖本轮用户要求。Memory consolidation 与 memory-document affinity 尚未实现。
 
-本地资料源已支持绝对路径连接测试、只读无 symlink 扫描、50 MiB/文件与 10,000 文件上限、SHA-256、内容寻址归档、full/incremental cursor、created/updated/skipped/deleted/failed 统计、暂停/恢复和同步审计。源端删除只标记 `source_deleted`，不删除本地 artifact；扫描失败不推进 cursor，也不误删现有知识。知识页提供同主题的创建、测试、同步与历史状态入口，不显示内部 connector ID。Legacy importer 已接入同一 connector contract：应用原导入入口会复用 connector，生成 sync cursor、统计和审计；单文件失败不会推进 cursor，源目录保持只读。GitHub 与 Feishu 尚未迁入统一 connector contract。
+本地资料源已支持绝对路径连接测试、只读无 symlink 扫描、50 MiB/文件与 10,000 文件上限、SHA-256、内容寻址归档、full/incremental cursor、created/updated/skipped/deleted/failed 统计、暂停/恢复和同步审计。源端删除只标记 `source_deleted`，不删除本地 artifact；扫描失败不推进 cursor，也不误删现有知识。知识页提供同主题的创建、测试、同步与历史状态入口，不显示内部 connector ID。Legacy importer 已接入同一 connector contract：应用原导入入口会复用 connector，生成 sync cursor、统计和审计；单文件失败不会推进 cursor，源目录保持只读。GitHub 分析也通过 connector 保存用户只读授权、固定 commit cursor 和同步审计；未完成真实 fetch 前不会显示网络已验证。
+
+Feishu Today 是出站投影而非 SourceConnector。当前“今天”页可生成保留 Core 顺序、exact revisions、UserPriority 与 SuggestedPriority 的 `dry_run` JSON 预览，不请求凭据、不连接 Feishu、不产生远端写入。Feishu 作为入站资料源的 connector 与真实投影写入仍未实现。
 
 持久 Task Queue 支持 pending/processing/finalizing/completed/failed/cancelled/retrying/dead-letter 状态、指数退避、取消、恢复、人工重试、stage worker limit、不可变 attempt 和 version/attempt guard。任务 JSON 限制为 1 MB，禁止直接持久化 token/password/API key；异常在写库前脱敏。当前 runtime 提供手动 dispatcher，常驻后台调度与 scheduled sync 尚未实现。
 
@@ -94,7 +97,7 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 | Knowledge import/chunk/hybrid search/citation | 已完成 | 增加真实 embedding/rerank 可选 adapter |
 | Wiki revision/diff/rollback/graph/health | 已完成 | 增加页面编辑、移动和 lint 修复 proposal |
 | Memory governance | 已完成本地核心 | 增加 consolidation 与 document affinity |
-| SourceConnector/sync cursor/delete safety | 部分完成 | local-folder、Legacy 已完成；迁移 GitHub、Feishu adapter |
+| SourceConnector/sync cursor/delete safety | 部分完成 | local-folder、Legacy、GitHub 已完成；增加其他入站 adapter |
 | Task retry/cancel/dead-letter/worker pool | 已完成本地核心 | 增加后台 dispatcher、scheduled sync 与每模型并发策略 |
 | Opportunity/Resume/Application | 已完成本地核心 | 编排离线端到端任务和公司/面试产物 |
 | 外部 ATS/邮件/Feishu/Notion 写入 | 阻塞 | 需要凭据、条款与逐次用户批准 |
@@ -103,22 +106,22 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 
 ## 10. 测试与构建结果
 
-本轮可审计实现提交：`4e8e944`（Memory）、`0caa294`（Task Queue）、`e14d795`（local-folder SourceConnector）、`64374d0`（知识页资料源 UI）、`58c4b3a`（scoped Tool Registry/API）、`9bae9f1`（Legacy SourceConnector）。
+本轮可审计实现提交：`4e8e944`（Memory）、`0caa294`（Task Queue）、`e14d795`（local-folder SourceConnector）、`64374d0`（知识页资料源 UI）、`58c4b3a`（scoped Tool Registry/API）、`9bae9f1`（Legacy SourceConnector）、`34ef3d8`（GitHub SourceConnector）、`eee4776`（Feishu Today dry-run）。
 
-- Backend：`679 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制。
-- Frontend：`22 test files, 59 passed`。
+- Backend：`681 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制。
+- Frontend：`22 test files, 61 passed`。
 - Ruff：`backend tests migrations` 通过。
 - TypeScript/Vite：production build 通过。
-- Legacy/SourceConnector focused：`10 passed`；Tool/API focused：`6 passed`。
-- 数据库 migration head：`0029_legacy_source_connector`；Legacy connector 的升级、带 sync run 的降级清理及再次升级均通过。
-- Desktop：PyInstaller sidecar、`cargo check --locked` 与 Tauri NSIS release 构建通过；sidecar SHA-256 `23c51e80408dc9f7f7638b7026cf8c410bcc26e4bd2eb3a7bf95a712bc83c8db`。
+- Legacy/SourceConnector focused：`10 passed`；GitHub/SourceConnector focused：`11 passed`；Feishu/Today focused：`11 passed`；Tool/API focused：`6 passed`。
+- 数据库 migration head：`0030_github_source_connector`；Legacy/GitHub connector 的升级、带 sync run 的降级清理及再次升级均通过。
+- Desktop：PyInstaller sidecar、`cargo check --locked` 与 Tauri NSIS release 构建通过；sidecar SHA-256 `692fd89ab87bd7c1936f3af50febe39d0a9a6c6002ab2c9f16fd05e479fe8091`，NSIS SHA-256 `669ac86ec82d679ac2f38d388515ae27838f15b89466be998aa2a189a90ead96`。
 - 安装包：`apps/desktop/src-tauri/target/release/bundle/nsis/Agent Career Harness_0.1.0_x64-setup.exe`。
-- 干净数据目录验收：sidecar 从空库迁移到 `0028_source_connectors`，首次只读导入 7,575 条（新增 7,575、重复标记 684、失败 0）；同源重跑新增 0、未变化 7,575，导入前后 Legacy 签名一致。重启后 `Python` 岗位检索与详情 provenance 仍可用，岗位 1,028、面试 503、问题 4,816、刷题 324；SQLite `integrity_check=ok`、外键违规 0。
+- 干净数据目录验收：首次只读导入 7,575 条（新增 7,575、重复标记 684、失败 0）；同源重跑新增 0、未变化 7,575，导入前后 Legacy 签名一致。新 sidecar 将该库从 `0028_source_connectors` 原地升级到 `0030_github_source_connector`；重启后 `Python` 岗位检索与详情 provenance 仍可用，岗位 1,028、面试 503、问题 4,816、刷题 324；SQLite `integrity_check=ok`、外键违规 0。Feishu preview 返回 `dry_run`；GitHub 未确认网络时返回 422 且不执行 fetch。
 
 ## 11. 未完成与阻塞
 
 - Memory 本地治理已完成；consolidation/affinity 仍缺失。
-- SourceConnector 当前覆盖本地文件夹与 Legacy Agent Radar；GitHub、Feishu、Notion、Yuque、DingTalk、RSS、Confluence 尚未统一，scheduled sync 也未实现。
+- SourceConnector 当前覆盖本地文件夹、Legacy Agent Radar 与 GitHub；Feishu 入站、Notion、Yuque、DingTalk、RSS、Confluence 尚未统一，scheduled sync 也未实现。
 - Task Queue 当前由 API/业务显式 dispatch；没有常驻后台 worker supervisor 或每模型并发策略。
 - Tool scope 已由后端强制执行；真实 MCP transport auth 和 CLI sandbox 尚未实现。
 - GraphRAG、真实 dense embedding/rerank、OCR/VLM/ASR、表格/图片/Office 全格式解析仍需可替换 adapter。
@@ -129,11 +132,11 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 
 ## 12. 下一阶段具体顺序
 
-1. 将现有 GitHub read-only 与 Feishu offline projection 迁入 SourceConnector contract，保持既有 provenance 与 authority。
-2. 增加后台 dispatcher、scheduled sync、per-model concurrency 与 failed-task inspection UI。
-3. 将 Opportunity → Resume proposal → ATS → company research → STAR → Application audit 串成离线 E2E。
-4. 在 scoped Tool Registry 上实现认证的 MCP transport 与受控 CLI Runner；默认只读，写入必须 approval，网络/文件系统由后端强制。
-5. 增加 Memory consolidation/document affinity 与 Wiki 编辑/移动/lint-fix proposal。
+1. 增加后台 dispatcher、scheduled sync、per-model concurrency 与 failed-task inspection UI。
+2. 将 Opportunity → Resume proposal → ATS → company research → STAR → Application audit 串成离线 E2E。
+3. 在 scoped Tool Registry 上实现认证的 MCP transport 与受控 CLI Runner；默认只读，写入必须 approval，网络/文件系统由后端强制。
+4. 增加 Memory consolidation/document affinity 与 Wiki 编辑/移动/lint-fix proposal。
+5. 增加 Feishu 入站资料 connector；真实出站写入继续等待凭据、权限与逐次批准。
 6. 最后接入可选 embedding、rerank、OCR/VLM 和 WeKnora adapter。
 
 需要用户之后确认的事项仅包括：Legacy canonical authority、真实模型数据发送、外部连接凭据/条款、任何真实投递或消息写入，以及受限制许可证的商业授权。

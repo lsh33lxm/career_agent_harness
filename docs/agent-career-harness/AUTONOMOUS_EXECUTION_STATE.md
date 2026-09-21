@@ -7,6 +7,7 @@
 - 产品依据：`docs/prd/ACH_v2.0_PRD_插件化职业智能平台.md`
 - 执行依据：`docs/prd/ACH_v2.0_Codex_长期自主执行提示词.md`
 - 当前分支：`refactor/v1.4-integration`
+- 当前实现提交：`8c3370b`（桌面内部枚举中文展示收口）
 - 起始基线：`084017c`
 - Legacy Agent Radar：只读；本轮不修改原始文件
 
@@ -59,6 +60,7 @@
 - Migration `0022_job_source_terms_provenance` 将每次 source run 的 terms/robots/ToS note 与检查时间作为 immutable provenance 保存，并通过 upgrade/downgrade 验证。
 - Focused：backend `32 passed`，Plugins UI `1 passed`；full：backend `681 passed, 5 skipped`，frontend `23 files / 64 passed`；Vite build、Ruff、diff check 通过。
 - Independent review：APPROVE；历史 scan report、rollback、enable、healthcheck 与 invoke 的 quarantine bypass 已回归验证，P0/P1/P2/P3 均无未解决项。
+- 中文展示收口：能力、证据、历史、插件、Today、资料源、任务、项目与简历页面的内部状态枚举统一通过展示层映射；前端 `23` 个测试文件、`64` 项测试与 production build 通过。
 
 ## Slice A checklist
 

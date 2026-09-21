@@ -62,10 +62,12 @@ def create_source_connector_router(api: SourceConnectorApi) -> APIRouter:
     def sync(request: SyncRequest, connector_id: str = Path(min_length=3, max_length=128)) -> Any:
         try:
             api.repository.get(connector_id)
-            return api.tasks.enqueue(
+            queued = api.tasks.enqueue(
                 "source.local_folder_sync",
                 {"connector_id": connector_id, "mode": request.mode.value},
             )
+            completed = api.tasks.run_one("source_sync")
+            return completed or queued
         except Exception as error:
             raise _error(error) from error
 

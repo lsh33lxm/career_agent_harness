@@ -4,8 +4,12 @@ from pathlib import Path
 
 import pytest
 from alembic import command
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import inspect
 
+from career_harness.api.app import create_app
+from career_harness.api.source_connectors import SourceConnectorApi
+from career_harness.config import Settings
 from career_harness.core.connectors.models import ConnectorStatus, SyncMode
 from career_harness.db.migrations import alembic_config, upgrade_to_head
 from career_harness.db.session import create_sqlite_engine, sqlite_url
@@ -115,6 +119,36 @@ def test_pause_resume_and_connection_test(tmp_path: Path) -> None:
         service.sync(connector.connector_id)
     resumed = repository.set_status(connector.connector_id, ConnectorStatus.ACTIVE)
     assert resumed.status is ConnectorStatus.ACTIVE
+
+
+@pytest.mark.asyncio
+async def test_source_connector_api_runs_manual_sync_through_task_queue(tmp_path: Path) -> None:
+    repository, service, tasks, source = _service(tmp_path)
+    (source / "经历.md").write_text("有来源的项目经历", encoding="utf-8")
+    app = create_app(
+        Settings.for_test("connector-api-token-0001"),
+        source_connector_api=SourceConnectorApi(service, repository, tasks),
+    )
+    headers = {"Authorization": "Bearer connector-api-token-0001"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        created = await client.post(
+            "/api/v1/source-connectors/local-folder",
+            headers=headers,
+            json={"display_name": "求职资料", "root_path": str(source)},
+        )
+        assert created.status_code == 200
+        connector_id = created.json()["connector_id"]
+        synced = await client.post(
+            f"/api/v1/source-connectors/{connector_id}/sync",
+            headers=headers,
+            json={"mode": "full"},
+        )
+        assert synced.status_code == 200
+        assert synced.json()["status"] == "completed"
+        runs = await client.get(
+            f"/api/v1/source-connectors/{connector_id}/runs", headers=headers
+        )
+        assert runs.json()[0]["stats"]["created"] == 1
 
 
 def test_source_connector_migration_is_reversible(tmp_path: Path) -> None:

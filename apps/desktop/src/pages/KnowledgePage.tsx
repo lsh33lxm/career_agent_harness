@@ -11,6 +11,7 @@ import {
   type LegacyKnowledgeItem,
   type LegacyKnowledgeOverview,
 } from "../api/legacy";
+import { SourceConnectorsPanel } from "./SourceConnectorsPanel";
 
 const categoryLabels: Record<string, string> = {
   personal_fact: "个人事实", project_evidence: "项目证据", skill: "技能",
@@ -152,6 +153,8 @@ export function KnowledgePage() {
           <small>仅检查孤立页面、重复标题、过期链接、缺少引用和提示注入；不会自动发布或修复。</small>
         </section>
       )}
+
+      <SourceConnectorsPanel />
 
       <section className="knowledge-canonical-search">
         <div><p className="eyebrow">已确认知识</p><h2>精确检索</h2></div>

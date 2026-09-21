@@ -3,6 +3,7 @@
 ## 2026-09-22
 
 - 完成桌面用户可见状态中文化收口（`8c3370b`）：新增共享展示标签映射，覆盖能力审核、证据来源、项目复核、历史记录、工具与模型、任务阶段、资料源同步、简历渲染/ATS、Today 来源与市场信号；同步修正 UI 回归断言。前端 `23` 个测试文件、`64` 项测试，TypeScript/Vite build、Ruff、`git diff --check` 通过。
+- 补齐简历与历史用户文案中文化（`7c5183a`）：将提案草稿、简历修订、目标岗位档案、模板名称和录用状态统一为中文；前端 `23` 个测试文件、`64` 项测试与 Vite build 通过。
 - 完成 Windows Tauri 2 桌面产品化：PyInstaller one-file sidecar、bundle migration resources、随机 loopback 端口、临时 token 注入、Data Root 日志与完整进程树回收。
 - 生成 NSIS 安装包并完成隔离干净安装；首次启动自动建库，重启后数据持久，窗口关闭后 sidecar 与监听端口均释放。
 - 在干净安装数据库执行真实 Legacy 只读导入：首轮读取/新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575；导入前后源签名一致，Python 岗位查询与 provenance 抽样通过。

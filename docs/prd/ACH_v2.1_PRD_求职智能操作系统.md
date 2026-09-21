@@ -3,11 +3,11 @@
 版本：v2.1
 
 日期：2026-09-22
-实现基线：`8c3370b`（integration worktree；`fix(desktop): localize internal status labels`；后续文档提交不改变实现基线）
+实现基线：`7c5183a`（integration worktree；`fix(desktop): translate resume and history copy`；后续文档提交不改变实现基线）
 
 ## 1. 本次目标与结论
 
-Agent Career Harness 已从页面原型形成可安装的本地中文职业工作台：Career Core 管理权威状态，Artifact/Evidence 保存来源，Legacy 数据以只读投影进入机会与知识页面，插件、模型、GitHub 项目分析、简历、岗位、能力和 Wiki 通过同一审计边界协作。本轮恢复正确的“观复”桌面图标，并补齐 Wiki graph、review-gated Wiki 编辑、长期记忆、持久任务队列及失败恢复界面、本地/Legacy/GitHub 资料源治理、Feishu 离线预览、scoped tool governance 与当前路由的内部状态中文展示。
+Agent Career Harness 已从页面原型形成可安装的本地中文职业工作台：Career Core 管理权威状态，Artifact/Evidence 保存来源，Legacy 数据以只读投影进入机会与知识页面，插件、模型、GitHub 项目分析、简历、岗位、能力和 Wiki 通过同一审计边界协作。本轮恢复正确的“观复”桌面图标，并补齐 Wiki graph、review-gated Wiki 编辑、长期记忆、持久任务队列及失败恢复界面、本地/Legacy/GitHub 资料源治理、Feishu 离线预览、scoped tool governance 与当前路由的内部状态和简历/历史文案中文展示。
 
 状态定义：**已完成**表示代码、测试和本地构建均存在；**部分完成**表示安全的本地闭环存在但高级能力或外部连接未完成；**阻塞**表示需要凭据、条款许可或用户权威。
 
@@ -106,7 +106,7 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 
 ## 10. 测试与构建结果
 
-本轮可审计实现提交：`4e8e944`（Memory）、`0caa294`（Task Queue）、`e14d795`（local-folder SourceConnector）、`64374d0`（知识页资料源 UI）、`58c4b3a`（scoped Tool Registry/API）、`9bae9f1`（Legacy SourceConnector）、`34ef3d8`（GitHub SourceConnector）、`eee4776`（Feishu Today dry-run）、`09f4674`（资料源类型 UI）、`4b2613d`/`924c482`（任务恢复 UI 与执行）、`31f32ea`（review-gated Wiki 编辑）、`82a5948`（Today 操作按钮对比度修复）、`8c3370b`（内部状态枚举中文展示）。
+本轮可审计实现提交：`4e8e944`（Memory）、`0caa294`（Task Queue）、`e14d795`（local-folder SourceConnector）、`64374d0`（知识页资料源 UI）、`58c4b3a`（scoped Tool Registry/API）、`9bae9f1`（Legacy SourceConnector）、`34ef3d8`（GitHub SourceConnector）、`eee4776`（Feishu Today dry-run）、`09f4674`（资料源类型 UI）、`4b2613d`/`924c482`（任务恢复 UI 与执行）、`31f32ea`（review-gated Wiki 编辑）、`82a5948`（Today 操作按钮对比度修复）、`8c3370b`（内部状态枚举中文展示）、`7c5183a`（简历与历史用户文案中文化）。
 
 - Backend：`681 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制。
 - Frontend：`23 test files, 64 passed`。

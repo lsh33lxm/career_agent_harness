@@ -1,6 +1,6 @@
 # Agent Career Harness 当前状态
 
-更新时间：2026-09-22；分支：`refactor/v1.4-integration`；当前集成基线：`8c3370b`（统一桌面内部枚举的中文展示）。
+更新时间：2026-09-22；分支：`refactor/v1.4-integration`；当前集成基线：`7c5183a`（简历与历史用户文案中文化）。
 
 ## 当前结论
 

@@ -20,9 +20,11 @@ from career_harness.api.opportunities import OpportunityApi
 from career_harness.api.plugins import PluginApi
 from career_harness.api.project_reads import ProjectReadApi
 from career_harness.api.resume_studio import ResumeStudioApi
+from career_harness.api.source_connectors import SourceConnectorApi
 from career_harness.api.tasks import TaskApi
 from career_harness.api.today import TodayApi
 from career_harness.config import Settings
+from career_harness.core.connectors.models import SyncMode
 from career_harness.db.application_repository import ApplicationRepository
 from career_harness.db.capability_repository import CapabilityRepository
 from career_harness.db.evidence_repository import EvidenceRepository
@@ -35,6 +37,7 @@ from career_harness.db.project_repository import ProjectRepository
 from career_harness.db.resume_repository import ResumeRepository
 from career_harness.db.resume_studio_repository import ResumeStudioRepository
 from career_harness.db.session import create_sqlite_engine, sqlite_url
+from career_harness.db.source_connector_repository import SourceConnectorRepository
 from career_harness.db.task_repository import TaskRepository
 from career_harness.platform import AppPaths
 from career_harness.platform.secure_store import WindowsCredentialSecretStore
@@ -48,6 +51,7 @@ from career_harness.services.opportunity_radar_service import OpportunityRadarSe
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.plugin_service import PluginLifecycleManager
 from career_harness.services.resume_studio_service import ResumeStudioService
+from career_harness.services.source_connector_service import LocalFolderConnectorService
 from career_harness.services.task_service import RegisteredTaskHandler, TaskService
 from career_harness.services.today_service import TodayService
 from career_harness.storage import ArtifactStore
@@ -76,6 +80,10 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         default_source_root=Path(configured_legacy_root) if configured_legacy_root else None,
     )
     task_repository = TaskRepository(engine)
+    source_connector_repository = SourceConnectorRepository(engine)
+    source_connector_service = LocalFolderConnectorService(
+        source_connector_repository, ArtifactStore(active_paths.artifacts)
+    )
     task_service = TaskService(
         task_repository,
         handlers=(
@@ -84,8 +92,16 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
                 stage="evaluation",
                 handler=lambda payload: {"ok": True, "label": payload.get("label")},
             ),
+            RegisteredTaskHandler(
+                task_type="source.local_folder_sync",
+                stage="source_sync",
+                handler=lambda payload: source_connector_service.sync(
+                    str(payload["connector_id"]),
+                    SyncMode(str(payload.get("mode", "incremental"))),
+                ).model_dump(mode="json"),
+            ),
         ),
-        stage_limits={"evaluation": 2},
+        stage_limits={"evaluation": 2, "source_sync": 1},
     )
     return create_app(
         settings,
@@ -130,4 +146,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         ),
         memory_api=MemoryApi(MemoryRepository(engine)),
         task_api=TaskApi(task_service, task_repository),
+        source_connector_api=SourceConnectorApi(
+            source_connector_service, source_connector_repository, task_service
+        ),
     )

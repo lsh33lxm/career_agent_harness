@@ -1577,3 +1577,9 @@ mark { padding: 2px 5px; color: var(--green); background: var(--surface-green); 
 .model-provider-notice { color: var(--muted); font-size: 0.8rem; line-height: 1.55; }
 .model-provider-confirm { grid-template-columns: auto 1fr !important; align-items: start; }
 @media (max-width: 900px) { .model-provider-grid { grid-template-columns: 1fr; } }
+.github-analysis-form { display: grid; gap: 12px; margin-bottom: 18px; }
+.github-analysis-form h2 { display: flex; align-items: center; gap: 8px; }
+.github-analysis-form label { display: grid; gap: 6px; color: var(--muted); }
+.github-analysis-form input:not([type="checkbox"]) { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface-panel); padding: 10px 12px; }
+.github-analysis-form .button { justify-self: start; }
+.github-analysis-profile { border-top: 1px solid var(--border); padding-top: 14px; }

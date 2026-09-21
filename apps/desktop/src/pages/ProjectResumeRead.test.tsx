@@ -25,7 +25,8 @@ const response = (body: unknown, status = 200) => new Response(JSON.stringify(bo
 it("默认列出并打开项目，无需输入内部 ID", async () => {
   const fetcher = setup()
     .mockResolvedValueOnce(response([project.project]))
-    .mockResolvedValueOnce(response(project));
+    .mockResolvedValueOnce(response(project))
+    .mockResolvedValueOnce(response([]));
 
   render(<ProjectsPage />);
 
@@ -34,17 +35,40 @@ it("默认列出并打开项目，无需输入内部 ID", async () => {
   expect(screen.queryByLabelText(/项目 ID/)).toBeNull();
   expect(fetcher.mock.calls[0][0]).toBe("http://127.0.0.1:8765/api/v1/projects");
   expect(fetcher.mock.calls[1][0]).toBe("http://127.0.0.1:8765/api/v1/projects/p1");
+  expect(fetcher.mock.calls[2][0]).toBe("http://127.0.0.1:8765/api/v1/github/projects/p1/analyses");
 });
 
 it("项目搜索只筛选已加载列表并保留清晰空状态", async () => {
   setup()
     .mockResolvedValueOnce(response([project.project]))
-    .mockResolvedValueOnce(response(project));
+    .mockResolvedValueOnce(response(project))
+    .mockResolvedValueOnce(response([]));
   render(<ProjectsPage />);
   await screen.findByRole("heading", { name: "Agent Career Harness" });
 
   fireEvent.change(screen.getByLabelText("搜索项目"), { target: { value: "不存在" } });
   expect(screen.getByText("没有匹配的项目。")).toBeTruthy();
+});
+
+it("GitHub 分析必须确认只读网络并保存可追溯档案", async () => {
+  const fetcher = setup().mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith("/api/v1/projects")) return response([]);
+    if (url.endsWith("/api/v1/github/analyze")) return response({ project_id: "github_p1" });
+    throw new Error(`unexpected request ${url}`);
+  });
+  render(<ProjectsPage />);
+  await screen.findByText("还没有项目档案");
+  fireEvent.change(screen.getByLabelText("公开或私有仓库地址"), {
+    target: { value: "https://github.com/example/career-tool" },
+  });
+  const submit = screen.getByRole("button", { name: "开始只读分析" });
+  expect(submit.hasAttribute("disabled")).toBe(true);
+  fireEvent.click(screen.getByText("我确认执行一次只读 GitHub 网络请求"));
+  fireEvent.click(submit);
+  expect(await screen.findByText(/只读分析完成/)).toBeTruthy();
+  const call = fetcher.mock.calls.find(([url]) => String(url).endsWith("/api/v1/github/analyze"));
+  expect(String(call?.[1]?.body)).toContain("confirm_read_only_network");
 });
 
 it("默认列出简历并读取基础内容与不可变修订", async () => {

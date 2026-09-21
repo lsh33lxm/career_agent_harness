@@ -145,3 +145,12 @@ Start with `git status --short --branch`, inspect this file, then continue at th
 - Migration：additive/reversible `0024_model_provider_configs`，保存非敏感配置与不可变连接审计行。
 - Verification：backend full 654 passed / 5 Windows symlink skips；migration/API subset 50 passed；frontend 19 files / 52 passed and build；Windows Credential Manager synthetic write/read/delete passed；Ruff/diff passed.
 - Next：bounded read-only GitHub repository analysis and project archive UI; real conversation remains blocked until credentials are explicitly configured.
+## GitHub project analysis checkpoint — 2026-09-21
+
+- 状态：IMPLEMENTED / real public-repository fetch blocked by current network.
+- Flow：explicit URL + read-only network confirmation → bounded shallow clone with hooks disabled → static analysis → immutable `0025` profile → existing Project list/detail UI.
+- Analysis：README、directory、dependency manifests、key modules、technology stack、tests、deployment、recent git activity、quantified outcome clues、risks and provenance.
+- Safety：GitHub-only HTTPS URL；120s timeout；5,000 files / 100 MiB including `.git`；never execute repository code/install scripts；private token only in Windows Credential Manager and git environment, never argv/log/DB/API.
+- Verification：backend full 656 passed / 5 Windows symlink skips；migration/API subset 52 passed；frontend 19 files / 53 passed and build；`0024→0025→0024→0025` and Ruff/diff passed；synthetic public/private flows passed.
+- External acceptance：`https://github.com/octocat/Hello-World` failed because `github.com:443` is unreachable from this environment. No archive/profile was persisted for the failed fetch.
+- Next：model-backed project conversation with exact analysis/resume/job references can proceed locally with fake provider contracts; real conversation needs configured credentials and network.

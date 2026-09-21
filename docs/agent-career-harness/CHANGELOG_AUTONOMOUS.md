@@ -33,3 +33,4 @@
 - Hardening verification：focused backend `32 passed`、Plugins UI `1 passed`；full backend `650 passed, 5 skipped`、frontend `18 files / 59 passed`；Vite build、Ruff `backend tests migrations` 与 `git diff --check` 通过。
 - Independent hardening review：先后修复 quarantine 经 disable/rollback 绕过、旧 scan report 绕过、JSON/Bearer 脱敏遗漏、历史 terms 时间伪造与无效 manifest 示例；最终 APPROVE，P0/P1/P2/P3 none。
 - 新增真实模型服务配置：OpenAI、Anthropic、DeepSeek、OpenAI-compatible，additive `0024`、Windows Credential Manager 密钥边界、脱敏 API/UI 与用户确认后的只读连接测试。合成安全存储 rehearsal、50 backend subset、backend full 654 passed/5 skipped、52 frontend tests/build 通过；无凭据时保持未配置，未伪造外部连接成功。
+- 新增 bounded GitHub 项目分析：additive `0025`、GitHub-only URL policy、hooks-disabled shallow clone、file/byte/timeout limits、静态项目 profile、private token safe store、Project UI/provenance。backend full 656 passed/5 skipped、52 backend subset、53 frontend tests/build 和 migration rehearsal 通过；真实 GitHub fetch 因环境 443 不可达保持 external blocker。

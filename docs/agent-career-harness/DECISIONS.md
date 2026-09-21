@@ -134,3 +134,10 @@
 - 决定：模型 provider 的 endpoint、model、timeout 与测试状态可进入 Core DB；API key 只进入 Windows Credential Manager。保存配置一律回到 `not_tested`，只有用户明确确认的一次真实只读 `/models` 请求成功后才标记 `connected`。
 - 原因：配置存在、密钥存在与服务真实可用是三个不同事实；任何一个都不能替代真实连接证据。避免明文凭据进入 SQLite、日志、Git 或 API 响应。
 - 影响：OpenAI-compatible 的 loopback endpoint 可无密钥；所有远程 HTTP endpoint 被拒绝。连接测试不发送职业数据，真实对话必须另行记录模型、提示词版本和输入引用。
+## D-2.0-019 — GitHub analysis is bounded read-only evidence, never a personal fact
+
+- 状态：`ACCEPTED`
+- 日期：2026-09-21
+- 决定：只接受标准 GitHub HTTPS owner/repository URL；仓库浅克隆到 Data Root 受控缓存并禁用 hooks，设置 120 秒、5,000 文件和 100 MiB（含 `.git`）上限。只执行静态读取和只读 git metadata 命令。分析结果形成 immutable profile 并关联 Project，但保持 `document/code evidence`，不自动提升为个人 Capability、Resume Fact 或 Outcome。
+- 原因：第三方仓库内容不可信，项目存在与个人掌握/贡献不是同一事实；安全缓存和 exact commit/provenance 支持重放而不污染 Git 仓库。
+- 影响：私有 token 仅在 Windows Credential Manager 和子进程环境中出现，不进入 argv/日志/SQLite/API。网络失败必须 fail-loud，不创建 synthetic profile。

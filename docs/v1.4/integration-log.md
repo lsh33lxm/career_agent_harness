@@ -122,3 +122,16 @@ frontend 18 files / 55 tests passed and production build passed; Ruff/diff check
   and `0023→0024→0023→0024` passed.
 - No real provider connection was attempted because no user credential is configured. GitHub project
   analysis, controlled CLI runners and Windows packaging remain follow-ups.
+## 2026-09-21 — Bounded GitHub project analysis
+
+- Added reversible `0025_github_project_analysis`, strict GitHub HTTPS URL validation, bounded
+  hooks-disabled shallow clone into Data Root cache, static project profiles and existing Project
+  association. Private tokens use Windows Credential Manager and never enter argv/DB/API/logs.
+- Profiles include exact commit, README hash, analyzed paths, dependencies, key modules, stack,
+  tests, deployment, recent activity, outcome clues and risks. They remain project evidence and do
+  not promote personal facts or mastery.
+- Validation: backend full 656 passed / 5 Windows symlink skips; migration/API subset 52 passed;
+  frontend 19 files / 53 passed and production build; Ruff/diff and `0024→0025→0024→0025`
+  passed. Synthetic public/private flows passed.
+- Live public fetch remains blocked: this environment cannot reach `github.com:443`; no failed fetch
+  record was persisted. Real acceptance must be rerun when GitHub network access is available.

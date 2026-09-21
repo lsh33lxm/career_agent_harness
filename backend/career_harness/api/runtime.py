@@ -10,6 +10,7 @@ from career_harness.api.capabilities import CapabilityApi
 from career_harness.api.capability_inbox import CapabilityInboxApi
 from career_harness.api.career_reads import CareerReadApi
 from career_harness.api.evidence import EvidenceApi
+from career_harness.api.github_projects import GitHubProjectApi
 from career_harness.api.job_radar import JobRadarApi
 from career_harness.api.knowledge import KnowledgeApi
 from career_harness.api.legacy_import import LegacyImportApi
@@ -36,6 +37,7 @@ from career_harness.platform.secure_store import WindowsCredentialSecretStore
 from career_harness.services.capability_review_service import CapabilityReviewService
 from career_harness.services.capability_workspace_service import CapabilityWorkspaceService
 from career_harness.services.command_service import CommandService
+from career_harness.services.github_project_service import GitHubProjectService
 from career_harness.services.legacy_import_service import LegacyImportService
 from career_harness.services.model_provider_service import ModelProviderService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
@@ -99,6 +101,13 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         model_provider_api=ModelProviderApi(
             ModelProviderService(
                 ModelProviderRepository(engine),
+                WindowsCredentialSecretStore(),
+            )
+        ),
+        github_project_api=GitHubProjectApi(
+            GitHubProjectService(
+                engine,
+                active_paths.root / "project-cache" / "github",
                 WindowsCredentialSecretStore(),
             )
         ),

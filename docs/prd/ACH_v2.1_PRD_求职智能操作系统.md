@@ -112,6 +112,7 @@ Plugin Manifest、Registry、Permission Gate、worker/plugin envelope、安装�
 - Task/SourceConnector migration/runtime subset：`60 passed`；Tool/API focused：`6 passed`。
 - Desktop：PyInstaller sidecar、`cargo check --locked` 与 Tauri NSIS release 构建通过；sidecar SHA-256 `23c51e80408dc9f7f7638b7026cf8c410bcc26e4bd2eb3a7bf95a712bc83c8db`。
 - 安装包：`apps/desktop/src-tauri/target/release/bundle/nsis/Agent Career Harness_0.1.0_x64-setup.exe`。
+- 干净数据目录验收：sidecar 从空库迁移到 `0028_source_connectors`，首次只读导入 7,575 条（新增 7,575、重复标记 684、失败 0）；同源重跑新增 0、未变化 7,575，导入前后 Legacy 签名一致。重启后 `Python` 岗位检索与详情 provenance 仍可用，岗位 1,028、面试 503、问题 4,816、刷题 324；SQLite `integrity_check=ok`、外键违规 0。
 
 ## 11. 未完成与阻塞
 

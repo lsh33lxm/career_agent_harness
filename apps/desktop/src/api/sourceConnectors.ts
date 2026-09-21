@@ -4,11 +4,16 @@ export type ConnectorStatus = "active" | "paused";
 
 export interface SourceConnector {
   connector_id: string;
-  connector_type: "local_folder";
+  connector_type: "local_folder" | "legacy_agent_radar" | "github";
   display_name: string;
   status: ConnectorStatus;
-  config: { root_path: string };
-  sync_cursor: { completed_at: string; resource_count: number; manifest_sha256: string } | null;
+  config: {
+    root_path?: string;
+    repository_url?: string;
+    use_private_token?: boolean;
+    read_only_network_confirmed?: boolean;
+  };
+  sync_cursor: Record<string, unknown> | null;
   conflict_policy: "source_wins" | "local_wins" | "defer";
   delete_policy: "keep" | "mark_deleted";
   created_at: string;
@@ -45,8 +50,15 @@ export function createLocalFolderConnector(
   });
 }
 
-export function testSourceConnector(connectorId: string): Promise<{ ok: boolean }> {
-  return apiRequest<{ ok: boolean }>(
+export interface SourceConnectionTest {
+  ok: boolean;
+  connector_type: SourceConnector["connector_type"];
+  network_verified?: boolean;
+  last_verified_commit?: string | null;
+}
+
+export function testSourceConnector(connectorId: string): Promise<SourceConnectionTest> {
+  return apiRequest<SourceConnectionTest>(
     `/api/v1/source-connectors/${encodeURIComponent(connectorId)}/test`,
     { method: "POST" },
   );

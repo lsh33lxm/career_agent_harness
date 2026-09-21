@@ -16,6 +16,16 @@ const date = (value: string | null | undefined) => value
   ? new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value))
   : "尚未同步";
 
+const connectorTypeLabels: Record<SourceConnector["connector_type"], string> = {
+  local_folder: "本地文件夹",
+  legacy_agent_radar: "Legacy 历史数据",
+  github: "GitHub 只读仓库",
+};
+
+function connectorLocation(connector: SourceConnector): string {
+  return connector.config.repository_url ?? connector.config.root_path ?? "未记录定位信息";
+}
+
 export function SourceConnectorsPanel() {
   const [connectors, setConnectors] = useState<SourceConnector[]>([]);
   const [runs, setRuns] = useState<Record<string, SourceSyncRun | undefined>>({});
@@ -60,8 +70,12 @@ export function SourceConnectorsPanel() {
     setBusy(`${connector.connector_id}:${action}`);
     try {
       if (action === "test") {
-        await testSourceConnector(connector.connector_id);
-        setMessage(`“${connector.display_name}”连接正常。`);
+        const result = await testSourceConnector(connector.connector_id);
+        setMessage(
+          connector.connector_type === "github" && !result.network_verified
+            ? `“${connector.display_name}”配置有效，尚未完成真实只读网络验证。`
+            : `“${connector.display_name}”连接正常。`,
+        );
       } else if (action === "sync") {
         const task = await syncSourceConnector(connector.connector_id);
         setMessage(task.status === "completed" ? `“${connector.display_name}”同步完成。` : `同步状态：${task.status}`);
@@ -76,9 +90,9 @@ export function SourceConnectorsPanel() {
   }
 
   return (
-    <section className="source-connectors" aria-label="本地资料源">
+    <section className="source-connectors" aria-label="资料源">
       <div className="knowledge-section-heading">
-        <div><p className="eyebrow">知识来源</p><h2>本地资料源</h2></div>
+        <div><p className="eyebrow">知识来源</p><h2>资料源</h2></div>
         <FolderSync size={20} />
       </div>
       <p className="knowledge-message">{message}</p>
@@ -88,13 +102,13 @@ export function SourceConnectorsPanel() {
         <button type="submit" disabled={busy !== null || !displayName.trim() || !rootPath.trim()}>添加资料源</button>
       </form>
       <div className="source-connector-list">
-        {connectors.length === 0 && <p className="knowledge-message">尚未添加本地资料源。添加后可进行只读、可追溯的增量同步。</p>}
+        {connectors.length === 0 && <p className="knowledge-message">尚未添加资料源。添加后可进行只读、可追溯的增量同步。</p>}
         {connectors.map((connector) => {
           const latest = runs[connector.connector_id];
           const locked = busy?.startsWith(connector.connector_id) ?? false;
           return (
             <article key={connector.connector_id} className="source-connector-card">
-              <div><DatabaseZap size={18} /><div><h3>{connector.display_name}</h3><p title={connector.config.root_path}>{connector.config.root_path}</p></div></div>
+              <div><DatabaseZap size={18} /><div><h3>{connector.display_name}</h3><p>{connectorTypeLabels[connector.connector_type]} · <span title={connectorLocation(connector)}>{connectorLocation(connector)}</span></p></div></div>
               <dl>
                 <div><dt>状态</dt><dd>{connector.status === "active" ? "已启用" : "已暂停"}</dd></div>
                 <div><dt>最近同步</dt><dd>{date(latest?.finished_at)}</dd></div>

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import {
@@ -37,7 +37,7 @@ const connector = {
 beforeEach(() => {
   vi.mocked(listSourceConnectors).mockResolvedValue([connector]);
   vi.mocked(listSourceSyncRuns).mockResolvedValue([]);
-  vi.mocked(testSourceConnector).mockResolvedValue({ ok: true });
+  vi.mocked(testSourceConnector).mockResolvedValue({ ok: true, connector_type: "local_folder" });
   vi.mocked(syncSourceConnector).mockResolvedValue({ status: "completed", last_error: null });
   vi.mocked(setSourceConnectorPaused).mockResolvedValue({ ...connector, status: "paused" });
   vi.mocked(createLocalFolderConnector).mockResolvedValue(connector);
@@ -61,9 +61,41 @@ it("展示中文资料源并允许测试、同步和暂停", async () => {
 it("通过名称和路径创建本地资料源", async () => {
   vi.mocked(listSourceConnectors).mockResolvedValueOnce([]).mockResolvedValue([connector]);
   render(<SourceConnectorsPanel />);
-  await screen.findByText(/尚未添加本地资料源/);
+  await screen.findByText(/尚未添加资料源/);
   fireEvent.change(screen.getByLabelText("资料源名称"), { target: { value: "求职档案" } });
   fireEvent.change(screen.getByLabelText("本地文件夹路径"), { target: { value: "D:\\档案" } });
   fireEvent.click(screen.getByRole("button", { name: "添加资料源" }));
   await waitFor(() => expect(createLocalFolderConnector).toHaveBeenCalledWith("求职档案", "D:\\档案"));
+});
+
+it("正确展示 Legacy 与 GitHub 资料源并区分网络验证状态", async () => {
+  vi.mocked(listSourceConnectors).mockResolvedValue([
+    {
+      ...connector,
+      connector_id: "connector_legacy_1",
+      connector_type: "legacy_agent_radar",
+      display_name: "历史岗位",
+      config: { root_path: "D:\\历史数据" },
+    },
+    {
+      ...connector,
+      connector_id: "connector_github_1",
+      connector_type: "github",
+      display_name: "项目仓库",
+      config: { repository_url: "https://github.com/example/career-tool" },
+    },
+  ]);
+  vi.mocked(testSourceConnector).mockResolvedValue({
+    ok: true,
+    connector_type: "github",
+    network_verified: false,
+  });
+  render(<SourceConnectorsPanel />);
+
+  expect(await screen.findByText(/Legacy 历史数据/)).toBeTruthy();
+  expect(screen.getByText(/GitHub 只读仓库/)).toBeTruthy();
+  const githubCard = screen.getByText("项目仓库").closest("article");
+  if (!githubCard) throw new Error("GitHub connector card not found");
+  fireEvent.click(within(githubCard).getByRole("button", { name: "测试连接" }));
+  expect(await screen.findByText(/尚未完成真实只读网络验证/)).toBeTruthy();
 });

@@ -17,7 +17,7 @@
 | A Plugin Foundation | DONE (local/offline) | Slice A commit `e2f2807` |
 | B Career Knowledge | DONE (completion audit passed) | deterministic hybrid search + flagged-content quarantine |
 | C Resume Studio | DONE (completion audit passed) | sandbox renderer、draft proposal/review、immutable render review 与 provenance |
-| D Opportunity Radar | AUDIT REQUIRED | 多维 ranking 与 source policy 尚需核验/补齐 |
+| D Opportunity Radar | DONE (completion audit passed) | explainable multi-dimensional ranking + per-source retry/rate/disable policy |
 | E Lifecycle / Replacement | AUDIT REQUIRED | shadow metrics、license/dependency scan 与 rollback recommendation 尚需核验/补齐 |
 
 ## Slice A checklist
@@ -69,6 +69,16 @@
 - Verification：focused backend 8 passed；backend full 634 passed, 5 skipped；frontend 58 passed；Vite build、Ruff、diff check 通过
 - Review：P1 findings fixed; no unresolved P0/P1. Real Typst compiler remains unavailable locally and is represented as disabled, not synthetic success.
 - Next：Slice D completion audit
+
+## Slice D completion checkpoint
+
+- 状态：DONE — local/offline Opportunity Radar completion audit passed
+- Migration：`0019_opportunity_radar_ranking_policy`，staging score breakdown 与 source policy additive/reversible；保留既有 staging CHECK constraints
+- Ranking：deal-breaker、capability match、evidence coverage、interest/user-priority separation、location、salary、deadline、freshness 分项持久化；缺少个人证据明确为 0，不升级为 Fact
+- Source policy：每来源独立 rate limit、retry budget、failure threshold、disabled state 与 last error；失败不创建 staging，连续失败后 fail-loud disabled
+- Verification：focused Opportunity/API/migration 8 passed；migration/backend regression subset 56 passed；frontend 58 passed；Vite build、Ruff、diff check 通过
+- External actions：JobSpy/WebMagic/portal crawler remains quarantined until license/ToS/network authority; manual/offline sources are the only active adapters
+- Next：Slice E completion audit
 
 ## Recovery entry
 

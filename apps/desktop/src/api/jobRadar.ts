@@ -23,6 +23,7 @@ export interface JobStagingRecord {
   suggested_score: number;
   suggested_reasons: string[];
   gaps: string[];
+  score_breakdown: Record<string, number>;
   admitted_job_id: string | null;
   admitted_opportunity_id: string | null;
 }

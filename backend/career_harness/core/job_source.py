@@ -52,6 +52,17 @@ class JobSourceHealth(FrozenModel):
     message: str
 
 
+class JobSourcePolicy(FrozenModel):
+    source_id: OpaqueId
+    rate_limit_ms: int = Field(ge=0, le=300_000)
+    max_retries: int = Field(ge=0, le=5)
+    failure_threshold: int = Field(ge=1, le=20)
+    failure_count: int = Field(ge=0)
+    disabled: bool = False
+    last_error: str | None = Field(default=None, max_length=2048)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
 class JobStagingRecord(FrozenModel):
     staging_id: OpaqueId
     source_id: OpaqueId
@@ -67,6 +78,7 @@ class JobStagingRecord(FrozenModel):
     suggested_score: float = Field(ge=0, le=1)
     suggested_reasons: tuple[str, ...]
     gaps: tuple[str, ...]
+    score_breakdown: dict[str, float] = Field(default_factory=dict)
     admitted_job_id: OpaqueId | None = None
     admitted_opportunity_id: OpaqueId | None = None
     created_at: datetime = Field(default_factory=utc_now)

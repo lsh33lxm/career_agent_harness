@@ -103,7 +103,7 @@ export function JobRadarPanel() {
             <article className="radar-record" key={record.staging_id}>
               <div><h3>{record.normalized.title}</h3><p>{record.normalized.company}{record.normalized.location ? ` · ${record.normalized.location}` : ""}</p></div>
               <div className="radar-score"><strong>{Math.round(record.suggested_score * 100)}</strong><span>建议匹配</span></div>
-              <div className="radar-notes"><span>{record.status}</span>{record.gaps.length > 0 && <span>缺口：{record.gaps.join("、")}</span>}{record.duplicate_of && <span>重复：{record.duplicate_of}</span>}</div>
+              <div className="radar-notes"><span>{record.status}</span><span>能力 {Math.round((record.score_breakdown.capability_match ?? 0) * 100)} · 证据 {Math.round((record.score_breakdown.evidence_coverage ?? 0) * 100)}</span>{record.gaps.length > 0 && <span>缺口：{record.gaps.join("、")}</span>}{record.duplicate_of && <span>重复：{record.duplicate_of}</span>}</div>
               {record.status === "staged" && <button className="secondary-command" type="button" disabled={admitting === record.staging_id} onClick={() => void admit(record)}><Check size={15} />{admitting === record.staging_id ? "纳入中…" : "纳入机会"}</button>}
             </article>
           ))}

@@ -16,6 +16,7 @@ const staged = {
   status: "staged" as const, duplicate_of: null, suggested_score: 0.5,
   suggested_reasons: ["matched: Python"], gaps: ["Rust"], admitted_job_id: null,
   admitted_opportunity_id: null,
+  score_breakdown: { capability_match: 0.5, evidence_coverage: 0 },
   normalized: { title: "Platform Engineer", company: "Local Co", location: "Remote",
     remote: true, salary: null, requirements: ["Python"], source_url: null },
 };

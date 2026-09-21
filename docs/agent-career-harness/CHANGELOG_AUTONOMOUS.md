@@ -13,6 +13,7 @@
 - 下一入口切换为 Slice C Resume Studio；Resume 外部模板与真实 ATS/投递写入仍保持 proposal-only/blocked。
 - 完成 Slice C Resume Studio：`0016_resume_studio`、TargetProfile、target/patch refs、自有 HTML/CSS 模板、确定性 PDF、Artifact、ATS report、diff/provenance、authenticated API 与前端 Studio panel。
 - 2026-09-21：完成 Slice C completion audit：Typst renderer 改为 sandbox/plugin contract，补齐 compiler provenance、unknown migration semantics、immutable render review、EvidenceRef-backed local draft promotion；focused 8 passed，backend full 634 passed/5 skipped，frontend 58 passed，build/Ruff/diff check passed。
+- 2026-09-21：完成 Slice D completion audit：加入 `0019_opportunity_radar_ranking_policy`、可解释多维 ranking、evidence coverage 明示、source retry/rate/disable policy、policy API 与 frontend score projection；focused 8 passed，migration/backend subset 56 passed，frontend 58 passed，build/Ruff/diff check passed。
 - Slice C focused backend/API/migration/restore `59 passed`；backend full `622 passed, 5 skipped`；frontend `57 passed`；Vite build、Ruff、diff check 通过。
 - 下一入口切换为 Slice D Opportunity Radar；真实抓取器和自动投递保持 blocked。
 - 完成 Slice D Opportunity Radar：`0017_opportunity_radar`、JobSource contract、manual/offline sources、Artifact/Evidence provenance、字段规范化、URL/content dedupe、match/gap/deal-breaker ranking、user-only admission、Resume proposal seed、API 与 Opportunities staging UI。

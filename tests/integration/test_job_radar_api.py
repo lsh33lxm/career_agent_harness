@@ -23,7 +23,12 @@ async def test_fixture_search_lists_staging_and_requires_user_admission(tmp_path
         collected = await client.post(
             "/api/v1/jobs/fixture-search",
             headers=AUTH,
-            json={"query": "platform", "desired_terms": ["Python", "Rust"]},
+            json={
+                "query": "platform",
+                "desired_terms": ["Python", "Rust"],
+                "preferred_locations": ["Remote"],
+                "minimum_salary": 100000,
+            },
         )
         staging_id = collected.json()[0]["staging_id"]
         listing = await client.get("/api/v1/jobs/search?status=staged", headers=AUTH)
@@ -34,10 +39,12 @@ async def test_fixture_search_lists_staging_and_requires_user_admission(tmp_path
             f"/api/v1/jobs/staging/{staging_id}/resume-proposal-seed", headers=AUTH
         )
         opportunities = await client.get("/api/v1/opportunities", headers=AUTH)
+        policies = await client.get("/api/v1/jobs/source-policies", headers=AUTH)
 
     assert unauthorized.status_code == 401
     assert collected.status_code == 201
     assert collected.json()[0]["gaps"] == ["Rust"]
+    assert "capability_match" in collected.json()[0]["score_breakdown"]
     assert listing.json()[0]["staging_id"] == staging_id
     assert admitted.status_code == 201
     assert seed.status_code == 200
@@ -45,3 +52,5 @@ async def test_fixture_search_lists_staging_and_requires_user_admission(tmp_path
     assert opportunities.json()[0]["job"]["job_id"] == (
         admitted.json()["admission"]["decision"]["job"]["job_id"]
     )
+    assert policies.status_code == 200
+    assert policies.json()[0]["disabled"] is False

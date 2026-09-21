@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import time
 import uuid
 from datetime import UTC, datetime
 
@@ -13,6 +14,7 @@ from career_harness.core.evidence.models import ArtifactClass
 from career_harness.core.job_source import (
     JobResumeProposalSeed,
     JobSource,
+    JobSourcePolicy,
     JobStagingRecord,
     JobStagingStatus,
     NormalizedJobRecord,
@@ -55,12 +57,34 @@ class OpportunityRadarService:
         query: str,
         desired_terms: tuple[str, ...] = (),
         excluded_terms: tuple[str, ...] = (),
+        preferred_locations: tuple[str, ...] = (),
+        minimum_salary: float | None = None,
     ) -> tuple[JobStagingRecord, ...]:
         health = source.health()
         terms = source.terms()
         if health.status != "ok" or terms.status.value == "blocked":
             raise ValueError(f"job source is blocked: {health.message}")
-        raw_records = source.search(query)
+        policy = self.repository.ensure_source_policy(source.source_id)
+        if policy.disabled:
+            raise ValueError(f"job source is disabled after repeated failures: {source.source_id}")
+        raw_records: tuple[RawJobRecord, ...] | None = None
+        last_error: Exception | None = None
+        for attempt in range(policy.max_retries + 1):
+            if policy.rate_limit_ms:
+                time.sleep(policy.rate_limit_ms / 1000)
+            try:
+                raw_records = source.search(query)
+                self.repository.record_source_success(source.source_id)
+                break
+            except Exception as error:  # noqa: BLE001
+                last_error = error
+                policy = self.repository.record_source_failure(source.source_id, str(error))
+                if attempt >= policy.max_retries or policy.disabled:
+                    break
+        if raw_records is None:
+            if last_error is None:
+                raise RuntimeError("job source failed without an error")
+            raise last_error
         now = datetime.now(UTC)
         run_seed = source.source_id + query + "".join(item.raw_text for item in raw_records)
         run_id = f"source_run_{_digest(run_seed)[:32]}"
@@ -90,6 +114,8 @@ class OpportunityRadarService:
                     raw,
                     desired_terms=desired_terms,
                     excluded_terms=excluded_terms,
+                    preferred_locations=preferred_locations,
+                    minimum_salary=minimum_salary,
                 )
             )
         return tuple(results)
@@ -102,6 +128,8 @@ class OpportunityRadarService:
         *,
         desired_terms: tuple[str, ...],
         excluded_terms: tuple[str, ...],
+        preferred_locations: tuple[str, ...],
+        minimum_salary: float | None,
     ) -> JobStagingRecord:
         normalized = source.normalize(raw)
         raw_bytes = raw.raw_text.encode("utf-8")
@@ -119,11 +147,14 @@ class OpportunityRadarService:
         source_id = f"source_job_staging_{_digest(source.source_id + raw.source_ref)[:32]}"
         snapshot_id = f"snapshot_job_staging_{_digest(staging_id + raw_sha)[:32]}"
         evidence_ref_id = f"evidence_job_staging_{_digest(staging_id + raw_sha)[:32]}"
-        score, reasons, gaps = self._rank(
+        score, reasons, gaps, score_breakdown = self._rank(
             normalized,
             normalized.requirements,
             desired_terms,
             excluded_terms,
+            captured_at=raw.captured_at,
+            preferred_locations=preferred_locations,
+            minimum_salary=minimum_salary,
         )
         status = JobStagingStatus.DUPLICATE if duplicate_of else JobStagingStatus.STAGED
         now = raw.captured_at
@@ -170,10 +201,11 @@ class OpportunityRadarService:
                     "(staging_id, source_run_id, source_id, source_ref, raw_artifact_id, "
                     "raw_sha256, url_fingerprint, content_fingerprint, normalized, terms_status, "
                     "status, duplicate_of, suggested_score, suggested_reasons, gaps, "
+                    "score_breakdown, "
                     "admitted_job_id, admitted_opportunity_id, created_at) VALUES "
                     "(:id, :run_id, :source_id, :source_ref, :artifact_id, :raw_sha, :url_fp, "
                     ":content_fp, :normalized, :terms, :status, :duplicate_of, :score, :reasons, "
-                    ":gaps, NULL, NULL, :created_at)"
+                    ":gaps, :score_breakdown, NULL, NULL, :created_at)"
                 ),
                 {
                     "id": staging_id,
@@ -191,6 +223,7 @@ class OpportunityRadarService:
                     "score": score,
                     "reasons": _json(list(reasons)),
                     "gaps": _json(list(gaps)),
+                    "score_breakdown": _json(score_breakdown),
                     "created_at": now,
                 },
             )
@@ -198,6 +231,9 @@ class OpportunityRadarService:
         if result is None:
             raise RuntimeError("job staging record was not persisted")
         return result
+
+    def source_policies(self) -> tuple[JobSourcePolicy, ...]:
+        return self.repository.list_source_policies()
 
     def admit(self, staging_id: str, *, actor: str = "user") -> OpportunityAdmissionCommit:
         if actor != "user":
@@ -269,7 +305,11 @@ class OpportunityRadarService:
         requirements: tuple[str, ...],
         desired_terms: tuple[str, ...],
         excluded_terms: tuple[str, ...],
-    ) -> tuple[float, tuple[str, ...], tuple[str, ...]]:
+        *,
+        captured_at: datetime,
+        preferred_locations: tuple[str, ...],
+        minimum_salary: float | None,
+    ) -> tuple[float, tuple[str, ...], tuple[str, ...], dict[str, float]]:
         fields = (
             normalized.title,
             normalized.company,
@@ -282,13 +322,66 @@ class OpportunityRadarService:
         matched = tuple(term for term in desired_terms if term.lower() in haystack)
         gaps = tuple(term for term in desired_terms if term.lower() not in haystack)
         deal_breakers = tuple(term for term in excluded_terms if term.lower() in haystack)
-        if deal_breakers:
-            return 0.0, (f"deal-breaker: {', '.join(deal_breakers)}",), gaps
-        score = 0.5 if not desired_terms else round(len(matched) / len(desired_terms), 3)
-        reasons = (
-            (f"matched: {', '.join(matched)}",) if matched else ("no verified preference match",)
+        deal_breaker_score = 0.0 if deal_breakers else 1.0
+        capability_score = 0.5 if not desired_terms else len(matched) / len(desired_terms)
+        location_score = 0.5 if not normalized.location else 0.0
+        if preferred_locations:
+            location_score = (
+                1.0
+                if normalized.location
+                and any(term.lower() in normalized.location.lower() for term in preferred_locations)
+                else 0.0
+            )
+        salary_score = 0.5 if not normalized.salary else 1.0
+        if minimum_salary is not None:
+            amounts = [
+                float(value.replace(",", ""))
+                for value in re.findall(r"\d[\d,]*(?:\.\d+)?", normalized.salary or "")
+            ]
+            salary_score = (
+                min(1.0, max(amounts, default=0.0) / minimum_salary)
+                if minimum_salary > 0
+                else 0.0
+            )
+        deadline_score = 0.5
+        if normalized.deadline_at is not None:
+            days = (normalized.deadline_at - captured_at).total_seconds() / 86400
+            deadline_score = 0.0 if days < 0 else max(0.0, min(1.0, 1 / (1 + days / 7)))
+        age_days = max(0.0, (datetime.now(UTC) - captured_at).total_seconds() / 86400)
+        freshness_score = max(0.0, min(1.0, 1 - age_days / 30))
+        breakdown = {
+            "deal_breaker": round(deal_breaker_score, 3),
+            "capability_match": round(capability_score, 3),
+            "evidence_coverage": 0.0,
+            "interest_priority": 0.5,
+            "location": round(location_score, 3),
+            "salary": round(salary_score, 3),
+            "deadline": round(deadline_score, 3),
+            "freshness": round(freshness_score, 3),
+        }
+        weighted = (
+            0.45 * breakdown["capability_match"]
+            + 0.15 * breakdown["evidence_coverage"]
+            + 0.10 * breakdown["interest_priority"]
+            + 0.10 * breakdown["location"]
+            + 0.10 * breakdown["salary"]
+            + 0.05 * breakdown["deadline"]
+            + 0.05 * breakdown["freshness"]
         )
-        return score, reasons, gaps
+        score = round(deal_breaker_score * weighted, 3)
+        reasons = []
+        if deal_breakers:
+            reasons.append(f"deal-breaker: {', '.join(deal_breakers)}")
+        elif matched:
+            reasons.append(f"matched: {', '.join(matched)}")
+        else:
+            reasons.append("no verified preference match")
+        reasons.append("evidence coverage: 0; no personal evidence supplied")
+        if preferred_locations:
+            reasons.append(f"location score: {breakdown['location']:.3f}")
+        if minimum_salary is not None:
+            reasons.append(f"salary score: {breakdown['salary']:.3f}")
+        return score, tuple(reasons), gaps, breakdown
 
     @staticmethod
     def _command(command_id: str, kind: EntityKind, entity_id: str, key: str) -> Command:

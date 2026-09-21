@@ -10,6 +10,7 @@ from career_harness.adapters.job_sources import ManualJobSource, OfflineFixtureJ
 from career_harness.core.common import FrozenModel
 from career_harness.core.job_source import (
     JobResumeProposalSeed,
+    JobSourcePolicy,
     JobStagingRecord,
     JobStagingStatus,
     RawJobRecord,
@@ -24,12 +25,16 @@ class ManualJobImportRequest(FrozenModel):
     query: str = Field(default="", max_length=2048)
     desired_terms: tuple[str, ...] = ()
     excluded_terms: tuple[str, ...] = ()
+    preferred_locations: tuple[str, ...] = ()
+    minimum_salary: float | None = Field(default=None, gt=0)
 
 
 class FixtureSearchRequest(FrozenModel):
     query: str = Field(default="", max_length=2048)
     desired_terms: tuple[str, ...] = ()
     excluded_terms: tuple[str, ...] = ()
+    preferred_locations: tuple[str, ...] = ()
+    minimum_salary: float | None = Field(default=None, gt=0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +72,8 @@ def create_job_radar_router(api: JobRadarApi) -> APIRouter:
                 query=request.query,
                 desired_terms=request.desired_terms,
                 excluded_terms=request.excluded_terms,
+                preferred_locations=request.preferred_locations,
+                minimum_salary=request.minimum_salary,
             )
         except Exception as error:
             raise _error(error) from error
@@ -83,9 +90,15 @@ def create_job_radar_router(api: JobRadarApi) -> APIRouter:
                 query=request.query,
                 desired_terms=request.desired_terms,
                 excluded_terms=request.excluded_terms,
+                preferred_locations=request.preferred_locations,
+                minimum_salary=request.minimum_salary,
             )
         except Exception as error:
             raise _error(error) from error
+
+    @router.get("/source-policies", response_model=list[JobSourcePolicy])
+    def source_policies() -> tuple[JobSourcePolicy, ...]:
+        return api.service.source_policies()
 
     @router.post(
         "/staging/{staging_id}/admit",

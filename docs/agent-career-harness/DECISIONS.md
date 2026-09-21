@@ -97,3 +97,9 @@
 - 状态：ACCEPTED
 - 决定：Typst 只能通过注入 sandbox runner、PluginRunner、PermissionGate 和 PluginEnvelope 执行；compiler identity/hash 与 worker checks 必须进入 RenderRun provenance。前端 draft 只能本地保存，必须携带 EvidenceRef 经 user-reviewed ResumePatch 后生成 immutable ResumeRevision 才能渲染。
 - 原因：避免宿主进程越权、不可重放 provenance，以及 preview/export 分叉。
+
+## D-2.0-014 — Opportunity ranking is an auditable projection
+
+- 状态：ACCEPTED
+- 决定：Job staging 只保存 explainable score breakdown；deal-breaker、能力匹配、证据覆盖、兴趣/用户优先级分离、地点、薪资、截止期和新鲜度均为建议投影。未提供个人证据时 evidence coverage 为 0，source 连续失败按独立 policy retry 后禁用；不改变 Job/Opportunity canonical truth。
+- 原因：让排序可解释、可重放、可安全降级，避免外部职位输入或出现次数自动提升职业事实与 User Priority。

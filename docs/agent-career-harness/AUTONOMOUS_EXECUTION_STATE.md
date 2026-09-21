@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | A Plugin Foundation | DONE (local/offline) | Slice A commit `e2f2807` |
 | B Career Knowledge | DONE (completion audit passed) | deterministic hybrid search + flagged-content quarantine |
-| C Resume Studio | IN PROGRESS (completion audit) | 第二 renderer、自动保存、drafter-reviewer 与输出 metadata |
+| C Resume Studio | DONE (completion audit passed) | sandbox renderer、draft proposal/review、immutable render review 与 provenance |
 | D Opportunity Radar | AUDIT REQUIRED | 多维 ranking 与 source policy 尚需核验/补齐 |
 | E Lifecycle / Replacement | AUDIT REQUIRED | shadow metrics、license/dependency scan 与 rollback recommendation 尚需核验/补齐 |
 
@@ -62,13 +62,13 @@
 
 ## Slice C checkpoint
 
-- 状态：DONE — local/offline Resume Studio vertical slice
-- Migration：`0016_resume_studio`，TargetProfile/template/render/ATS records immutable and additive
-- Flow：approved ResumeBase/Revision → user TargetProfile → evidence-constrained Patch proposal/review → immutable revision → HTML preview/PDF Artifact → ATS report
-- Renderer：repository-owned `resume-render-html` template；未复制 Magic Resume 源码、模板、字体或资产
-- Verification：focused backend/API/migration/restore 59 passed；backend full 622 passed, 5 skipped；frontend 57 passed；Vite build passed；Ruff/diff check passed
-- External actions：ATS submit and third-party template execution remain blocked/proposal-only
-- Next slice：Slice D — Opportunity Radar，manual/offline sources first
+- 状态：DONE — local/offline Resume Studio completion audit passed
+- Migration：`0018_resume_studio_completion`，历史 unknown provenance 使用 NULL；Typst template downgrade 可逆并保留数据
+- Renderer：HTML builtin；Typst 仅经 PluginRunner/PermissionGate/PluginEnvelope 注入 sandbox，当前机器无 sandbox 因此 disabled
+- Flow：approved ResumeRevision → local draft → EvidenceRef-backed patch proposal → user review → immutable ResumeRevision → render Artifact → immutable user render review
+- Verification：focused backend 8 passed；backend full 634 passed, 5 skipped；frontend 58 passed；Vite build、Ruff、diff check 通过
+- Review：P1 findings fixed; no unresolved P0/P1. Real Typst compiler remains unavailable locally and is represented as disabled, not synthetic success.
+- Next：Slice D completion audit
 
 ## Recovery entry
 

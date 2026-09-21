@@ -367,6 +367,15 @@ textarea:focus-visible {
 
 .resume-studio { margin-top: 24px; }
 .resume-studio-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.resume-render-review { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.resume-render-review p { margin: 5px 0 12px; color: var(--text-muted); }
+.resume-draft-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 14px; }
+.resume-draft-workspace textarea { min-height: 260px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.resume-draft-preview { min-height: 210px; margin-top: 8px; padding: 22px; border: 1px solid var(--border); overflow-wrap: anywhere; }
+.resume-draft-preview.warm-paper { background: var(--surface-warm, #fffdf7); color: var(--text); }
+.resume-draft-preview.compact-ink { padding: 15px; background: var(--surface-panel); color: var(--text); }
+.resume-draft-preview section + section { margin-top: 12px; }
+.resume-draft-preview p { margin: 4px 0 0; white-space: pre-wrap; }
 .resume-studio-grid label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
 .resume-studio-grid input { min-width: 0; padding: 9px 10px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-control); }
 .resume-studio-message { color: var(--muted); font-size: 13px; }
@@ -384,6 +393,7 @@ textarea:focus-visible {
 
 @media (max-width: 600px) {
   .resume-studio-grid { grid-template-columns: 1fr; }
+  .resume-draft-workspace { grid-template-columns: 1fr; }
   .resume-preview .resume { min-width: 0; }
 }
 

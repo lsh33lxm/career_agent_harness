@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { ResumeStudioPanel } from "./ResumeStudioPanel";
@@ -7,6 +7,7 @@ import { ResumeStudioPanel } from "./ResumeStudioPanel";
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  window.localStorage.clear();
   delete window.__ACH_CONFIG__;
 });
 
@@ -21,6 +22,18 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
     launchToken: "resume-ui-token",
   };
   const fetcher = vi.fn()
+    .mockResolvedValueOnce(response([
+      {
+        template_id: "resume-render-html", name: "观复简历 / Warm Paper",
+        version: "1.0.0", renderer: "html_css", content_sha256: "a".repeat(64),
+        description: "Built in", status: "active", created_at: "now",
+      },
+      {
+        template_id: "resume-render-typst", name: "观复简历 / Typst A4",
+        version: "1.0.0", renderer: "typst_worker", content_sha256: "b".repeat(64),
+        description: "Isolated", status: "disabled", created_at: "now",
+      },
+    ]))
     .mockResolvedValueOnce(response({
       target_profile_id: "target_profile_001", resume_id: "resume_001",
       title: "Platform Engineer", company: null, opportunity_id: null,
@@ -30,6 +43,9 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
     .mockResolvedValueOnce(response({
       render_run_id: "render_001", resume_revision_id: "resume_revision_001",
       target_profile_id: "target_profile_001", template_id: "resume-render-html",
+      template_version: "1.0.0", renderer: "html_css",
+      renderer_plugin_id: "resume-render-html-builtin", renderer_plugin_version: "1.0.0",
+      input_sha256: "b".repeat(64),
       status: "completed", output_artifact_id: "artifact_001",
       output_sha256: "a".repeat(64), output_media_type: "application/pdf",
       page_count: 1, preview_html: "<article class=\"resume\"><h1>Minnn</h1></article>",
@@ -39,7 +55,11 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
       render_run_id: "render_001", status: "warnings", page_count: 1,
       checks: { text_layer: true }, keyword_gaps: ["Kubernetes"], created_at: "now",
     }))
-    .mockResolvedValueOnce(response(new Blob(["%PDF"]), "application/pdf"));
+    .mockResolvedValueOnce(response(new Blob(["%PDF"]), "application/pdf"))
+    .mockResolvedValueOnce(response({
+      render_run_id: "render_001", decision: "approved", reviewer: "user",
+      reason: "已核对内容与版式", reviewed_at: "now",
+    }));
   vi.stubGlobal("fetch", fetcher);
   const createObjectURL = vi.fn(() => "blob:resume");
   const revokeObjectURL = vi.fn();
@@ -48,6 +68,8 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
 
   render(<ResumeStudioPanel />);
+  fireEvent.focus(screen.getByLabelText("渲染模板"));
+  expect(await screen.findByRole("option", { name: /Typst A4/ })).toBeTruthy();
   fireEvent.change(screen.getByLabelText("Studio Resume Base ID"), { target: { value: "resume_001" } });
   fireEvent.change(screen.getByLabelText("Studio Resume Revision ID"), { target: { value: "resume_revision_001" } });
   fireEvent.change(screen.getByLabelText("Target Profile ID"), { target: { value: "target_profile_001" } });
@@ -58,7 +80,11 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
   expect(await screen.findByText("Minnn")).toBeTruthy();
   expect(screen.getByText(/Kubernetes/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "下载 PDF" }));
-  await screen.findByText(/生成完成/);
-  expect(fetcher.mock.calls[3][1].headers.get("Authorization")).toBe("Bearer resume-ui-token");
+  await waitFor(() => expect(createObjectURL).toHaveBeenCalled());
+  fireEvent.change(screen.getByLabelText("审核理由"), { target: { value: "已核对内容与版式" } });
+  fireEvent.click(screen.getByRole("button", { name: "批准" }));
+  expect(await screen.findByText(/已由用户 approved/)).toBeTruthy();
+  expect(fetcher.mock.calls[4][1].headers.get("Authorization")).toBe("Bearer resume-ui-token");
   expect(createObjectURL).toHaveBeenCalled();
+  expect(window.localStorage.getItem("ach.resume-studio.draft.v1")).toContain("resume_001");
 });

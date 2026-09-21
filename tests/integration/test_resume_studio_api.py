@@ -82,14 +82,30 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
         artifact = await client.get(
             f"/api/v1/resume/render-runs/{render_id}/artifact", headers=AUTH
         )
+        review = await client.post(
+            f"/api/v1/resume/render-runs/{render_id}/review",
+            headers=AUTH,
+            json={"decision": "approved", "reason": "User reviewed the immutable output."},
+        )
+        loaded_review = await client.get(
+            f"/api/v1/resume/render-runs/{render_id}/review", headers=AUTH
+        )
         diff = await client.get("/api/v1/resume/diff/resume_revision_001", headers=AUTH)
 
     assert unauthorized.status_code == 401
     assert templates.status_code == 200
-    assert templates.json()[0]["template_id"] == "resume-render-html"
+    assert {item["template_id"] for item in templates.json()} == {
+        "resume-render-html",
+        "resume-render-typst",
+    }
+    typst = next(item for item in templates.json() if item["template_id"].endswith("typst"))
+    assert typst["status"] in {"active", "disabled"}
     assert target.status_code == 201
     assert rendered.status_code == 201
     assert report.json()["keyword_gaps"] == ["Kubernetes"]
     assert artifact.headers["content-type"] == "application/pdf"
     assert artifact.content.startswith(b"%PDF-1.4")
+    assert rendered.json()["renderer_plugin_id"] == "resume-render-html-builtin"
+    assert review.status_code == 200
+    assert loaded_review.json() == review.json()
     assert diff.json()["resume_revision_id"] == "resume_revision_001"

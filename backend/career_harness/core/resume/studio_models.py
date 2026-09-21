@@ -16,6 +16,7 @@ class TargetProfileStatus(StrEnum):
 
 class TemplateRenderer(StrEnum):
     HTML_CSS = "html_css"
+    TYPST_WORKER = "typst_worker"
 
 
 class RenderRunStatus(StrEnum):
@@ -75,6 +76,11 @@ class ResumeRenderRun(FrozenModel):
     resume_revision_id: OpaqueId
     target_profile_id: OpaqueId | None = None
     template_id: OpaqueId
+    template_version: str | None = Field(default=None, min_length=1, max_length=64)
+    renderer: TemplateRenderer | None = None
+    renderer_plugin_id: OpaqueId | None = None
+    renderer_plugin_version: str | None = Field(default=None, min_length=1, max_length=64)
+    input_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     status: RenderRunStatus
     output_artifact_id: OpaqueId
     output_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
@@ -84,6 +90,14 @@ class ResumeRenderRun(FrozenModel):
     checks: dict[str, bool]
     created_by: str = Field(min_length=1, max_length=255)
     created_at: datetime = Field(default_factory=utc_now)
+
+
+class ResumeRenderReview(FrozenModel):
+    render_run_id: OpaqueId
+    decision: str = Field(pattern=r"^(approved|rejected)$")
+    reviewer: str = Field(min_length=1, max_length=255)
+    reason: str = Field(min_length=1, max_length=2048)
+    reviewed_at: datetime = Field(default_factory=utc_now)
 
 
 class ResumeStudioDiff(FrozenModel):

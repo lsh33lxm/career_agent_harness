@@ -91,3 +91,9 @@
 - 决定：`career-kb-local` 将 lexical frequency 与本地字符 n-gram cosine vector score 合并，返回可解释的两个分量；不依赖外部 embedding 服务。检测到 prompt injection 的 revision 默认从搜索和 plugin result 排除，仅允许显式本地审核查询。
 - 原因：满足首期轻量 hybrid search，同时保持 local-first、可重放与恶意文档隔离。
 - 影响：后续真实 embedding adapter 可替换 vector provider，但不得改变 evidence citation、authority 或默认 quarantine 语义。
+
+## D-2.0-013 — Resume renderer sandbox and draft promotion boundary
+
+- 状态：ACCEPTED
+- 决定：Typst 只能通过注入 sandbox runner、PluginRunner、PermissionGate 和 PluginEnvelope 执行；compiler identity/hash 与 worker checks 必须进入 RenderRun provenance。前端 draft 只能本地保存，必须携带 EvidenceRef 经 user-reviewed ResumePatch 后生成 immutable ResumeRevision 才能渲染。
+- 原因：避免宿主进程越权、不可重放 provenance，以及 preview/export 分叉。

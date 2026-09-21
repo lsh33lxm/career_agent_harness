@@ -15,6 +15,7 @@ from career_harness.core.resume import (
     AtsReportStatus,
     RenderRunStatus,
     ResumeAtsReport,
+    ResumeRenderReview,
     ResumeRenderRun,
     ResumeStudioDiff,
     ResumeTargetPatchRef,
@@ -262,10 +263,14 @@ class ResumeStudioRepository:
                 text(
                     "INSERT INTO resume_render_run "
                     "(render_run_id, resume_revision_id, target_profile_id, template_id, status, "
+                    "template_version, renderer, renderer_plugin_id, renderer_plugin_version, "
+                    "input_sha256, "
                     "output_artifact_id, output_sha256, output_media_type, page_count, "
                     "preview_html, checks, created_by, created_at) VALUES "
                     "(:render_run_id, :resume_revision_id, :target_profile_id, :template_id, "
-                    ":status, :output_artifact_id, :output_sha256, :output_media_type, "
+                    ":status, :template_version, :renderer, :renderer_plugin_id, "
+                    ":renderer_plugin_version, :input_sha256, :output_artifact_id, "
+                    ":output_sha256, :output_media_type, "
                     ":page_count, :preview_html, :checks, :created_by, :created_at)"
                 ),
                 {
@@ -274,6 +279,11 @@ class ResumeStudioRepository:
                     "target_profile_id": run.target_profile_id,
                     "template_id": run.template_id,
                     "status": run.status.value,
+                    "template_version": run.template_version,
+                    "renderer": run.renderer.value,
+                    "renderer_plugin_id": run.renderer_plugin_id,
+                    "renderer_plugin_version": run.renderer_plugin_version,
+                    "input_sha256": run.input_sha256,
                     "output_artifact_id": run.output_artifact_id,
                     "output_sha256": run.output_sha256,
                     "output_media_type": run.output_media_type,
@@ -340,6 +350,48 @@ class ResumeStudioRepository:
             keyword_gaps=tuple(_loads(row["keyword_gaps"], [])),
             created_at=row["created_at"],
         )
+
+    def review_render(self, review: ResumeRenderReview) -> ResumeRenderReview:
+        if self.get_render(review.render_run_id) is None:
+            raise KeyError("render run not found")
+        with self.engine.begin() as connection:
+            existing = connection.execute(
+                text("SELECT * FROM resume_render_review WHERE render_run_id=:id"),
+                {"id": review.render_run_id},
+            ).mappings().first()
+            if existing is not None:
+                current = self._render_review(existing)
+                if (
+                    current.decision != review.decision
+                    or current.reviewer != review.reviewer
+                    or current.reason != review.reason
+                ):
+                    raise ValueError("render run already has a different review")
+                return current
+            connection.execute(
+                text(
+                    "INSERT INTO resume_render_review "
+                    "(render_run_id, decision, reviewer, reason, reviewed_at) "
+                    "VALUES (:render_run_id, :decision, :reviewer, :reason, :reviewed_at)"
+                ),
+                {**review.model_dump(mode="json"), "decision": review.decision},
+            )
+            self._event(
+                connection,
+                "resume.render.reviewed",
+                review.render_run_id,
+                {"decision": review.decision, "reviewer": review.reviewer},
+                review.reviewed_at,
+            )
+        return review
+
+    def get_render_review(self, render_run_id: str) -> ResumeRenderReview | None:
+        with self.engine.connect() as connection:
+            row = connection.execute(
+                text("SELECT * FROM resume_render_review WHERE render_run_id=:id"),
+                {"id": render_run_id},
+            ).mappings().first()
+        return self._render_review(row) if row else None
 
     def read_render_artifact(self, render_run_id: str) -> bytes:
         run = self.get_render(render_run_id)
@@ -455,12 +507,27 @@ class ResumeStudioRepository:
         )
 
     @staticmethod
+    def _render_review(row: Any) -> ResumeRenderReview:
+        return ResumeRenderReview(
+            render_run_id=row["render_run_id"],
+            decision=row["decision"],
+            reviewer=row["reviewer"],
+            reason=row["reason"],
+            reviewed_at=row["reviewed_at"],
+        )
+
+    @staticmethod
     def _render(row: Any) -> ResumeRenderRun:
         return ResumeRenderRun(
             render_run_id=row["render_run_id"],
             resume_revision_id=row["resume_revision_id"],
             target_profile_id=row["target_profile_id"],
             template_id=row["template_id"],
+            template_version=row["template_version"],
+            renderer=TemplateRenderer(row["renderer"]) if row["renderer"] else None,
+            renderer_plugin_id=row["renderer_plugin_id"],
+            renderer_plugin_version=row["renderer_plugin_version"],
+            input_sha256=row["input_sha256"],
             status=RenderRunStatus(row["status"]),
             output_artifact_id=row["output_artifact_id"],
             output_sha256=row["output_sha256"],

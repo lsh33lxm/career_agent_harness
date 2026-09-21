@@ -13,6 +13,7 @@ from career_harness.core.resume import (
     ResumePatch,
     ResumePatchOperation,
     ResumePatchStatus,
+    ResumeRenderReview,
     ResumeRenderRun,
     ResumeRevision,
     ResumeStudioDiff,
@@ -70,6 +71,11 @@ class RenderRequest(FrozenModel):
     actor: str = Field(default="user", min_length=1, max_length=255)
 
 
+class RenderReviewRequest(FrozenModel):
+    decision: str = Field(pattern=r"^(approved|rejected)$")
+    reason: str = Field(min_length=1, max_length=2048)
+
+
 @dataclass(frozen=True, slots=True)
 class ResumeStudioApi:
     service: ResumeStudioService
@@ -110,8 +116,7 @@ def create_resume_studio_router(api: ResumeStudioApi) -> APIRouter:
 
     @router.get("/templates", response_model=list[ResumeTemplateRegistration])
     def list_templates() -> tuple[ResumeTemplateRegistration, ...]:
-        api.service.ensure_builtin_template()
-        return api.service.repository.list_templates()
+        return api.service.list_templates()
 
     @router.post(
         "/target-profiles",
@@ -278,6 +283,34 @@ def create_resume_studio_router(api: ResumeStudioApi) -> APIRouter:
         result = api.service.repository.get_ats_report(render_run_id)
         if result is None:
             raise HTTPException(404, "ATS report not found")
+        return result
+
+    @router.post(
+        "/render-runs/{render_run_id}/review", response_model=ResumeRenderReview
+    )
+    def review_render(
+        request: RenderReviewRequest,
+        render_run_id: str = Path(min_length=3, max_length=128),
+    ) -> ResumeRenderReview:
+        try:
+            return api.service.review_render(
+                render_run_id=render_run_id,
+                decision=request.decision,
+                reason=request.reason,
+                actor="user",
+            )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.get(
+        "/render-runs/{render_run_id}/review", response_model=ResumeRenderReview
+    )
+    def get_render_review(
+        render_run_id: str = Path(min_length=3, max_length=128),
+    ) -> ResumeRenderReview:
+        result = api.service.repository.get_render_review(render_run_id)
+        if result is None:
+            raise HTTPException(404, "render review not found")
         return result
 
     @router.get("/render-runs/{render_run_id}/artifact")

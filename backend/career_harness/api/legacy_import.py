@@ -14,6 +14,7 @@ from career_harness.services.legacy_import_service import (
     LegacyImportStatus,
     LegacyJobDetail,
     LegacyJobSummary,
+    LegacyKnowledgeOverview,
 )
 
 
@@ -40,6 +41,10 @@ def create_legacy_import_router(api: LegacyImportApi) -> APIRouter:
     @router.get("/status", response_model=LegacyImportStatus)
     def import_status() -> LegacyImportStatus:
         return api.service.status()
+
+    @router.get("/knowledge-overview", response_model=LegacyKnowledgeOverview)
+    def knowledge_overview() -> LegacyKnowledgeOverview:
+        return api.service.knowledge_overview()
 
     @router.post(
         "/import",

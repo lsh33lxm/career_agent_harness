@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getToday, type TodayItem, type TodayQueue } from "../api/today";
+import { getLegacyKnowledgeOverview } from "../api/legacy";
 import { useHealth } from "../api/useHealth";
 import { TodayPage } from "./TodayPage";
 
@@ -14,6 +15,11 @@ vi.mock("../api/today", async (importOriginal) => {
 vi.mock("../api/useHealth", () => ({
   useHealth: vi.fn(),
 }));
+
+vi.mock("../api/legacy", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../api/legacy")>();
+  return { ...original, getLegacyKnowledgeOverview: vi.fn() };
+});
 
 function todayItem(overrides: Partial<TodayItem> = {}): TodayItem {
   return {
@@ -47,6 +53,19 @@ beforeEach(() => {
     },
     vi.fn(),
   ]);
+  vi.mocked(getLegacyKnowledgeOverview).mockResolvedValue({
+    data_as_of: null,
+    job_count: 0,
+    interview_count: 0,
+    question_count: 0,
+    coding_count: 0,
+    needs_review_count: 0,
+    top_skills: [],
+    top_companies: [],
+    top_locations: [],
+    questions: [],
+    interviews: [],
+  });
 });
 
 afterEach(cleanup);
@@ -71,7 +90,31 @@ describe("TodayPage", () => {
 
     render(<TodayPage />);
 
-    expect(await screen.findByText("今日队列为空，Core 没有可展示的事项。")).toBeTruthy();
+    expect(await screen.findByText("今日队列为空。先在“机会”导入或选择岗位，建立下一步行动。")).toBeTruthy();
+    expect(screen.queryByRole("article")).toBeNull();
+  });
+
+  it("有历史岗位但没有 Core 队列时给出可执行入口且不自动晋升岗位", async () => {
+    vi.mocked(getToday).mockResolvedValue(todayQueue([]));
+    vi.mocked(getLegacyKnowledgeOverview).mockResolvedValue({
+      data_as_of: "2026-09-22T00:00:00Z",
+      job_count: 1028,
+      interview_count: 503,
+      question_count: 4816,
+      coding_count: 324,
+      needs_review_count: 684,
+      top_skills: [],
+      top_companies: [],
+      top_locations: [],
+      questions: [],
+      interviews: [],
+    });
+
+    render(<TodayPage />);
+
+    expect(await screen.findByText("已有 1028 条历史岗位")).toBeTruthy();
+    expect(screen.getByText(/历史岗位不会自动进入求职流程/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "前往机会选择岗位" }).getAttribute("href")).toBe("/opportunities");
     expect(screen.queryByRole("article")).toBeNull();
   });
 

@@ -1,7 +1,9 @@
 import {
   AlertCircle, CheckCircle2, ChevronRight, FileText, Link2, RefreshCw, ScanText, Upload,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
+import { getLegacyKnowledgeOverview } from "../api/legacy";
 import { useHealth } from "../api/useHealth";
 import { useToday } from "../api/useToday";
 import type { TodayItem, TodayItemKind, TodayQueue } from "../api/today";
@@ -71,7 +73,7 @@ function TodayItemCard({ item }: { item: TodayItem }) {
   );
 }
 
-function TodayQueuePanel({ queue }: { queue: TodayQueue }) {
+function TodayQueuePanel({ queue, legacyJobCount }: { queue: TodayQueue; legacyJobCount: number | null }) {
   return (
     <section className="today-panel opportunity-stream" aria-labelledby="queue-title">
       <div className="today-section-heading">
@@ -85,7 +87,13 @@ function TodayQueuePanel({ queue }: { queue: TodayQueue }) {
       {queue.items.length === 0
         ? (
           <div className="empty-state">
-            <p>今日队列为空，Core 没有可展示的事项。</p>
+            {legacyJobCount && legacyJobCount > 0 ? (
+              <>
+                <p>Core 今日队列为空，但已有 {legacyJobCount} 条历史岗位可查看。</p>
+                <a className="today-secondary" href="/opportunities">前往机会选择岗位</a>
+                <small>历史岗位不会自动进入求职流程，也不会改变用户优先级。</small>
+              </>
+            ) : <p>今日队列为空。先在“机会”导入或选择岗位，建立下一步行动。</p>}
           </div>
         )
         : (
@@ -98,12 +106,22 @@ function TodayQueuePanel({ queue }: { queue: TodayQueue }) {
 }
 
 export function TodayPage() {
+  const [legacyJobCount, setLegacyJobCount] = useState<number | null>(null);
   const [health, retryHealth] = useHealth();
   const [today, retryToday] = useToday();
   const firstItem = today.status === "ready" ? today.data.items[0] : undefined;
   const reviews = today.status === "ready"
     ? today.data.items.filter((item) => item.kind === "review_request") : [];
   const unavailable = today.status === "loading" ? "正在读取今日队列…" : "队列暂不可用，恢复连接后显示。";
+  useEffect(() => {
+    const controller = new AbortController();
+    getLegacyKnowledgeOverview(controller.signal)
+      .then((overview) => setLegacyJobCount(overview.job_count))
+      .catch(() => {
+        if (!controller.signal.aborted) setLegacyJobCount(null);
+      });
+    return () => controller.abort();
+  }, []);
   return (
     <main className="today-page">
       <header className="today-hero">
@@ -135,7 +153,11 @@ export function TodayPage() {
                 <p>{firstItem.item_id}</p>
                 <small>沿用今日队列首项，不另行排序。完整理由与来源见下方队列。</small>
                 <a className="today-secondary" href="#queue-title">查看队列</a>
-              </> : <p>{today.status === "ready" ? "暂无焦点，今日队列为空。" : unavailable}</p>}
+              </> : today.status === "ready" && legacyJobCount && legacyJobCount > 0 ? <>
+                <h3>已有 {legacyJobCount} 条历史岗位</h3>
+                <p>先在“机会”中选择一个岗位加入求职流程，Core 才会生成可审计的今日行动。</p>
+                <a className="today-secondary" href="/opportunities">查看历史岗位</a>
+              </> : <p>{today.status === "ready" ? "暂无焦点。先导入或选择岗位，建立今天的第一步。" : unavailable}</p>}
             </div>
           </section>
           {today.status === "loading" && (
@@ -155,7 +177,7 @@ export function TodayPage() {
               </div>
             </section>
           )}
-          {today.status === "ready" && <TodayQueuePanel queue={today.data} />}
+          {today.status === "ready" && <TodayQueuePanel queue={today.data} legacyJobCount={legacyJobCount} />}
           <section className="today-panel weekly-panel" aria-labelledby="weekly-title">
             <h2 className="today-section-title" id="weekly-title"><span />本周回看</h2>
             <p className="today-unavailable">周度回看尚未接入，当前不展示进度或完成数量。</p>

@@ -41,6 +41,15 @@
 - 构建：PyInstaller sidecar、Cargo check、Vite production、Tauri debug no-bundle、release NSIS 全部通过。
 - 回归：backend `657 passed, 5 skipped`；frontend `19 files / 53 passed`；Ruff、Cargo check、Vite build 与 diff check 通过。
 
+## Legacy knowledge projection checkpoint (2026-09-22)
+
+- 状态：真实 Legacy 只读数据已进入知识页与 Today 引导；未执行 canonical cutover。
+- Overview：岗位 1,028、面试 503、问题 4,816、刷题 324、待复核 709；技能、公司和地点趋势来自 staging/projection 聚合。
+- Provenance：近期问题与面试显示原始相对路径、SHA-256、行号和历史复核状态；所有内容明确标记为 historical projection，不提升为 Fact、Capability 或 Resume Fact。
+- Today：Core 队列为空时显示历史岗位数量和“机会”入口；不会自动创建 Opportunity、设置 User Priority 或改变求职状态。
+- Recovery：应用重启后从最新成功导入批次恢复 Legacy 源路径，仅检查可访问性，不写回 Legacy。
+- Verification：backend focused `2 passed`；frontend focused `7 passed`；frontend full `20 files / 55 passed`；Vite build、Ruff 与 diff check 通过。
+
 ## Final requirement hardening
 
 - Plugin Manifest v1 现在有 repository-owned 示例；插件详情页展示 source/commit、权限、license review、NOTICE、依赖扫描、审计、更新策略与卸载影响。

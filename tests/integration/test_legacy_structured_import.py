@@ -70,8 +70,16 @@ def _legacy_fixture(root: Path) -> None:
     )
     _write_csv(
         root / "data/统一数据/问题明细.csv",
-        ["unified_record_id", "raw_text"],
-        [],
+        ["unified_record_id", "canonical_question", "topic", "company", "role"],
+        [
+            {
+                "unified_record_id": "question-1",
+                "canonical_question": "如何设计可审计的 Agent 工作流？",
+                "topic": "Agent 工程",
+                "company": "示例科技",
+                "role": "Python 开发工程师",
+            }
+        ],
     )
     _write_csv(
         root / "data/统一数据/来源总台账.csv",
@@ -81,7 +89,7 @@ def _legacy_fixture(root: Path) -> None:
     _write_csv(
         root / "data/统一数据/个人刷题记录.csv",
         ["LeetCode 题号", "题目"],
-        [],
+        [{"LeetCode 题号": "1", "题目": "两数之和"}],
     )
     _write_csv(
         root / "data/候选数据/9.16补采/PlatformJobObservation_candidate_platform.csv",
@@ -134,20 +142,23 @@ def test_structured_import_is_read_only_idempotent_and_queryable(
 
     assert first.status == "completed"
     assert first.totals == {
-        "read_count": 3,
-        "new_count": 3,
+        "read_count": 5,
+        "new_count": 5,
         "updated_count": 0,
         "unchanged_count": 0,
         "duplicate_count": 0,
         "failed_count": 0,
     }
     assert second.totals["new_count"] == 0
-    assert second.totals["unchanged_count"] == 3
+    assert second.totals["unchanged_count"] == 5
     assert second.totals["failed_count"] == 0
     assert first.source_signature_before == first.source_signature_after
     assert second.source_signature_before == second.source_signature_after
     after = {path: (path.stat().st_size, path.stat().st_mtime_ns) for path in legacy.rglob("*")}
     assert after == before
+    reopened_status = LegacyImportService(service.engine, service.artifact_store).status()
+    assert reopened_status.configured_source_root == str(legacy.resolve())
+    assert reopened_status.source_accessible is True
 
     jobs = service.list_jobs(query="Python", location="上海")
     assert len(jobs) == 1
@@ -159,6 +170,16 @@ def test_structured_import_is_read_only_idempotent_and_queryable(
     assert "SQLite" in detail.jd_text
     assert detail.raw_record["unified_job_id"] == "job-history-1"
     assert len(detail.related_interviews) == 1
+
+    overview = service.knowledge_overview()
+    assert overview.job_count == 1
+    assert overview.interview_count == 1
+    assert overview.question_count == 1
+    assert overview.coding_count == 1
+    assert overview.top_skills[0].label in {"Python", "SQLite"}
+    assert overview.questions[0].title == "如何设计可审计的 Agent 工作流？"
+    assert overview.questions[0].source_path.endswith("问题明细.csv")
+    assert overview.questions[0].source_sha256
 
     with service.engine.connect() as connection:
         source_rows = connection.execute(
@@ -204,3 +225,10 @@ async def test_legacy_import_api_runs_import_and_returns_provenance(
         detail_response = await client.get(f"/api/v1/legacy/jobs/{job['staging_id']}")
         assert detail_response.status_code == 200
         assert detail_response.json()["job"]["source_path"].endswith("岗位与JD数据.csv")
+
+        overview_response = await client.get("/api/v1/legacy/knowledge-overview")
+        assert overview_response.status_code == 200
+        overview = overview_response.json()
+        assert overview["job_count"] == 1
+        assert overview["question_count"] == 1
+        assert overview["questions"][0]["title"] == "如何设计可审计的 Agent 工作流？"

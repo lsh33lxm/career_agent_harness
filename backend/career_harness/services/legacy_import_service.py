@@ -4,6 +4,7 @@ import csv
 import hashlib
 import json
 import uuid
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from io import StringIO
@@ -385,6 +386,39 @@ class LegacyJobDetail(FrozenModel):
     related_interviews: tuple[dict[str, Any], ...]
 
 
+class LegacyTrendItem(FrozenModel):
+    label: str
+    count: int = Field(ge=1)
+
+
+class LegacyKnowledgeItem(FrozenModel):
+    record_id: str
+    kind: Literal["question", "interview"]
+    title: str
+    topic: str | None
+    company: str | None
+    role: str | None
+    observed_at: str | None
+    review_status: Literal["historical_unconfirmed", "needs_review", "duplicate"]
+    source_path: str
+    source_sha256: str
+    row_number: int = Field(ge=1)
+
+
+class LegacyKnowledgeOverview(FrozenModel):
+    data_as_of: datetime | None
+    job_count: int = Field(ge=0)
+    interview_count: int = Field(ge=0)
+    question_count: int = Field(ge=0)
+    coding_count: int = Field(ge=0)
+    needs_review_count: int = Field(ge=0)
+    top_skills: tuple[LegacyTrendItem, ...]
+    top_companies: tuple[LegacyTrendItem, ...]
+    top_locations: tuple[LegacyTrendItem, ...]
+    questions: tuple[LegacyKnowledgeItem, ...]
+    interviews: tuple[LegacyKnowledgeItem, ...]
+
+
 class LegacyImportService:
     def __init__(
         self,
@@ -408,17 +442,178 @@ class LegacyImportService:
         return root
 
     def status(self) -> LegacyImportStatus:
-        configured = str(self.default_source_root) if self.default_source_root else None
+        latest = self.latest_report()
+        configured = (
+            str(self.default_source_root)
+            if self.default_source_root
+            else latest.source_root
+            if latest
+            else None
+        )
         accessible = False
-        if self.default_source_root is not None:
+        if configured is not None:
             try:
-                accessible = self.resolve_source_root().is_dir()
+                accessible = Path(configured).expanduser().resolve(strict=True).is_dir()
             except (OSError, ValueError):
                 accessible = False
         return LegacyImportStatus(
             configured_source_root=configured,
             source_accessible=accessible,
-            latest_report=self.latest_report(),
+            latest_report=latest,
+        )
+
+    @staticmethod
+    def _labels(value: Any) -> tuple[str, ...]:
+        if value in (None, ""):
+            return ()
+        if isinstance(value, list):
+            result: list[str] = []
+            for item in value:
+                result.extend(LegacyImportService._labels(item))
+            return tuple(result)
+        candidate = str(value).strip()
+        if candidate.startswith("["):
+            try:
+                decoded = json.loads(candidate)
+            except json.JSONDecodeError:
+                decoded = None
+            if isinstance(decoded, list):
+                return LegacyImportService._labels(decoded)
+        return (candidate,) if candidate else ()
+
+    @staticmethod
+    def _top(counter: Counter[str], limit: int = 12) -> tuple[LegacyTrendItem, ...]:
+        return tuple(
+            LegacyTrendItem(label=label, count=count)
+            for label, count in sorted(
+                counter.items(), key=lambda item: (-item[1], item[0])
+            )[:limit]
+        )
+
+    @staticmethod
+    def _knowledge_item(row: Any) -> LegacyKnowledgeItem | None:
+        content = json.loads(row["content"]) if isinstance(row["content"], str) else row["content"]
+        title = _first(
+            content,
+            "canonical_question",
+            "canonical_text",
+            "raw_question",
+            "raw_text",
+            "title",
+        )
+        if not title:
+            return None
+        return LegacyKnowledgeItem(
+            record_id=row["record_id"],
+            kind=row["record_kind"],
+            title=title[:1000],
+            topic=_first(content, "topic", "category", "question_type"),
+            company=_first(content, "company_canonical", "company", "company_raw"),
+            role=_first(content, "role", "role_raw", "role_family"),
+            observed_at=_first(
+                content,
+                "effective_event_date",
+                "interview_date",
+                "published_at",
+            ),
+            review_status=row["review_status"],
+            source_path=row["relative_path"],
+            source_sha256=row["sha256"],
+            row_number=row["row_number"],
+        )
+
+    def knowledge_overview(self) -> LegacyKnowledgeOverview:
+        with self.engine.connect() as connection:
+            job_rows = connection.execute(
+                text(
+                    "SELECT s.normalized, p.review_status FROM job_staging_record s "
+                    "JOIN job_staging_provenance p ON p.staging_id=s.staging_id"
+                )
+            ).mappings().all()
+            projection_counts = {
+                row["record_kind"]: row["count"]
+                for row in connection.execute(
+                    text(
+                        "SELECT record_kind, COUNT(*) AS count FROM legacy_projection_record "
+                        "GROUP BY record_kind"
+                    )
+                ).mappings()
+            }
+            projection_review_count = connection.execute(
+                text(
+                    "SELECT COUNT(*) FROM legacy_projection_record "
+                    "WHERE review_status IN ('needs_review', 'duplicate')"
+                )
+            ).scalar_one()
+            latest_finished_at = connection.execute(
+                text(
+                    "SELECT finished_at FROM legacy_import_batch WHERE status='completed' "
+                    "ORDER BY started_at DESC LIMIT 1"
+                )
+            ).scalar_one_or_none()
+
+            def recent(kind: str) -> tuple[LegacyKnowledgeItem, ...]:
+                rows = connection.execute(
+                    text(
+                        "SELECT r.record_id, r.record_kind, r.content, r.review_status, "
+                        "r.row_number, f.relative_path, f.sha256 "
+                        "FROM legacy_projection_record r JOIN legacy_source_file_version f "
+                        "ON f.file_version_id=r.file_version_id "
+                        "WHERE r.record_kind=:kind AND r.review_status<>'duplicate' "
+                        "ORDER BY COALESCE(json_extract(r.content, '$.effective_event_date'), "
+                        "json_extract(r.content, '$.interview_date'), "
+                        "json_extract(r.content, '$.published_at'), '') DESC, r.created_at DESC "
+                        "LIMIT 100"
+                    ),
+                    {"kind": kind},
+                ).mappings()
+                items = [self._knowledge_item(row) for row in rows]
+                return tuple(item for item in items if item is not None)[:8]
+
+            questions = recent("question")
+            interviews = recent("interview")
+
+        skills: Counter[str] = Counter()
+        companies: Counter[str] = Counter()
+        locations: Counter[str] = Counter()
+        job_review_count = 0
+        for row in job_rows:
+            if row["review_status"] in {"needs_review", "duplicate"}:
+                job_review_count += 1
+            normalized = (
+                json.loads(row["normalized"])
+                if isinstance(row["normalized"], str)
+                else row["normalized"]
+            )
+            if row["review_status"] != "duplicate":
+                for label in self._labels(normalized.get("requirements")):
+                    if len(label) <= 100 and "\n" not in label:
+                        skills[label] += 1
+                for label in self._labels(normalized.get("company")):
+                    if not label.casefold().startswith("company_"):
+                        companies[label] += 1
+                for label in self._labels(normalized.get("location")):
+                    locations[label] += 1
+
+        data_as_of = None
+        if latest_finished_at is not None:
+            data_as_of = (
+                datetime.fromisoformat(latest_finished_at)
+                if isinstance(latest_finished_at, str)
+                else latest_finished_at
+            )
+        return LegacyKnowledgeOverview(
+            data_as_of=data_as_of,
+            job_count=len(job_rows),
+            interview_count=projection_counts.get("interview", 0),
+            question_count=projection_counts.get("question", 0),
+            coding_count=projection_counts.get("coding", 0),
+            needs_review_count=job_review_count + projection_review_count,
+            top_skills=self._top(skills),
+            top_companies=self._top(companies, 8),
+            top_locations=self._top(locations, 8),
+            questions=questions,
+            interviews=interviews,
         )
 
     def run(self, source_root: Path | None = None) -> LegacyImportReport:

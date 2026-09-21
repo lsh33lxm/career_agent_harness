@@ -59,8 +59,47 @@ export interface LegacyJobDetail {
   related_interviews: Record<string, unknown>[];
 }
 
+export interface LegacyTrendItem {
+  label: string;
+  count: number;
+}
+
+export interface LegacyKnowledgeItem {
+  record_id: string;
+  kind: "question" | "interview";
+  title: string;
+  topic: string | null;
+  company: string | null;
+  role: string | null;
+  observed_at: string | null;
+  review_status: "historical_unconfirmed" | "needs_review" | "duplicate";
+  source_path: string;
+  source_sha256: string;
+  row_number: number;
+}
+
+export interface LegacyKnowledgeOverview {
+  data_as_of: string | null;
+  job_count: number;
+  interview_count: number;
+  question_count: number;
+  coding_count: number;
+  needs_review_count: number;
+  top_skills: LegacyTrendItem[];
+  top_companies: LegacyTrendItem[];
+  top_locations: LegacyTrendItem[];
+  questions: LegacyKnowledgeItem[];
+  interviews: LegacyKnowledgeItem[];
+}
+
 export function getLegacyImportStatus(signal?: AbortSignal): Promise<LegacyImportStatus> {
   return apiRequest<LegacyImportStatus>("/api/v1/legacy/status", { signal });
+}
+
+export function getLegacyKnowledgeOverview(
+  signal?: AbortSignal,
+): Promise<LegacyKnowledgeOverview> {
+  return apiRequest<LegacyKnowledgeOverview>("/api/v1/legacy/knowledge-overview", { signal });
 }
 
 export function runLegacyImport(sourceRoot?: string): Promise<LegacyImportReport> {

@@ -5,6 +5,8 @@
 - 完成 Windows Tauri 2 桌面产品化：PyInstaller one-file sidecar、bundle migration resources、随机 loopback 端口、临时 token 注入、Data Root 日志与完整进程树回收。
 - 生成 NSIS 安装包并完成隔离干净安装；首次启动自动建库，重启后数据持久，窗口关闭后 sidecar 与监听端口均释放。
 - 在干净安装数据库执行真实 Legacy 只读导入：首轮读取/新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575；导入前后源签名一致，Python 岗位查询与 provenance 抽样通过。
+- 新增只读 Legacy 知识概览 API 与知识页真实内容：展示岗位/面试/问题/刷题计数、技能/公司/地点趋势、近期问题和面试 provenance；历史内容保持未确认投影。
+- Today 在 Core 队列为空时读取真实历史岗位数量并提供“机会”入口，不自动创建 Opportunity 或修改用户优先级。局部验证 backend `2 passed`、frontend `7 passed`，frontend full `55 passed`，Vite build/Ruff/diff check 通过。
 
 ## 2026-09-21
 

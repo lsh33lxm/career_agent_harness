@@ -30,6 +30,14 @@ const kindLabels: Record<TodayItemKind, string> = {
   enhancement_task: "增强任务",
   review_request: "待你确认",
 };
+const sourceKindLabels: Record<string, string> = {
+  opportunity: "机会",
+  application: "申请",
+  interview: "面试",
+  capability: "能力",
+  review_request: "待确认",
+  project: "项目",
+};
 
 const weekdayLabels = ["日", "一", "二", "三", "四", "五", "六"];
 
@@ -57,7 +65,7 @@ function TodayItemCard({ item }: { item: TodayItem }) {
         <h3>{kindLabels[item.kind]}</h3>
         <span>{item.item_id}</span>
         <small>
-          来源 <mark>{item.source_refs.map((ref) => `${ref.kind}:${ref.entity_id}#${ref.revision}`).join("、")}</mark>
+          来源 <mark>{item.source_refs.map((ref) => `${sourceKindLabels[ref.kind] ?? "来源"}：${ref.entity_id}#${ref.revision}`).join("、")}</mark>
         </small>
       </div>
       <div className="today-match">

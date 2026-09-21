@@ -18,6 +18,7 @@ import type {
 } from "../api/capabilities";
 import { listCapabilityIdentities } from "../api/capabilities";
 import { useCapabilities, type CapabilityQuery } from "../api/useCapabilities";
+import { authorityLabels, displayLabel } from "../app/displayLabels";
 
 const layerLabels = {
   common_core: "通用核心",
@@ -35,6 +36,12 @@ const statusLabels: Record<PersonalCapabilityState["display_status"], string> = 
 };
 
 const recommendationLabels = { low: "低", medium: "中", high: "高" } as const;
+const relationLabels: Record<string, string> = {
+  prerequisite: "前置能力",
+  related: "相关能力",
+  composition: "组成能力",
+  successor: "后继能力",
+};
 
 function DetailSection({
   icon,
@@ -95,7 +102,7 @@ function CapabilityDetail({
           {projection.evidence_bindings.length === 0 ? <p className="capability-muted">当前状态修订没有证据绑定。</p> : (
             <ul>{projection.evidence_bindings.map((binding) => (
               <li key={binding.binding_id}>
-                <strong>{binding.authority}</strong>
+                <strong>{displayLabel(binding.authority, authorityLabels)}</strong>
                 <span>{binding.scopes.join(" · ")}</span>
                 <code>{binding.binding_id}</code>
               </li>
@@ -132,7 +139,7 @@ function CapabilityDetail({
           {relations.length === 0 ? <p className="capability-muted">该节点没有关系记录。</p> : (
             <ul>{relations.map((relation) => (
               <li key={relation.relation_id}>
-                <strong>{relation.relation_type}</strong>
+                <strong>{displayLabel(relation.relation_type, relationLabels)}</strong>
                 <span>{relation.source_capability_id} → {relation.target_capability_id}</span>
                 <code>{relation.relation_id}</code>
               </li>
@@ -210,7 +217,7 @@ export function CapabilitiesPage() {
                     <button key={node.capability_id} type="button" aria-pressed={selectedIndex === index} onClick={() => setSelectedIndex(index)}>
                       <span className={`capability-node-mark capability-node-mark--${node.layer}`} />
                       <span><strong>{node.canonical_name}</strong><small>{layerLabels[node.layer]}</small></span>
-                      <span className="capability-node-signals"><small>T {projection.target_market_bindings.length}</small><small>B {projection.broad_market_bindings.length}</small>{projection.personal_state && <em>{statusLabels[projection.personal_state.display_status]}</em>}</span>
+                      <span className="capability-node-signals"><small>目标市场 {projection.target_market_bindings.length}</small><small>广泛市场 {projection.broad_market_bindings.length}</small>{projection.personal_state && <em>{statusLabels[projection.personal_state.display_status]}</em>}</span>
                     </button>
                   );
                 })}

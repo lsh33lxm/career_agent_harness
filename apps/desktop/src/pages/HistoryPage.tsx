@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { listApplications, listOutcomes } from "../api/history";
 import type { ApplicationRead, ApplicationState, OutcomeRead } from "../api/history";
+import { actorLabels, displayLabel } from "../app/displayLabels";
 import "./HistoryPage.css";
 
 const states: Record<ApplicationState, string> = {
@@ -46,7 +47,7 @@ function OutcomePanel({ applicationId }: { applicationId: string }) {
             <dt>来源权威</dt><dd>{outcome.authority === "user_confirmed" ? "用户确认" : "门户回执"}</dd>
             <dt>当时的申请</dt><dd>{outcome.application_id}#{outcome.application_revision}</dd>
             <dt>结果记录</dt><dd>{outcome.entity_id}#{outcome.revision}</dd>
-            <dt>记录者</dt><dd>{outcome.recorded_by}</dd>
+            <dt>记录者</dt><dd>{displayLabel(outcome.recorded_by, actorLabels)}</dd>
             <dt>证据引用</dt><dd>{outcome.evidence_refs.length ? outcome.evidence_refs.join("、") : "无证据引用（用户确认）"}</dd>
           </dl>
         </article>

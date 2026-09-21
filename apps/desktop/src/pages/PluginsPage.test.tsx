@@ -76,7 +76,7 @@ it("shows manifest details, policy, audit and uninstall impact without external 
   fireEvent.click(screen.getByText("查看详情与权限"));
   expect(screen.getByText("builtin://echo-fixture")).toBeTruthy();
   fireEvent.change(screen.getByLabelText("Echo Fixture更新策略"), { target: { value: "manual" } });
-  await waitFor(() => expect(screen.getByRole("status").textContent).toContain("更新策略已设为 manual"));
+  await waitFor(() => expect(screen.getByRole("status").textContent).toContain("更新策略已设为 手动批准"));
   fireEvent.click(screen.getByRole("button", { name: "审计" }));
   expect(await screen.findByRole("region", { name: "Echo Fixture审计" })).toBeTruthy();
   expect(screen.getByText(/运行 2 次/)).toBeTruthy();

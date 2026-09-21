@@ -49,6 +49,9 @@ const displayLabels: Record<string, string> = {
   offline_review_required: "需要人工复核",
   approved: "已批准",
   pending: "待处理",
+  notify: "仅提醒",
+  patch_auto: "准备补丁预览",
+  manual: "手动批准",
 };
 
 const toolCopy: Record<string, { name: string; description: string }> = {
@@ -158,7 +161,7 @@ export function PluginsPage() {
     setActionMessage("");
     try {
       await setPluginUpdatePolicy(item.manifest.id, policy);
-      setActionMessage(`${item.manifest.name}：更新策略已设为 ${policy}`);
+      setActionMessage(`${item.manifest.name}：更新策略已设为 ${displayLabel(policy)}`);
       await load();
     } catch (error) {
       setActionMessage(`${item.manifest.name}：更新策略保存失败：${(error as Error).message}`);
@@ -265,7 +268,7 @@ export function PluginsPage() {
               <section className="plugin-audit" aria-label={`${item.manifest.name}卸载影响`}>
                 <h3>卸载影响预览</h3>
                 <p>{uninstallPreview.removal_allowed ? "停用后可以移除插件指针。" : "插件仍启用，暂不可移除。"}</p>
-                <p>Core truth 删除：{uninstallPreview.core_truth_deleted ? "会" : "不会"}；Artifact bytes 删除：{uninstallPreview.artifact_bytes_deleted ? "会" : "不会"}。</p>
+                <p>Career Core 权威数据删除：{uninstallPreview.core_truth_deleted ? "会" : "不会"}；原始材料字节删除：{uninstallPreview.artifact_bytes_deleted ? "会" : "不会"}。</p>
                 <p>保留记录：{uninstallPreview.retained_records.join(", ")}</p>
               </section>
             )}

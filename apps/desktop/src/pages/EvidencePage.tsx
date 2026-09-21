@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { getEvidence, listEvidence } from "../api/evidence";
 import type { EvidencePageRead, EvidenceProvenance } from "../api/evidence";
+import { artifactClassLabels, displayLabel, sourceTypeLabels } from "../app/displayLabels";
 import "./EvidencePage.css";
 
 type Load<T> = { status: "loading" } | { status: "error"; message: string }
@@ -10,8 +11,14 @@ type Load<T> = { status: "loading" } | { status: "error"; message: string }
 const message = (error: unknown) => error instanceof ApiError && error.status === 404
   ? "这条证据引用不存在。" : "暂时无法读取证据来源，请检查本地 Core 后重试。";
 const sourceLabel = (item: EvidenceProvenance) => item.source.source_type === "legacy_historical_unconfirmed"
-  ? "历史来源 · 未确认" : item.source.source_type;
-const classes = { public_source: "公开来源", personal: "个人材料", sensitive: "敏感材料" };
+  ? "历史来源 · 未确认" : displayLabel(item.source.source_type, sourceTypeLabels);
+const mediaTypeLabels: Record<string, string> = {
+  "text/plain": "纯文本",
+  "text/markdown": "Markdown 文档",
+  "text/html": "HTML 文档",
+  "application/pdf": "PDF 文档",
+  "application/json": "JSON 数据",
+};
 
 function EvidenceDetail({ refId }: { refId: string }) {
   const [attempt, setAttempt] = useState(0);
@@ -35,16 +42,16 @@ function EvidenceDetail({ refId }: { refId: string }) {
       <p className="evidence-authority">{sourceLabel(item)} · 保存材料不代表确认其中的主张。</p>
       <dl>
         <dt>证据引用</dt><dd>{item.evidence_ref.evidence_ref_id}</dd>
-        <dt>来源类型</dt><dd>{item.source.source_type}</dd>
+        <dt>来源类型</dt><dd>{displayLabel(item.source.source_type, sourceTypeLabels)}</dd>
         <dt>来源标识</dt><dd>{item.source.source_id}</dd>
         <dt>历史位置（仅描述）</dt><dd>{item.source.locator}</dd>
         <dt>快照</dt><dd>{item.snapshot.snapshot_id}</dd>
         <dt>采集时间（原始记录）</dt><dd><time>{item.snapshot.captured_at}</time></dd>
         <dt>制品</dt><dd>{item.artifact.artifact_id}</dd>
         <dt>SHA-256</dt><dd>{item.artifact.sha256}</dd>
-        <dt>大小</dt><dd>{item.artifact.byte_length.toLocaleString()} bytes</dd>
-        <dt>材料分类</dt><dd>{classes[item.artifact.artifact_class]}</dd>
-        <dt>媒体类型</dt><dd>{item.artifact.media_type}</dd>
+        <dt>大小</dt><dd>{item.artifact.byte_length.toLocaleString()} 字节</dd>
+        <dt>材料分类</dt><dd>{displayLabel(item.artifact.artifact_class, artifactClassLabels)}</dd>
+        <dt>媒体类型</dt><dd>{mediaTypeLabels[item.artifact.media_type] ?? item.artifact.media_type}</dd>
         <dt>精确选择器</dt><dd>{item.evidence_ref.selector ?? "未指定"}</dd>
       </dl>
     </>}
@@ -76,7 +83,7 @@ export function EvidencePage() {
       <h2 className="today-section-title"><span />本页 {state.data.items.length} 条记录</h2>
       {state.data.items.length === 0 && <p>{cursor === null ? "还没有证据记录。" : "此页没有更多证据记录。"}</p>}
       {state.data.items.map((item) => <button className="evidence-item" type="button" key={item.evidence_ref.evidence_ref_id} aria-pressed={selected === item.evidence_ref.evidence_ref_id} onClick={() => setSelected(item.evidence_ref.evidence_ref_id)}>
-        <strong>{sourceLabel(item)}</strong><span>{item.evidence_ref.evidence_ref_id}</span><small>{classes[item.artifact.artifact_class]} · {item.artifact.byte_length.toLocaleString()} 字节</small>
+        <strong>{sourceLabel(item)}</strong><span>{item.evidence_ref.evidence_ref_id}</span><small>{displayLabel(item.artifact.artifact_class, artifactClassLabels)} · {item.artifact.byte_length.toLocaleString()} 字节</small>
       </button>)}
       <div className="evidence-pagination">
         {cursor !== null && <button type="button" onClick={() => navigate(null)}>返回首页</button>}

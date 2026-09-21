@@ -2,6 +2,7 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { listCapabilityInbox, reviewCapabilityCandidate, type InboxItem, type InboxReceipt, type InboxReviewRequest } from "../api/capabilityInbox";
+import { actorLabels, capabilityLayerLabels, candidateStatusLabels, displayLabel } from "../app/displayLabels";
 import "./CapabilityInboxPage.css";
 
 function requestId(prefix: string): string {
@@ -51,8 +52,8 @@ function ReviewCard({ item, refresh }: { item: InboxItem; refresh: () => Promise
     <p>{candidate.status === "pending" ? "待审核" : "审核历史"}</p>
     <h2>{candidate.proposed_canonical_name}</h2>
     <p>{candidate.proposed_description}</p>
-    <p>{candidate.candidate_node_id} · revision {revision} · {candidate.status}</p>
-    <p>发现者：{candidate.discovered_by} · 层级：{candidate.proposed_layer}</p>
+    <p>候选编号：{candidate.candidate_node_id} · 第 {revision} 版 · {displayLabel(candidate.status, candidateStatusLabels)}</p>
+    <p>发现者：{displayLabel(candidate.discovered_by, actorLabels)} · 层级：{displayLabel(candidate.proposed_layer, capabilityLayerLabels)}</p>
     <p>来源证据：{candidate.source_evidence_refs.join(" · ")}</p>
     {candidate.review_reason && <p>历史审核：{candidate.reviewed_by} — {candidate.review_reason}</p>}
     {forbidden && <p>用户本人提出的候选不能由同一用户审核。</p>}
@@ -65,7 +66,7 @@ function ReviewCard({ item, refresh }: { item: InboxItem; refresh: () => Promise
     </form>}
     {error && <p role="alert">{error}</p>}
     {conflict && <button disabled={pending} onClick={() => { void refresh().then((ok) => { if (ok) { setConflict(false); setDecision(""); setReason(""); setError(""); } }); }}>刷新审核状态</button>}
-    {receipt && <section role="status"><h3>审核已成功</h3><p>回执：{receipt.commit.event_id} · revision {receipt.commit.revision}</p>
+    {receipt && <section role="status"><h3>审核已成功</h3><p>回执：{receipt.commit.event_id} · 第 {receipt.commit.revision} 版</p>
       {receipt.capability_id && <p>能力 ID：{receipt.capability_id}</p>}
       {receipt.graph_version && <p>图谱 ID：{receipt.graph_version.graph_version_id}</p>}
     </section>}

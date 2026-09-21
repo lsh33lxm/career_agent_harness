@@ -10,6 +10,7 @@ import {
   type TaskRecord,
   type TaskStatus,
 } from "../api/tasks";
+import { displayLabel, taskStageLabels } from "../app/displayLabels";
 
 const statusLabels: Record<TaskStatus, string> = {
   pending: "等待执行",
@@ -123,7 +124,7 @@ export function TaskQueuePanel() {
               <dl className="plugin-meta">
                 <div><dt>进度</dt><dd>{Math.round(task.progress * 100)}%</dd></div>
                 <div><dt>尝试</dt><dd>{task.current_attempt} / {task.max_attempts}</dd></div>
-                <div><dt>阶段</dt><dd>{task.stage.replaceAll("_", " ")}</dd></div>
+                <div><dt>阶段</dt><dd>{displayLabel(task.stage, taskStageLabels)}</dd></div>
               </dl>
               {task.last_error && <p className="model-provider-notice">最近错误：{task.last_error}</p>}
               <div className="plugin-actions">

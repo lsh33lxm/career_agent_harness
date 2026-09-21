@@ -83,7 +83,7 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
   await waitFor(() => expect(createObjectURL).toHaveBeenCalled());
   fireEvent.change(screen.getByLabelText("审核理由"), { target: { value: "已核对内容与版式" } });
   fireEvent.click(screen.getByRole("button", { name: "批准" }));
-  expect(await screen.findByText(/已由用户 approved/)).toBeTruthy();
+  expect(await screen.findByText(/已由用户已批准/)).toBeTruthy();
   expect(fetcher.mock.calls[4][1].headers.get("Authorization")).toBe("Bearer resume-ui-token");
   expect(createObjectURL).toHaveBeenCalled();
   expect(window.localStorage.getItem("ach.resume-studio.draft.v1")).toContain("resume_001");

@@ -18,6 +18,7 @@ import {
 } from "../api/resumeStudio";
 import { getResumeRevision } from "../api/projectResume";
 import type { ResumeRevisionRead } from "../api/projectResume";
+import { atsStatusLabels, decisionLabels, displayLabel, rendererLabels } from "../app/displayLabels";
 
 const DRAFT_KEY = "ach.resume-studio.draft.v1";
 
@@ -219,7 +220,7 @@ export function ResumeStudioPanel() {
   }
 
   async function render() {
-    setMessage("正在生成 HTML preview 与 PDF…");
+    setMessage("正在生成 HTML 预览与 PDF…");
     try {
       const rendered = await renderResume({
         resume_revision_id: revisionId,
@@ -243,7 +244,7 @@ export function ResumeStudioPanel() {
         reason: reviewReason.trim(),
       });
       setReview(saved);
-      setMessage(`用户审核已记录：${saved.decision}。Artifact 本身保持不可变。`);
+      setMessage(`用户审核已记录：${displayLabel(saved.decision, decisionLabels)}。输出文件本身保持不可变。`);
     } catch (error) {
       setMessage("审核记录失败：" + (error as Error).message);
     }
@@ -280,7 +281,7 @@ export function ResumeStudioPanel() {
         <label>目标岗位<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：平台工程师" /></label>
         <label>公司（可选）<input value={company} onChange={(event) => setCompany(event.target.value)} placeholder="例如：目标公司" /></label>
         <label>渲染模板<select aria-label="渲染模板" value={templateId} onFocus={loadTemplates} onChange={(event) => setTemplateId(event.target.value)}>
-          {templates.map((template) => <option key={template.template_id} value={template.template_id} disabled={template.status !== "active"}>{template.name} · {template.renderer}{template.status === "disabled" ? "（不可用）" : ""}</option>)}
+          {templates.map((template) => <option key={template.template_id} value={template.template_id} disabled={template.status !== "active"}>{template.name} · {displayLabel(template.renderer, rendererLabels)}{template.status === "disabled" ? "（不可用）" : ""}</option>)}
         </select></label>
       </div>
       <div className="button-row">
@@ -307,20 +308,20 @@ export function ResumeStudioPanel() {
           <div className="resume-preview" dangerouslySetInnerHTML={{ __html: run.preview_html }} />
           {report && (
             <div className="resume-ats-report">
-              <span><ShieldCheck size={14} /> ATS：{report.status}</span>
+              <span><ShieldCheck size={14} /> ATS：{displayLabel(report.status, atsStatusLabels)}</span>
               <span>{report.page_count} 页</span>
               {report.keyword_gaps.length > 0 && <span>Gap：{report.keyword_gaps.join("、")}</span>}
             </div>
           )}
           <div className="resume-render-review">
             <strong>导出文件人工审核</strong>
-            <p>生成物不会自动成为 Resume Fact 或申请用最终稿。</p>
+            <p>生成物不会自动成为简历事实或申请用最终稿。</p>
             <label>审核理由<input aria-label="审核理由" value={reviewReason} onChange={(event) => setReviewReason(event.target.value)} disabled={Boolean(review)} /></label>
             <div className="button-row">
               <button className="button button-secondary" type="button" onClick={() => submitReview("rejected")} disabled={!reviewReason.trim() || Boolean(review)}><X size={14} />拒绝</button>
               <button className="button button-primary" type="button" onClick={() => submitReview("approved")} disabled={!reviewReason.trim() || Boolean(review)}><Check size={14} />批准</button>
             </div>
-            {review && <span className="service-status">已由用户 {review.decision}</span>}
+            {review && <span className="service-status">已由用户{displayLabel(review.decision, decisionLabels)}</span>}
           </div>
         </div>
       )}

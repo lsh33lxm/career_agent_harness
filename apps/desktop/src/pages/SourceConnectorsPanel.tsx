@@ -11,6 +11,7 @@ import {
   type SourceConnector,
   type SourceSyncRun,
 } from "../api/sourceConnectors";
+import { displayLabel, syncStatusLabels } from "../app/displayLabels";
 
 const date = (value: string | null | undefined) => value
   ? new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value))
@@ -78,7 +79,7 @@ export function SourceConnectorsPanel() {
         );
       } else if (action === "sync") {
         const task = await syncSourceConnector(connector.connector_id);
-        setMessage(task.status === "completed" ? `“${connector.display_name}”同步完成。` : `同步状态：${task.status}`);
+        setMessage(task.status === "completed" ? `“${connector.display_name}”同步完成。` : `同步状态：${displayLabel(task.status, syncStatusLabels)}`);
       } else {
         await setSourceConnectorPaused(connector.connector_id, connector.status === "active");
         setMessage(connector.status === "active" ? "资料源已暂停。" : "资料源已恢复。兼容性检查通过后可手动同步。");

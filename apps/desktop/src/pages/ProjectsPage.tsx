@@ -7,6 +7,7 @@ import {
   type ProjectRead,
 } from "../api/projectResume";
 import { analyzeGitHubProject, listGitHubAnalyses, saveGitHubToken, type GitHubAnalysis } from "../api/githubProjects";
+import { authorityLabels, displayLabel, freshnessLabels, reviewStatusLabels } from "../app/displayLabels";
 
 type ProjectSummary = ProjectRead["project"];
 
@@ -122,7 +123,7 @@ export function ProjectsPage() {
                 <h3>项目证据</h3>
                 <p>以下为每条证据的最新修订，不代表项目历史修订当时的快照。</p>
                 {detail.evidence.length === 0 && <p>此项目尚无已记录证据。</p>}
-                {detail.evidence.map((item) => <article key={item.evidence_id}><h3>{item.summary}</h3><p>来源权威：{item.authority} · 复核：{item.review_status} · 时效：{item.freshness}</p><details><summary>查看来源文件</summary><ul>{item.source_manifest.entries.map((entry) => <li key={entry.relative_path}>{entry.relative_path}<br />SHA-256：{entry.sha256}<br />{entry.byte_length} 字节</li>)}</ul></details></article>)}
+                {detail.evidence.map((item) => <article key={item.evidence_id}><h3>{item.summary}</h3><p>来源权威：{displayLabel(item.authority, authorityLabels)} · 复核：{displayLabel(item.review_status, reviewStatusLabels)} · 时效：{displayLabel(item.freshness, freshnessLabels)}</p><details><summary>查看来源文件</summary><ul>{item.source_manifest.entries.map((entry) => <li key={entry.relative_path}>{entry.relative_path}<br />SHA-256：{entry.sha256}<br />{entry.byte_length} 字节</li>)}</ul></details></article>)}
                 <h3>GitHub 静态分析</h3>
                 {analyses.length === 0 && <p>此项目没有 GitHub 分析档案。</p>}
                 {analyses.map((analysis) => <article className="github-analysis-profile" key={analysis.analysis_id}><h3>{analysis.repository_url}</h3><p>固定提交：{analysis.commit_sha.slice(0, 12)} · {analysis.file_count} 个文件 · {analysis.byte_count} 字节</p><p><strong>技术栈：</strong>{analysis.profile.technology_stack.join("、") || "未识别"}</p><p><strong>依赖清单：</strong>{analysis.profile.dependency_manifests.join("、") || "未发现"}</p><p><strong>测试：</strong>{analysis.profile.tests.slice(0, 8).join("、") || "未发现"}</p><p><strong>部署：</strong>{analysis.profile.deployment.slice(0, 8).join("、") || "未发现"}</p><p><strong>最近活跃：</strong>{analysis.profile.recent_activity[0] ? `${analysis.profile.recent_activity[0].authored_at} · ${analysis.profile.recent_activity[0].title}` : "未读取到提交记录"}</p><p><strong>可量化线索：</strong>{analysis.profile.outcome_clues.join("；") || "未发现，不能自动补全"}</p>{analysis.profile.risk_notes.length > 0 && <p><strong>风险提示：</strong>{analysis.profile.risk_notes.join("；")}</p>}<details><summary>查看分析 provenance</summary><p>README SHA-256：{analysis.readme_sha256 ?? "无"}</p><p>分析器：{analysis.provenance.analyzer}</p><p>README：{analysis.provenance.readme ?? "未发现"}</p></details></article>)}

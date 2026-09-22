@@ -11,7 +11,7 @@ import {
 } from "../api/projectResume";
 import { StructuredSections } from "./RecordLookup";
 import { ResumeStudioPanel } from "./ResumeStudioPanel";
-import { restoreResumeBaseRevision, restoreResumeRevision } from "../api/resumeStudio";
+import { getResumeDiff, restoreResumeBaseRevision, restoreResumeRevision, type ResumeStudioDiff } from "../api/resumeStudio";
 
 export function ResumePage() {
   const [bases, setBases] = useState<ResumeBaseRead[]>([]);
@@ -21,6 +21,7 @@ export function ResumePage() {
   const [baseHistory, setBaseHistory] = useState<ResumeBaseRead[]>([]);
   const [selectedBaseRevision, setSelectedBaseRevision] = useState("");
   const [selectedRevision, setSelectedRevision] = useState("");
+  const [diff, setDiff] = useState<ResumeStudioDiff | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
@@ -64,6 +65,7 @@ export function ResumePage() {
         setBaseHistory(nextBaseHistory);
         setSelectedBaseRevision(String(nextBase.revision));
         setSelectedRevision(nextRevisions[0]?.revision_id || "");
+        setDiff(null);
       })
       .catch(() => {
         if (!controller.signal.aborted) setError("简历内容暂时无法读取，请选择其他记录或重试。");
@@ -113,6 +115,16 @@ export function ResumePage() {
     }
   }
 
+  async function loadSelectedDiff() {
+    if (!revision) return;
+    setError("");
+    try {
+      setDiff(await getResumeDiff(revision.revision_id));
+    } catch {
+      setError("暂时无法读取内容差异，请稍后重试。");
+    }
+  }
+
   return (
     <main className="page record-page">
       <header className="page-heading"><div><p className="eyebrow">个人材料</p><h1>简历</h1><p>查看已确认的基础内容和不可变修订；模型建议不会自动成为简历事实。</p></div></header>
@@ -128,7 +140,7 @@ export function ResumePage() {
           <section><h2>基础内容</h2><p>第 {base.revision} 版 · 创建时间：{base.created_at}</p>{baseHistory.length > 1 && <details><summary>查看基础版本历史</summary><label><span>选择要恢复的版本</span><select aria-label="选择要恢复的基础版本" value={selectedBaseRevision} onChange={(event) => setSelectedBaseRevision(event.target.value)}>{baseHistory.map((item) => <option key={`${item.resume_id}:${item.revision}`} value={item.revision}>第 {item.revision} 版 · {item.created_at}</option>)}</select></label><button type="button" disabled={Number(selectedBaseRevision) === base.revision} onClick={restoreSelectedBase}>恢复为新基础版本</button><ul>{baseHistory.map((item) => <li key={`${item.resume_id}:${item.revision}`}>第 {item.revision} 版 · {item.created_at} · {item.created_by}</li>)}</ul></details>}<StructuredSections value={base.sections} /></section>
           <section><div className="section-heading"><h2>生成修订</h2>{revisions.length > 0 && <label><span className="sr-only">选择生成修订</span><select aria-label="选择生成修订" value={selectedRevision} onChange={(event) => setSelectedRevision(event.target.value)}>{revisions.map((item, index) => <option key={item.revision_id} value={item.revision_id}>修订 {revisions.length - index} · {item.created_at}</option>)}</select></label>}</div>
             {revisions.length === 0 && <p>还没有基于这份简历生成的修订。</p>}
-            {revision && <><p>来源基础版本：第 {revision.base_revision} 版</p><button type="button" onClick={restoreSelectedRevision}>恢复为基础简历</button><StructuredSections value={revision.content} /><details><summary>查看精确来源引用</summary><p>内容 SHA-256：{revision.content_sha256}</p>{revision.accepted_patch_refs.length ? <ul>{revision.accepted_patch_refs.map((ref) => <li key={`${ref.entity_id}:${ref.revision}`}>已审核修改 · 第 {ref.revision} 版</li>)}</ul> : <p>无已审核修改引用。</p>}</details></>}
+            {revision && <><p>来源基础版本：第 {revision.base_revision} 版</p><button type="button" onClick={restoreSelectedRevision}>恢复为基础简历</button><button type="button" onClick={loadSelectedDiff}>查看内容差异</button>{diff && <details open><summary>内容差异与来源</summary><pre className="resume-diff">{diff.diff}</pre>{diff.claim_provenance.length > 0 && <p>事实引用：{diff.claim_provenance.map((ref) => `${ref.entity_id} 第 ${ref.revision} 版`).join("、")}</p>}{diff.evidence_provenance.length > 0 && <p>证据引用：{diff.evidence_provenance.join("、")}</p>}</details>}<StructuredSections value={revision.content} /><details><summary>查看精确来源引用</summary><p>内容 SHA-256：{revision.content_sha256}</p>{revision.accepted_patch_refs.length ? <ul>{revision.accepted_patch_refs.map((ref) => <li key={`${ref.entity_id}:${ref.revision}`}>已审核修改 · 第 {ref.revision} 版</li>)}</ul> : <p>无已审核修改引用。</p>}</details></>}
           </section>
         </div>}
       </section>

@@ -118,3 +118,24 @@ it("可将旧基础版本恢复为新的不可变版本", async () => {
   const restoreCall = fetcher.mock.calls.find(([url]) => String(url).endsWith("/api/v1/resume/base-restore"));
   expect(String(restoreCall?.[1]?.body)).toContain('"source_base_revision":1');
 });
+
+it("按需查看简历修订差异和来源", async () => {
+  const base = { resume_id: "r1", candidate_id: "candidate_1", revision: 1, sections: { summary: "基础内容" }, created_by: "user", created_at: "2026-09-20" };
+  const revision = { revision_id: "rr1", resume_id: "r1", base_revision: 1, content: { summary: "修订内容" }, content_sha256: "a".repeat(64), accepted_patch_refs: [], created_by: "user", created_at: "2026-09-21" };
+  const fetcher = setup().mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith("/api/v1/resumes")) return response([base]);
+    if (url.endsWith("/api/v1/resumes/r1/base")) return response(base);
+    if (url.endsWith("/api/v1/resumes/r1/revisions")) return response([revision]);
+    if (url.endsWith("/api/v1/resumes/r1/bases")) return response([base]);
+    if (url.endsWith("/api/v1/resume/diff/rr1")) return response({ resume_id: "r1", base_revision: 1, resume_revision_id: "rr1", diff: "summary: 基础内容 → 修订内容", claim_provenance: [], evidence_provenance: ["evidence-1"] });
+    throw new Error(`unexpected request ${url}`);
+  });
+
+  render(<ResumePage />);
+  expect(await screen.findByText("修订内容")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "查看内容差异" }));
+  expect(await screen.findByText("summary: 基础内容 → 修订内容")).toBeTruthy();
+  expect(screen.getByText("证据引用：evidence-1")).toBeTruthy();
+  expect(fetcher.mock.calls.some(([url]) => String(url).endsWith("/api/v1/resume/diff/rr1"))).toBe(true);
+});

@@ -74,6 +74,15 @@ export interface ResumeAtsReport {
   created_at: string;
 }
 
+export interface ResumeStudioDiff {
+  resume_id: string;
+  base_revision: number;
+  resume_revision_id: string;
+  diff: string;
+  claim_provenance: Array<{ entity_id: string; revision: number }>;
+  evidence_provenance: string[];
+}
+
 export interface ResumeValidationResult {
   valid: boolean;
   data: Record<string, unknown> | null;
@@ -183,6 +192,10 @@ export function restoreResumeBaseRevision(
     { method: "POST", body: JSON.stringify(input) },
     idempotencyKey,
   );
+}
+
+export function getResumeDiff(revisionId: string): Promise<ResumeStudioDiff> {
+  return apiRequest(`/api/v1/resume/diff/${encodeURIComponent(revisionId)}`);
 }
 
 export function getAtsReport(renderRunId: string): Promise<ResumeAtsReport> {

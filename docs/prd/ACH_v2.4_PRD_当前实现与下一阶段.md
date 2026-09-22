@@ -1,6 +1,6 @@
 # Agent Career Harness v2.4
 
-日期：2026-09-23；基线：`refactor/v1.4-integration`，HEAD：`5aebdb3`。
+日期：2026-09-23；基线：`refactor/v1.4-integration`，HEAD：`7edcbd9`。
 
 ## 0. 当前定位
 
@@ -75,7 +75,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 
 ## 6. 质量与安全
 
-- 后端全量：`711 passed, 5 skipped`；跳过项是 Windows symlink 权限限制；验证基于 HEAD `5aebdb3` 之后的代码。
+- 后端全量：`711 passed, 5 skipped`；跳过项是 Windows symlink 权限限制；验证基于 HEAD `7edcbd9` 之前的功能代码，前端中文状态修复另有聚焦构建验证。
 - 前端：23 个测试文件、67 项测试通过；`npm run build` 通过，包含本地草稿撤销/重做用例。
 - Ruff：`ruff check backend tests migrations` 通过；`git diff --check` 通过。
 - 未执行真实 ATS 提交、消息发送、Feishu/Gmail/Notion 写入或 canonical cutover。
@@ -94,4 +94,15 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 - Feishu、Gmail、Notion 和真实申请/消息发送需要凭据、目的地权限和用户授权，保持 `BLOCKED_EXTERNAL_ACTION`。
 - Legacy authority 到 canonical Job/Fact/Capability 的 cutover 需要用户确认，当前只保留历史 evidence 与 staging。
 - 公网 GitHub/ATS 验收受当前网络环境限制，未伪造成功结果。
+
+## 9. v2.4 本轮增量
+
+- 沟通草稿每日上限达到后保留为 `BLOCKED`，并记录 `blocked_reason=daily_communication_limit`；草稿不会被静默丢弃，也不会触发外部发送。
+- 沟通摘要增加 `channel_counts`，机会页显示邮件与平台消息数量，并显示限流阻断原因。
+- 机会页将已记录发送、已回复、待跟进、已结束和已阻断状态统一显示为中文。
+- 当前 integration 工作树没有 `reference-repos/`，因此不能声称已经读取十个上游快照、确认其 commit 或许可证；没有复制第三方源码或资产。
+
+## 10. 下一步与硬边界
+
+可继续的本地工作包括 OCR fixture、Resume 字段级恢复、SourceConnector 失败恢复读模型、Wiki lint-fix proposal 和离线面试编排。真实 Feishu/Gmail/Notion 写入、MCP 网络监听、宿主 sandbox、Legacy canonical cutover 与真实 ATS/平台发送仍需凭据、权限或用户 authority，保持阻断状态。
 

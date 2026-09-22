@@ -1,6 +1,6 @@
 # Agent Career Harness 当前状态
 
-更新时间：2026-09-23；分支：`refactor/v1.4-integration`；当前集成基线：`5aebdb3`（沟通限流按渠道统计与机会页阻断提示）。
+更新时间：2026-09-23；分支：`refactor/v1.4-integration`；当前集成基线：`7edcbd9`（沟通限流按渠道统计与中文状态投影）。
 
 ## 当前结论
 

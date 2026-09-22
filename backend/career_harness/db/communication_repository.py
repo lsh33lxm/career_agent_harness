@@ -119,15 +119,27 @@ class CommunicationRepository:
                 .mappings()
                 .all()
             )
+            channel_rows = (
+                connection.execute(
+                    text(
+                        "SELECT channel, COUNT(*) AS count "
+                        "FROM communication_draft GROUP BY channel"
+                    )
+                )
+                .mappings()
+                .all()
+            )
             today = connection.execute(
                 text("SELECT COUNT(*) FROM communication_draft WHERE date(created_at)=date('now')")
             ).scalar_one()
         counts = {str(row["status"]): int(row["count"]) for row in rows}
+        channel_counts = {str(row["channel"]): int(row["count"]) for row in channel_rows}
         return {
             "daily_limit": daily_limit,
             "created_today": int(today),
             "remaining_today": max(0, daily_limit - int(today)),
             "counts": counts,
+            "channel_counts": channel_counts,
             "reply_count": counts.get(CommunicationStatus.REPLIED.value, 0),
             "follow_up_count": counts.get(CommunicationStatus.FOLLOW_UP.value, 0),
         }

@@ -88,6 +88,7 @@ def test_communication_summary_tracks_daily_limit_and_statuses(tmp_path: Path) -
     assert summary["reply_count"] == 1
     assert summary["follow_up_count"] == 1
     assert summary["counts"][CommunicationStatus.PENDING_REVIEW.value] == 1
+    assert summary["channel_counts"][CommunicationChannel.FOLLOW_UP_NOTE.value] == 3
 
 
 def test_communication_daily_limit_blocks_without_dropping_the_proposal(tmp_path: Path) -> None:

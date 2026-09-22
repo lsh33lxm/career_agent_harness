@@ -19,6 +19,17 @@ class CommunicationRepository:
 
     def create(self, draft: CommunicationDraft) -> CommunicationDraft:
         with self.engine.begin() as connection:
+            existing = connection.execute(
+                text("SELECT * FROM communication_draft WHERE draft_id=:id"),
+                {"id": draft.draft_id},
+            ).mappings().first()
+            if existing is not None:
+                current = self._read(existing)
+                if current.model_dump(exclude={"created_at", "reviewed_at"}) != draft.model_dump(
+                    exclude={"created_at", "reviewed_at"}
+                ):
+                    raise ValueError("沟通草稿 ID 已存在且内容不同")
+                return current
             connection.execute(
                 text(
                     "INSERT INTO communication_draft "

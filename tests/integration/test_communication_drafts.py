@@ -42,6 +42,25 @@ def test_communication_draft_is_proposal_only_and_user_reviewed(tmp_path: Path) 
         repository.review(draft.draft_id, decision=CommunicationStatus.REJECTED, reason="改写")
 
 
+def test_communication_draft_retry_is_idempotent_and_conflicts_fail_closed(tmp_path: Path) -> None:
+    repository = CommunicationRepository(_engine(tmp_path))
+    draft = CommunicationDraft(
+        draft_id="draft_retry_001",
+        opportunity_id="opportunity_retry_001",
+        channel=CommunicationChannel.PLATFORM_MESSAGE,
+        body="请确认面试时间。",
+        provenance={"source": "offline_fixture"},
+        created_by="user",
+    )
+    assert repository.create(draft).draft_id == draft.draft_id
+    persisted = repository.create(draft)
+    assert persisted.model_dump(exclude={"created_at", "reviewed_at"}) == draft.model_dump(
+        exclude={"created_at", "reviewed_at"}
+    )
+    with pytest.raises(ValueError, match="内容不同"):
+        repository.create(draft.model_copy(update={"body": "另一条消息"}))
+
+
 def test_communication_summary_tracks_daily_limit_and_statuses(tmp_path: Path) -> None:
     repository = CommunicationRepository(_engine(tmp_path))
     statuses = (

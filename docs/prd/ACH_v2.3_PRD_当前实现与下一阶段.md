@@ -17,6 +17,7 @@ Agent Career Harness 是本地优先、证据约束、人工审核的中文求�
 - Interview：只读面试查询、技术/行为准备 proposal、已完成面试的回答复盘 proposal；`0032_interview_session_events` 持久化用户/助手文本事件并校验 EvidenceRef；回答不会直接写入 Career Core。
 - Knowledge/Wiki/Memory：本地检索、引用、Wiki revision/proposal、Memory proposal/review/tombstone。
 - Task Queue：有界 `POST /api/v1/tasks/stages/{stage}/run?max_batches=N` 调度；不启动常驻后台或 shell。SourceConnector 支持 5 分钟至 7 天的 schedule metadata、到期查询和显式有界运行。
+- Task dispatcher：`POST /api/v1/tasks/dispatch` 可按指定 stage 顺序执行，并有批次和总任务数上限；不启动常驻进程，沿用已有失败重试与版本保护。
 - Communication：草稿批准后可由用户记录已发送、已回复、待跟进、已结束或已阻塞状态；状态更新不触发外部写入。
 - Memory：支持按来源 EvidenceRef 查询已确认记忆，并从同一作用域的已确认记忆生成 consolidation proposal；不会自动合并、删除或授予权限。
 - Plugins/Tools：manifest、权限、scope、schema、审计、quarantine 与只读 registry。
@@ -47,7 +48,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 | G2 职位与沟通 | 部分完成 | 排名、来源 policy、草稿和摘要已实现；平台采集、每日限流、回复监控未完成 |
 | G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点已实现；图片 OCR、细粒度 undo/redo 和完整历史 UI 未完成 |
 | G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件已实现；STAR 自动结构化反馈、学习计划、跨会话记忆 consolidation 未完成 |
-| G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、memory affinity/consolidation、SourceConnector、Task Queue、Tool Registry、显式 scheduled sync metadata 已实现；常驻 dispatcher、认证 MCP、CLI sandbox 未完成 |
+| G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、memory affinity/consolidation、SourceConnector、Task Queue、bounded multi-stage dispatcher、Tool Registry、显式 scheduled sync metadata 已实现；常驻 dispatcher、认证 MCP、CLI sandbox 未完成 |
 
 ## 4. 本轮代码切片
 
@@ -60,6 +61,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 - `backend/career_harness/db/source_connector_repository.py`、`api/source_connectors.py`：受约束 schedule metadata、到期查询与显式有界运行。
 - `backend/career_harness/db/communication_repository.py`、`api/communication.py`：人工记录沟通状态转换。
 - `backend/career_harness/db/memory_repository.py`、`api/memory.py`：来源亲和度查询与 review-gated consolidation proposal。
+- `backend/career_harness/services/task_service.py`、`api/tasks.py`：有界多阶段 dispatcher，支持总任务数限制。
 
 ## 5. 上游参考仓库采用方式
 

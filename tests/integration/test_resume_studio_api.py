@@ -157,3 +157,25 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
     assert exported.status_code == 200
     assert exported.headers["content-type"].startswith("text/markdown")
     assert "Minnn" in exported.text
+
+
+@pytest.mark.asyncio
+async def test_resume_base_history_restore_is_append_only(tmp_path: Path) -> None:
+    transport = httpx.ASGITransport(app=_app(tmp_path))
+    headers = {**AUTH, "X-Idempotency-Key": "restore-base-history-001"}
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        restored = await client.post(
+            "/api/v1/resume/base-restore",
+            headers=headers,
+            json={
+                "command_id": "restore_base_history_001",
+                "resume_id": "resume_001",
+                "source_base_revision": 1,
+                "expected_base_revision": 1,
+            },
+        )
+        history = await client.get("/api/v1/resumes/resume_001/bases", headers=AUTH)
+
+    assert restored.status_code == 201
+    assert restored.json()["revision"] == 2
+    assert [item["revision"] for item in history.json()] == [2, 1]

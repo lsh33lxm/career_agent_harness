@@ -71,6 +71,28 @@ def test_user_can_restore_immutable_revision_as_new_base(tmp_path: Path) -> None
     assert repository.resumes.get_base("resume_001", 1) is not None
 
 
+def test_user_can_restore_older_base_as_append_only_undo(tmp_path: Path) -> None:
+    studio, repository = _studio(tmp_path)
+    studio.resumes.save_base_revision(
+        _command("resume_001", EntityKind.RESUME, "command_edit").model_copy(
+            update={"expected_revision": 1}
+        ),
+        candidate_id="candidate_001",
+        sections={"name": "Minnn", "summary": "Temporary edit"},
+    )
+
+    restored = studio.resumes.restore_base_revision(
+        _command("resume_001", EntityKind.RESUME, "command_base_restore").model_copy(
+            update={"expected_revision": 2}
+        ),
+        source_revision=1,
+    )
+
+    assert restored.revision == 3
+    assert restored.sections["summary"] == "Verified platform engineer"
+    assert repository.resumes.get_base("resume_001", 2).sections["summary"] == "Temporary edit"  # type: ignore[union-attr]
+
+
 def test_target_profile_render_pdf_ats_and_exact_artifact_provenance(tmp_path: Path) -> None:
     service, repository = _studio(tmp_path)
     profile = service.create_target_profile(

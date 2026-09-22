@@ -94,3 +94,27 @@ it("默认列出简历并读取基础内容与不可变修订", async () => {
     "http://127.0.0.1:8765/api/v1/resumes/r1/bases",
   ]);
 });
+
+it("可将旧基础版本恢复为新的不可变版本", async () => {
+  const current = { resume_id: "r1", candidate_id: "candidate_1", revision: 3, sections: { summary: "当前内容" }, created_by: "user", created_at: "2026-09-23" };
+  const old = { ...current, revision: 1, sections: { summary: "历史内容" }, created_at: "2026-09-20" };
+  const fetcher = setup().mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith("/api/v1/resumes")) return response([current]);
+    if (url.endsWith("/api/v1/resumes/r1/base")) return response(current);
+    if (url.endsWith("/api/v1/resumes/r1/revisions")) return response([]);
+    if (url.endsWith("/api/v1/resumes/r1/bases")) return response([current, old]);
+    if (url.endsWith("/api/v1/resume/base-restore")) return response({ ...old, revision: 4 }, 201);
+    throw new Error(`unexpected request ${url}`);
+  });
+
+  render(<ResumePage />);
+  expect(await screen.findByText("当前内容")).toBeTruthy();
+  fireEvent.click(screen.getByText("查看基础版本历史"));
+  fireEvent.change(screen.getByLabelText("选择要恢复的基础版本"), { target: { value: "1" } });
+  fireEvent.click(screen.getByRole("button", { name: "恢复为新基础版本" }));
+
+  await waitFor(() => expect(fetcher.mock.calls.some(([url]) => String(url).endsWith("/api/v1/resume/base-restore"))).toBe(true));
+  const restoreCall = fetcher.mock.calls.find(([url]) => String(url).endsWith("/api/v1/resume/base-restore"));
+  expect(String(restoreCall?.[1]?.body)).toContain('"source_base_revision":1');
+});

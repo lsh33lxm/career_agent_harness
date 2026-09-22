@@ -77,6 +77,13 @@ class ResumeRestoreRequest(FrozenModel):
     expected_base_revision: int = Field(ge=1)
 
 
+class ResumeBaseRestoreRequest(FrozenModel):
+    command_id: OpaqueId
+    resume_id: OpaqueId
+    source_base_revision: int = Field(ge=1)
+    expected_base_revision: int = Field(ge=1)
+
+
 class RenderRequest(FrozenModel):
     resume_revision_id: OpaqueId
     target_profile_id: OpaqueId | None = None
@@ -415,6 +422,27 @@ def create_resume_studio_router(api: ResumeStudioApi) -> APIRouter:
         try:
             return api.service.resumes.restore_revision(
                 command, revision_id=request.revision_id
+            )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/base-restore", response_model=ResumeBase, status_code=status.HTTP_201_CREATED)
+    def restore_base(
+        request: ResumeBaseRestoreRequest,
+        idempotency_key: IdempotencyHeader,
+    ) -> ResumeBase:
+        command = _command(
+            command_id=request.command_id,
+            kind=EntityKind.RESUME,
+            entity_id=request.resume_id,
+            expected_revision=request.expected_base_revision,
+            idempotency_key=idempotency_key,
+            actor="user",
+            command_type="resume.base.restore",
+        )
+        try:
+            return api.service.resumes.restore_base_revision(
+                command, source_revision=request.source_base_revision
             )
         except Exception as error:
             raise _error(error) from error

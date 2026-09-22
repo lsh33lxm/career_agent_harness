@@ -203,6 +203,28 @@ class ResumeService:
             sections=revision.content,
         )
 
+    def restore_base_revision(
+        self,
+        command: Command,
+        *,
+        source_revision: int,
+    ) -> ResumeBase:
+        """Create a new user-owned base revision from an older base revision."""
+        self._require(command, EntityKind.RESUME, user=True)
+        source = self.repository.get_base(command.target.entity_id, source_revision)
+        if source is None:
+            raise ValueError("恢复需要同一份简历的精确基础版本")
+        current = self.repository.get_base(command.target.entity_id)
+        if current is None:
+            raise ValueError("恢复需要现有 ResumeBase")
+        if command.expected_revision != current.revision:
+            raise ValueError("恢复需要精确的当前基础版本")
+        return self.save_base_revision(
+            command,
+            candidate_id=current.candidate_id,
+            sections=source.sections,
+        )
+
     def _candidate_id(self, resume_id: OpaqueId) -> OpaqueId:
         base = self.repository.get_base(resume_id)
         if base is None:

@@ -11,7 +11,7 @@ import {
 } from "../api/projectResume";
 import { StructuredSections } from "./RecordLookup";
 import { ResumeStudioPanel } from "./ResumeStudioPanel";
-import { restoreResumeRevision } from "../api/resumeStudio";
+import { restoreResumeBaseRevision, restoreResumeRevision } from "../api/resumeStudio";
 
 export function ResumePage() {
   const [bases, setBases] = useState<ResumeBaseRead[]>([]);
@@ -19,6 +19,7 @@ export function ResumePage() {
   const [base, setBase] = useState<ResumeBaseRead | null>(null);
   const [revisions, setRevisions] = useState<ResumeRevisionRead[]>([]);
   const [baseHistory, setBaseHistory] = useState<ResumeBaseRead[]>([]);
+  const [selectedBaseRevision, setSelectedBaseRevision] = useState("");
   const [selectedRevision, setSelectedRevision] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,6 +62,7 @@ export function ResumePage() {
         setBase(nextBase);
         setRevisions(nextRevisions);
         setBaseHistory(nextBaseHistory);
+        setSelectedBaseRevision(String(nextBase.revision));
         setSelectedRevision(nextRevisions[0]?.revision_id || "");
       })
       .catch(() => {
@@ -90,6 +92,27 @@ export function ResumePage() {
     }
   }
 
+  async function restoreSelectedBase() {
+    if (!base || !selectedBaseRevision) return;
+    const sourceRevision = Number(selectedBaseRevision);
+    if (!Number.isInteger(sourceRevision) || sourceRevision === base.revision) return;
+    setError("");
+    try {
+      await restoreResumeBaseRevision(
+        {
+          command_id: `base_restore_${base.resume_id}_${sourceRevision}_${base.revision}`,
+          resume_id: base.resume_id,
+          source_base_revision: sourceRevision,
+          expected_base_revision: base.revision,
+        },
+        `resume-base-restore-${base.resume_id}-${sourceRevision}-${base.revision}`,
+      );
+      setAttempt((value) => value + 1);
+    } catch {
+      setError("恢复基础版本失败，请检查当前版本后重试。");
+    }
+  }
+
   return (
     <main className="page record-page">
       <header className="page-heading"><div><p className="eyebrow">个人材料</p><h1>简历</h1><p>查看已确认的基础内容和不可变修订；模型建议不会自动成为简历事实。</p></div></header>
@@ -102,7 +125,7 @@ export function ResumePage() {
         {loading && <p role="status">正在读取简历列表…</p>}
         {!loading && bases.length === 0 && <div className="empty-state"><FileText size={24} /><h2>还没有简历记录</h2><p>先在职业事实与证据确认后创建一份基础简历。</p></div>}
         {base && <div className="resume-browser__content">
-          <section><h2>基础内容</h2><p>第 {base.revision} 版 · 创建时间：{base.created_at}</p>{baseHistory.length > 1 && <details><summary>查看基础版本历史</summary><ul>{baseHistory.map((item) => <li key={`${item.resume_id}:${item.revision}`}>第 {item.revision} 版 · {item.created_at} · {item.created_by}</li>)}</ul></details>}<StructuredSections value={base.sections} /></section>
+          <section><h2>基础内容</h2><p>第 {base.revision} 版 · 创建时间：{base.created_at}</p>{baseHistory.length > 1 && <details><summary>查看基础版本历史</summary><label><span>选择要恢复的版本</span><select aria-label="选择要恢复的基础版本" value={selectedBaseRevision} onChange={(event) => setSelectedBaseRevision(event.target.value)}>{baseHistory.map((item) => <option key={`${item.resume_id}:${item.revision}`} value={item.revision}>第 {item.revision} 版 · {item.created_at}</option>)}</select></label><button type="button" disabled={Number(selectedBaseRevision) === base.revision} onClick={restoreSelectedBase}>恢复为新基础版本</button><ul>{baseHistory.map((item) => <li key={`${item.resume_id}:${item.revision}`}>第 {item.revision} 版 · {item.created_at} · {item.created_by}</li>)}</ul></details>}<StructuredSections value={base.sections} /></section>
           <section><div className="section-heading"><h2>生成修订</h2>{revisions.length > 0 && <label><span className="sr-only">选择生成修订</span><select aria-label="选择生成修订" value={selectedRevision} onChange={(event) => setSelectedRevision(event.target.value)}>{revisions.map((item, index) => <option key={item.revision_id} value={item.revision_id}>修订 {revisions.length - index} · {item.created_at}</option>)}</select></label>}</div>
             {revisions.length === 0 && <p>还没有基于这份简历生成的修订。</p>}
             {revision && <><p>来源基础版本：第 {revision.base_revision} 版</p><button type="button" onClick={restoreSelectedRevision}>恢复为基础简历</button><StructuredSections value={revision.content} /><details><summary>查看精确来源引用</summary><p>内容 SHA-256：{revision.content_sha256}</p>{revision.accepted_patch_refs.length ? <ul>{revision.accepted_patch_refs.map((ref) => <li key={`${ref.entity_id}:${ref.revision}`}>已审核修改 · 第 {ref.revision} 版</li>)}</ul> : <p>无已审核修改引用。</p>}</details></>}

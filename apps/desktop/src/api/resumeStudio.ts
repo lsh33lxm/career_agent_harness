@@ -169,6 +169,22 @@ export function restoreResumeRevision(
   );
 }
 
+export function restoreResumeBaseRevision(
+  input: {
+    command_id: string;
+    resume_id: string;
+    source_base_revision: number;
+    expected_base_revision: number;
+  },
+  idempotencyKey: string,
+): Promise<Record<string, unknown>> {
+  return apiRequest(
+    "/api/v1/resume/base-restore",
+    { method: "POST", body: JSON.stringify(input) },
+    idempotencyKey,
+  );
+}
+
 export function getAtsReport(renderRunId: string): Promise<ResumeAtsReport> {
   return apiRequest(`/api/v1/resume/render-runs/${encodeURIComponent(renderRunId)}/ats-report`);
 }

@@ -69,3 +69,15 @@ class TaskService:
         with ThreadPoolExecutor(max_workers=limit, thread_name_prefix=f"task-{stage}") as pool:
             results = tuple(pool.map(lambda _index: self.run_one(stage), range(limit)))
         return tuple(result for result in results if result is not None)
+
+    def drain_ready(self, stage: str, *, max_batches: int = 10) -> tuple[TaskRecord, ...]:
+        """Run a bounded local dispatch cycle; callers own scheduling and shutdown."""
+        if max_batches < 1 or max_batches > 100:
+            raise ValueError("max_batches must be between 1 and 100")
+        completed: list[TaskRecord] = []
+        for _ in range(max_batches):
+            batch = self.run_ready(stage)
+            if not batch:
+                break
+            completed.extend(batch)
+        return tuple(completed)

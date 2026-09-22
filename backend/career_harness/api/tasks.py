@@ -81,7 +81,11 @@ def create_task_router(api: TaskApi) -> APIRouter:
             raise _error(error) from error
 
     @router.post("/stages/{stage}/run")
-    def run(stage: str = Path(min_length=1, max_length=64)) -> Any:
-        return api.service.run_ready(stage)
+    def run(
+        stage: str = Path(min_length=1, max_length=64),
+        max_batches: int = Query(default=1, ge=1, le=100),
+    ) -> Any:
+        """Run a bounded local dispatch cycle; no background process or shell is spawned."""
+        return api.service.drain_ready(stage, max_batches=max_batches)
 
     return router

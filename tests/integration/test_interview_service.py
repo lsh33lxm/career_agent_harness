@@ -165,6 +165,36 @@ def test_interview_prep_creates_evidence_backed_proposal(tmp_path: Path) -> None
     assert proposal.evidence_refs == (EVIDENCE_REF_ID,)
 
 
+def test_completed_interview_feedback_is_a_review_gated_proposal(tmp_path: Path) -> None:
+    engine, _, interviews = _services(tmp_path)
+    interviews.schedule_interview(
+        _schedule_command(),
+        application_id="application_001",
+        application_revision=3,
+        round=InterviewRound.LOOP,
+        scheduled_at=SCHEDULED_AT,
+    )
+    interviews.complete_interview(
+        _command("interview_001", EntityKind.INTERVIEW, "command_complete", expected_revision=1),
+        evidence_refs=(EVIDENCE_REF_ID,),
+    )
+    service = InterviewPrepService(
+        interviews.repository,
+        KnowledgeRepository(engine, ArtifactStore(tmp_path / "artifacts")),
+    )
+    proposal = service.propose_feedback(
+        "interview_001",
+        question="请介绍一次故障复盘",
+        answer="我先确认影响范围，再回滚并补充监控。",
+    )
+    assert proposal.status.value == "pending"
+    assert proposal.evidence_refs == (EVIDENCE_REF_ID,)
+    assert "用户回答" in proposal.proposed_content
+
+    with pytest.raises(ValueError, match="回答不能为空"):
+        service.propose_feedback("interview_001", question="问题", answer=" ")
+
+
 def test_interview_writes_never_touch_other_domains(tmp_path: Path) -> None:
     engine, applications, interviews = _services(tmp_path)
     before = applications.repository.get("application_001")

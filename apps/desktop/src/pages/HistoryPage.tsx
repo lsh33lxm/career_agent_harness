@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { ApiError } from "../api/client";
-import { createInterviewPrepProposal, listApplications, listInterviews, listOutcomes } from "../api/history";
+import { createInterviewFeedbackProposal, createInterviewPrepProposal, listApplications, listInterviews, listOutcomes } from "../api/history";
 import type { ApplicationRead, ApplicationState, InterviewRead, OutcomeRead } from "../api/history";
 import { actorLabels, displayLabel } from "../app/displayLabels";
 import "./HistoryPage.css";
@@ -58,6 +58,7 @@ function OutcomePanel({ applicationId }: { applicationId: string }) {
 
 function InterviewPrepPanel({ applicationId }: { applicationId: string }) {
   const [interviews, setInterviews] = useState<InterviewRead[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   useEffect(() => {
     void listInterviews(applicationId).then(setInterviews).catch(() => setMessage("面试记录暂时不可用"));
@@ -73,6 +74,17 @@ function InterviewPrepPanel({ applicationId }: { applicationId: string }) {
       setMessage(`面试准备失败：${error instanceof Error ? error.message : "未知错误"}`);
     }
   }
+  async function submitFeedback(interview: InterviewRead) {
+    try {
+      const result = await createInterviewFeedbackProposal(interview.entity_id, {
+        question: "",
+        answer: answers[interview.entity_id] ?? "",
+      });
+      setMessage(`面试复盘草稿已创建，等待审核：${result.proposal_id}`);
+    } catch (error) {
+      setMessage(`面试复盘失败：${error instanceof Error ? error.message : "未知错误"}`);
+    }
+  }
   return <section className="today-panel history-outcomes" aria-labelledby="interview-prep-title">
     <h2 id="interview-prep-title" className="today-section-title"><span />面试准备</h2>
     <p>只基于已有证据生成草稿，不会自动补全经历或发送内容。</p>
@@ -82,6 +94,11 @@ function InterviewPrepPanel({ applicationId }: { applicationId: string }) {
       <h3>{interview.round === "technical" ? "技术面试" : "面试"} · {interview.status === "completed" ? "已完成" : interview.status === "scheduled" ? "已安排" : "已取消"}</h3>
       <p><time>{interview.scheduled_at}</time> · 证据 {interview.evidence_refs.length} 条</p>
       <button type="button" onClick={() => void prepare(interview)} disabled={!interview.evidence_refs.length}>生成准备草稿</button>
+      {interview.status === "completed" && <>
+        <label htmlFor={`interview-answer-${interview.entity_id}`}>记录本次回答（仅生成复盘提案）</label>
+        <textarea id={`interview-answer-${interview.entity_id}`} value={answers[interview.entity_id] ?? ""} onChange={(event) => setAnswers((current) => ({ ...current, [interview.entity_id]: event.target.value }))} placeholder="写下你的回答，未知内容保持待确认" />
+        <button type="button" onClick={() => void submitFeedback(interview)} disabled={!answers[interview.entity_id]?.trim() || !interview.evidence_refs.length}>生成复盘草稿</button>
+      </>}
     </article>)}
   </section>;
 }

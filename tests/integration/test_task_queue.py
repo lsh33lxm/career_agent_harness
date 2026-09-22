@@ -60,6 +60,20 @@ def test_task_queue_executes_records_attempt_and_audit(tmp_path: Path) -> None:
     assert set(events) == {"task.enqueued", "task.started", "task.finalizing", "task.completed"}
 
 
+def test_task_service_drain_ready_runs_multiple_bounded_batches(tmp_path: Path) -> None:
+    repository, service, _engine = _queue(tmp_path)
+    first = service.enqueue("test.echo", {"value": "一"})
+    second = service.enqueue("test.echo", {"value": "二"})
+
+    completed = service.drain_ready("evaluation", max_batches=2)
+
+    assert {item.task_id for item in completed} == {first.task_id, second.task_id}
+    assert all(item.status is TaskStatus.COMPLETED for item in completed)
+    assert service.drain_ready("evaluation", max_batches=2) == ()
+    with pytest.raises(ValueError, match="between 1 and 100"):
+        service.drain_ready("evaluation", max_batches=0)
+
+
 def test_retry_backoff_dead_letter_manual_retry_and_version_guard(tmp_path: Path) -> None:
     repository, _service, _engine = _queue(tmp_path)
     task = repository.enqueue(
@@ -134,7 +148,9 @@ async def test_task_api_allows_controlled_registered_work_without_shell(tmp_path
         )
         assert created.status_code == 200
         task_id = created.json()["task_id"]
-        ran = await client.post("/api/v1/tasks/stages/evaluation/run", headers=headers)
+        ran = await client.post(
+            "/api/v1/tasks/stages/evaluation/run?max_batches=2", headers=headers
+        )
         assert ran.status_code == 200
         detail = await client.get(f"/api/v1/tasks/{task_id}", headers=headers)
         assert detail.json()["task"]["status"] == "completed"

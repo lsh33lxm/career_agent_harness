@@ -62,3 +62,13 @@ export function createInterviewPrepProposal(
     { method: "POST", body: JSON.stringify(input) },
   );
 }
+
+export function createInterviewFeedbackProposal(
+  interviewId: string,
+  input: { question: string; answer: string },
+): Promise<{ proposal_id: string }> {
+  return apiRequest<{ proposal_id: string }>(
+    `/api/v1/interviews/${encodeURIComponent(interviewId)}/feedback-proposals`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+}

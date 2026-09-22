@@ -8,6 +8,7 @@ from career_harness.core.application import Application
 from career_harness.core.outcome import Outcome
 from career_harness.core.resume import ResumeBase, ResumeRevision
 from career_harness.db.application_repository import ApplicationRepository
+from career_harness.db.interview_repository import InterviewRepository
 from career_harness.db.resume_repository import ResumeRepository
 
 
@@ -15,6 +16,7 @@ from career_harness.db.resume_repository import ResumeRepository
 class CareerReadApi:
     resumes: ResumeRepository
     applications: ApplicationRepository
+    interviews: InterviewRepository | None = None
 
 
 def _not_found(detail: str) -> HTTPException:
@@ -70,5 +72,22 @@ def create_career_read_router(api: CareerReadApi) -> APIRouter:
         if api.applications.get(application_id) is None:
             raise _not_found("application not found")
         return api.applications.list_outcomes(application_id)
+
+    @router.get("/applications/{application_id}/interviews")
+    def list_interviews(application_id: str):
+        if api.interviews is None:
+            raise _not_found("interview read model unavailable")
+        if api.applications.get(application_id) is None:
+            raise _not_found("application not found")
+        return api.interviews.list_for_application(application_id)
+
+    @router.get("/interviews/{interview_id}")
+    def get_interview(interview_id: str, revision: int | None = Query(default=None, ge=1)):
+        if api.interviews is None:
+            raise _not_found("interview read model unavailable")
+        result = api.interviews.get(interview_id, revision)
+        if result is None:
+            raise _not_found("interview not found")
+        return result
 
     return router

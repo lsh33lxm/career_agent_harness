@@ -1,0 +1,12 @@
+{
+  "current_stage": "G5",
+  "current_task": "知识治理、任务系统与受控工具审计",
+  "status": "in_progress",
+  "completed_tasks": ["G0 本地参考仓库审计", "G1 离线职位到简历与 Application PREPARING 闭环", "G2 proposal-only 沟通草稿 backend foundation"],
+  "remaining_tasks": ["G1 公司研究/面试/结果归档补齐", "G2 桌面看板/限额/回复监控", "G3", "G4", "G5", "G6"],
+  "changed_files": [],
+  "tests_run": ["682 passed, 5 skipped", "frontend production build", "ruff"],
+  "failures": [],
+  "next_action": "审计 Memory、Knowledge、Task Queue、SourceConnector 和 Tool Registry 的缺口",
+  "updated_at": "2026-09-22T02:00:00+08:00"
+}

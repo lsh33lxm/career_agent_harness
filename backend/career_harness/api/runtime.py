@@ -39,6 +39,7 @@ from career_harness.db.application_repository import ApplicationRepository
 from career_harness.db.capability_repository import CapabilityRepository
 from career_harness.db.communication_repository import CommunicationRepository
 from career_harness.db.evidence_repository import EvidenceRepository
+from career_harness.db.interview_repository import InterviewRepository
 from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.memory_repository import MemoryRepository
 from career_harness.db.migrations import upgrade_to_head
@@ -189,6 +190,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         career_read_api=CareerReadApi(
             resumes=ResumeRepository(engine),
             applications=ApplicationRepository(engine),
+            interviews=InterviewRepository(engine),
         ),
         capability_api=CapabilityApi(
             service=CapabilityWorkspaceService(CapabilityRepository(engine))

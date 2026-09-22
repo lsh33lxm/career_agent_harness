@@ -199,3 +199,8 @@ Start with `git status --short --branch`, inspect this file, then continue at th
 - Verification：backend full 656 passed / 5 Windows symlink skips；migration/API subset 52 passed；frontend 19 files / 53 passed and build；`0024→0025→0024→0025` and Ruff/diff passed；synthetic public/private flows passed.
 - External acceptance：`https://github.com/octocat/Hello-World` failed because `github.com:443` is unreachable from this environment. No archive/profile was persisted for the failed fetch.
 - Next：model-backed project conversation with exact analysis/resume/job references can proceed locally with fake provider contracts; real conversation needs configured credentials and network.
+
+## G4 interview read-model checkpoint (2026-09-22)
+
+- 状态：PARTIAL；新增申请关联面试列表与面试详情只读 API，保留 exact revision 和 EvidenceRef。
+- InterviewService 已有排期/完成/取消边界；STAR、结构化反馈、学习计划和会话流仍未完成。

@@ -16,6 +16,7 @@ from career_harness.api.knowledge import KnowledgeApi
 from career_harness.api.legacy_import import LegacyImportApi
 from career_harness.api.memory import MemoryApi
 from career_harness.api.model_providers import ModelProviderApi
+from career_harness.api.offline_career_loop import OfflineCareerLoopApi
 from career_harness.api.opportunities import OpportunityApi
 from career_harness.api.plugins import PluginApi
 from career_harness.api.project_reads import ProjectReadApi
@@ -56,6 +57,7 @@ from career_harness.services.command_service import CommandService
 from career_harness.services.github_project_service import GitHubProjectService
 from career_harness.services.legacy_import_service import LegacyImportService
 from career_harness.services.model_provider_service import ModelProviderService
+from career_harness.services.offline_career_loop_service import OfflineCareerLoopService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.opportunity_service import OpportunityService
 from career_harness.services.plugin_service import PluginLifecycleManager
@@ -82,6 +84,12 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         ArtifactStore(active_paths.artifacts),
     )
     resume_studio_service = ResumeStudioService(CommandService(engine), resume_studio_repository)
+    opportunity_radar_service = OpportunityRadarService(
+        engine, ArtifactStore(active_paths.artifacts)
+    )
+    offline_career_loop_service = OfflineCareerLoopService(
+        opportunity_radar_service, resume_studio_service
+    )
     plugin_service = PluginLifecycleManager(
         engine,
         knowledge_search=knowledge_repository.search_for_plugin,
@@ -192,8 +200,9 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         knowledge_api=KnowledgeApi(knowledge_repository),
         resume_studio_api=ResumeStudioApi(resume_studio_service),
         job_radar_api=JobRadarApi(
-            OpportunityRadarService(engine, ArtifactStore(active_paths.artifacts))
+            opportunity_radar_service
         ),
+        offline_career_loop_api=OfflineCareerLoopApi(offline_career_loop_service),
         legacy_import_api=LegacyImportApi(
             legacy_import_service, legacy_connector_service
         ),

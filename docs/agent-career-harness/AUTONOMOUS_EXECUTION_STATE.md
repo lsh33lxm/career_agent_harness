@@ -31,6 +31,14 @@
 - External boundary：真实 marketplace 下载、第三方 crawler/portal、Typst compiler、Feishu/Gmail/Notion/ATS 写入仍按 blocker ledger 保持隔离或 proposal-only。
 - 当前入口：A–E 已收口；后续工作只从已登记 external boundary 获得授权后继续，或由新的产品授权开启下一切片。
 
+## G1 offline career loop checkpoint (2026-09-22)
+
+- 状态：IMPLEMENTED / local offline。
+- 新增 `POST /api/v1/career-loop/offline`，串联离线岗位 fixture、Artifact/Evidence、解释性评分、用户 admission、Resume TargetProfile、EvidenceRef-backed patch proposal、主题 PDF 渲染和 ATS 报告。
+- 提案保持 proposal 状态；不会自动批准简历事实、提交申请或写入外部系统。
+- Verification：离线闭环集成测试通过；相关 Opportunity Radar、Resume Studio 测试通过；Ruff 与 `git diff --check` 通过。
+- 下一步：将闭环结果接入现有桌面 Today/Opportunities 操作入口，并补齐 Application/Interview/Outcome 的 proposal-only 归档编排。
+
 ## Desktop productization checkpoint (2026-09-22)
 
 - 状态：Windows NSIS desktop lifecycle and clean-install acceptance passed。

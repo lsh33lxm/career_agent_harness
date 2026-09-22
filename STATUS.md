@@ -39,6 +39,11 @@
 
 详见 [v2.1 求职智能操作系统 PRD](docs/prd/ACH_v2.1_PRD_求职智能操作系统.md)。
 
+## G1 离线求职闭环
+
+- 新增 `/api/v1/career-loop/offline`：离线岗位 fixture → 可解释评分 → 用户 admission → Resume TargetProfile → EvidenceRef-backed 简历提案 → 观复主题 PDF/ATS 报告。
+- 提案不会自动批准或提交申请；闭环集成测试、Ruff 和 diff check 已通过。
+
 ## 历史完成记录（只作审计，不代表当前计数）
 
 

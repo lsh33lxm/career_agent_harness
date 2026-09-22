@@ -18,6 +18,10 @@ from career_harness.api.knowledge import KnowledgeApi, create_knowledge_router
 from career_harness.api.legacy_import import LegacyImportApi, create_legacy_import_router
 from career_harness.api.memory import MemoryApi, create_memory_router
 from career_harness.api.model_providers import ModelProviderApi, create_model_provider_router
+from career_harness.api.offline_career_loop import (
+    OfflineCareerLoopApi,
+    create_offline_career_loop_router,
+)
 from career_harness.api.opportunities import OpportunityApi, create_opportunity_router
 from career_harness.api.plugins import PluginApi, create_plugin_router
 from career_harness.api.project_reads import ProjectReadApi, create_project_read_router
@@ -62,6 +66,7 @@ def create_app(
     task_api: TaskApi | None = None,
     source_connector_api: SourceConnectorApi | None = None,
     tool_api: ToolApi | None = None,
+    offline_career_loop_api: OfflineCareerLoopApi | None = None,
 ) -> FastAPI:
     active_settings = settings or Settings()
     app = FastAPI(title="Agent Career Harness Local API", version=__version__)
@@ -137,5 +142,7 @@ def create_app(
         app.include_router(create_source_connector_router(source_connector_api))
     if tool_api is not None:
         app.include_router(create_tool_router(tool_api))
+    if offline_career_loop_api is not None:
+        app.include_router(create_offline_career_loop_router(offline_career_loop_api))
 
     return app

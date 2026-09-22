@@ -192,6 +192,8 @@ def test_completed_interview_feedback_is_a_review_gated_proposal(tmp_path: Path)
     assert "用户回答" in proposal.proposed_content
     assert "能力缺口" in proposal.proposed_content
     assert "学习下一步 proposal" in proposal.proposed_content
+    assert "STAR 结构评分（规则信号）：0/4" in proposal.proposed_content
+    assert "待补充维度：情境、任务、结果" in proposal.proposed_content
 
     with pytest.raises(ValueError, match="回答不能为空"):
         service.propose_feedback("interview_001", question="问题", answer=" ")

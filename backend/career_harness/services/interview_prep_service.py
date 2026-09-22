@@ -36,6 +36,27 @@ class InterviewSessionEventRequest(FrozenModel):
     source_refs: tuple[str, ...] = ()
 
 
+def _score_star_answer(answer: str) -> tuple[int, tuple[str, ...], tuple[str, ...]]:
+    """Return a transparent, rule-based STAR signal for a review proposal.
+
+    This is deliberately a heuristic: it evaluates structure only and never
+    promotes inferred content into a career fact.
+    """
+    text = answer.lower()
+    signals = {
+        "情境": ("情境", "背景", "当时", "场景"),
+        "任务": ("任务", "目标", "负责", "需要"),
+        "行动": ("行动", "我先", "我负责", "通过", "采用", "实施"),
+        "结果": ("结果", "最终", "提升", "降低", "完成", "指标"),
+    }
+    present = tuple(name for name, terms in signals.items() if any(term in text for term in terms))
+    missing = tuple(name for name in signals if name not in present)
+    score = len(present)
+    if len(answer.strip()) < 40:
+        score = max(0, score - 1)
+    return score, present, missing
+
+
 @dataclass(frozen=True, slots=True)
 class InterviewPrepService:
     interviews: InterviewRepository
@@ -113,6 +134,10 @@ class InterviewPrepService:
         if len(answer_text) > 20_000:
             raise ValueError("面试回答超过 20000 字限制")
         question_text = question.strip() or "未记录题目（待用户补充）"
+        star_score, star_present, star_missing = _score_star_answer(answer_text)
+        learning_steps = [f"补充{item}部分的事实与 EvidenceRef" for item in star_missing]
+        if not learning_steps:
+            learning_steps.append("核对结果中的量化指标，并准备一个可复述的追问答案")
         content = (
             f"问题：{question_text}\n"
             f"用户回答：{answer_text}\n"
@@ -121,9 +146,12 @@ class InterviewPrepService:
             "- 证据充分性：需要补充对应的已确认经历或 EvidenceRef\n"
             "- 表达优势：待用户确认\n"
             "- 能力缺口：待用户确认，不自动写入 Capability 或 Fact\n"
+            f"STAR 结构评分（规则信号）：{star_score}/4；"
+            f"识别到：{('、'.join(star_present) or '无')}\n"
+            f"待补充维度：{('、'.join(star_missing) or '无')}\n"
             "学习下一步 proposal：\n"
-            "- 用 STAR 结构重写一次回答\n"
-            "- 为每个结论补充可核验来源\n"
+            + "".join(f"- {step}\n" for step in learning_steps)
+            + "- 为每个结论补充可核验来源\n"
             "- 用户确认后再生成学习任务\n"
             "STAR 复盘草稿：\n"
             "- 情境：待用户确认\n"

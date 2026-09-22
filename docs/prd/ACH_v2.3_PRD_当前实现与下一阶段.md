@@ -19,7 +19,7 @@ Agent Career Harness 是本地优先、证据约束、人工审核的中文求�
 - Task Queue：有界 `POST /api/v1/tasks/stages/{stage}/run?max_batches=N` 调度；不启动常驻后台或 shell。SourceConnector 支持 5 分钟至 7 天的 schedule metadata、到期查询和显式有界运行。
 - Task dispatcher：`POST /api/v1/tasks/dispatch` 可按指定 stage 顺序执行，并有批次和总任务数上限；不启动常驻进程，沿用已有失败重试与版本保护。
 - Communication：草稿批准后可由用户记录已发送、已回复、待跟进、已结束或已阻塞状态；状态更新不触发外部写入。
-- Memory：支持按来源 EvidenceRef 查询已确认记忆，并从同一作用域的已确认记忆生成 consolidation proposal；不会自动合并、删除或授予权限。
+- Memory：支持按来源 EvidenceRef 查询已确认记忆，并从同一作用域的已确认记忆生成 consolidation proposal；批准后的 task/consolidation memory proposal 可进入有界 `memory.consolidation` 队列；不会自动合并、删除或授予权限。
 - Plugins/Tools：manifest、权限、scope、schema、审计、quarantine 与只读 registry；`adapters/mcp_transport.py` 提供认证后的 MCP transport boundary、JSON-RPC stdio 适配器和有界 SSE 事件适配器；`adapters/cli_runner.py` 通过命令白名单和危险参数拒绝强化后端 sandbox policy，不启动网络或进程；真实网络监听、生产认证和宿主级隔离仍待完成。
 - CLI runner：`adapters/cli_runner.py` 提供 approval-gated sandbox boundary；没有注入 sandbox executor 时明确 blocked，应用本身不启动任意 shell。
 - GitHub：受控只读 clone 与静态项目分析；当前网络限制下未伪造公网验收。
@@ -48,7 +48,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 | G1 离线求职闭环 | 部分完成 | 主链路与 proposal/audit 已通过；公司研究、STAR、Outcome/Wiki/Memory 全编排仍未闭环 |
 | G2 职位与沟通 | 部分完成 | 排名、来源 policy、草稿和摘要已实现；平台采集、每日限流、回复监控未完成 |
 | G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点、基础版本历史查看、追加式旧版本恢复和按需差异 UI 已实现；图片 OCR、字段级 undo/redo 未完成 |
-| G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件、基于规则信号的 STAR 结构评分、独立学习计划 proposal 和批准后有界任务入队已实现；自动 STAR 内容评分、跨会话记忆 consolidation 未完成 |
+| G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件、基于规则信号的 STAR 结构评分、独立学习计划 proposal、批准后有界任务入队和 Memory consolidation 任务入队已实现；自动 STAR 内容评分未完成 |
 | G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、memory affinity/consolidation、SourceConnector、Task Queue、bounded multi-stage dispatcher、Tool Registry、approval-gated CLI runner、CLI 命令白名单/危险参数拒绝、认证 MCP transport boundary、JSON-RPC stdio 适配器、有界 SSE 事件适配器、显式 scheduled sync metadata 已实现；真实网络监听/生产认证接入、宿主级 sandbox 隔离和常驻调度仍未完成 |
 
 ## 4. 本轮代码切片

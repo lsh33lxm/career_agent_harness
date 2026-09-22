@@ -230,6 +230,41 @@ async def test_source_connector_api_runs_manual_sync_through_task_queue(tmp_path
 
 
 @pytest.mark.asyncio
+async def test_source_connector_api_schedule_pause_and_resume_are_visible(
+    tmp_path: Path,
+) -> None:
+    repository, service, tasks, source = _service(tmp_path)
+    app = create_app(
+        Settings.for_test("connector-schedule-api-token"),
+        source_connector_api=SourceConnectorApi(service, repository, tasks),
+    )
+    headers = {"Authorization": "Bearer connector-schedule-api-token"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        created = await client.post(
+            "/api/v1/source-connectors/local-folder",
+            headers=headers,
+            json={"display_name": "定时资料", "root_path": str(source)},
+        )
+        connector_id = created.json()["connector_id"]
+        scheduled = await client.post(
+            f"/api/v1/source-connectors/{connector_id}/schedule",
+            headers=headers,
+            json={"enabled": True, "interval_minutes": 5},
+        )
+        paused = await client.post(
+            f"/api/v1/source-connectors/{connector_id}/pause", headers=headers
+        )
+        resumed = await client.post(
+            f"/api/v1/source-connectors/{connector_id}/resume", headers=headers
+        )
+
+    assert scheduled.status_code == 200
+    assert scheduled.json()["config"]["schedule_enabled"] is True
+    assert paused.status_code == 200 and paused.json()["status"] == "paused"
+    assert resumed.status_code == 200 and resumed.json()["status"] == "active"
+
+
+@pytest.mark.asyncio
 async def test_legacy_connector_api_runs_manual_sync_through_task_queue(
     tmp_path: Path,
 ) -> None:

@@ -93,10 +93,17 @@ class McpStdioServer:
     """Line-delimited JSON-RPC adapter; the caller owns stdin/stdout."""
 
     transport: AuthenticatedMcpTransport
+    max_message_bytes: int = 256_000
+
+    def __post_init__(self) -> None:
+        if not 1 <= self.max_message_bytes <= 1_000_000:
+            raise ValueError("MCP message limit must be between 1 and 1000000 bytes")
 
     def handle(self, message: str) -> str:
         request: Any = {}
         try:
+            if len(message.encode("utf-8")) > self.max_message_bytes:
+                raise ValueError("MCP request exceeds message limit")
             request = json.loads(message)
             request_id = request.get("id")
             method = request.get("method")

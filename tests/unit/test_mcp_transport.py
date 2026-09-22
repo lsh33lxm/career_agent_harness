@@ -124,3 +124,10 @@ def test_sse_adapter_reuses_authenticated_handler_and_bounds_output() -> None:
         "params": {"auth_token": "valid-token"},
     }))
     assert "SSE response exceeds limit" in bounded
+
+
+def test_stdio_adapter_bounds_incoming_messages() -> None:
+    server = McpStdioServer(_transport(), max_message_bytes=16)
+    response = json.loads(server.handle('{"method":"tools/list"}'))
+    assert response["error"]["code"] == -32001
+    assert "message limit" in response["error"]["message"]

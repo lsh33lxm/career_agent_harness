@@ -183,6 +183,16 @@ async def test_resume_base_history_restore_is_append_only(tmp_path: Path) -> Non
                 "expected_base_revision": 2,
             },
         )
+        redone = await client.post(
+            "/api/v1/resume/redo",
+            headers={**AUTH, "X-Idempotency-Key": "redo-base-history-001"},
+            json={
+                "command_id": "redo_base_history_001",
+                "resume_id": "resume_001",
+                "source_base_revision": 2,
+                "expected_base_revision": 3,
+            },
+        )
         history = await client.get("/api/v1/resumes/resume_001/bases", headers=AUTH)
 
     assert restored.status_code == 201
@@ -190,4 +200,6 @@ async def test_resume_base_history_restore_is_append_only(tmp_path: Path) -> Non
     assert undone.status_code == 201
     assert undone.json()["revision"] == 3
     assert undone.json()["sections"]["summary"] == "Verified platform engineer"
-    assert [item["revision"] for item in history.json()] == [3, 2, 1]
+    assert redone.status_code == 201
+    assert redone.json()["revision"] == 4
+    assert [item["revision"] for item in history.json()] == [4, 3, 2, 1]

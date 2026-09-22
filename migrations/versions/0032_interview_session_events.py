@@ -24,7 +24,10 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint("session_id", "sequence", name="uq_interview_session_sequence"),
         sa.CheckConstraint("role IN ('user','assistant','system')", name="ck_interview_event_role"),
-        sa.CheckConstraint("length(content) > 0 AND length(content) <= 20000", name="ck_interview_event_content"),
+        sa.CheckConstraint(
+            "length(content) > 0 AND length(content) <= 20000",
+            name="ck_interview_event_content",
+        ),
         sa.CheckConstraint("json_type(source_refs) = 'array'", name="ck_interview_event_refs"),
         sa.Index("ix_interview_session_event_session", "session_id", "sequence"),
     )

@@ -61,7 +61,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 
 ## 5. 上游参考仓库采用方式
 
-本轮只审阅 `reference-repos/` 本地快照，不复制源码、主题、模板或依赖；快照没有可用 Git 历史，不伪造 commit SHA。
+本轮只读审阅主仓库 `reference-repos/<name>/<name>/` 下的十个本地快照，不复制源码、主题、模板或依赖。快照均无 `.git`；当前工作树也没有 `_archives` ZIP 文件，因此无法提供 ZIP SHA-256，按“本地未版本化快照”记录，不伪造 commit 或 ZIP 哈希。`CapyMock` 没有根目录 LICENSE，`WeKnora` 带 `THIRD_PARTY_NOTICES.md`；参考目录未被修改或提交。
 
 | 仓库 | 采用方式 |
 | --- | --- |

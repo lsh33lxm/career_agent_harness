@@ -27,8 +27,31 @@ SandboxExecutor = Callable[[tuple[str, ...], str, int, int], dict[str, Any]]
 
 
 @dataclass(frozen=True, slots=True)
+class SandboxPolicy:
+    allowed_executables: frozenset[str] = frozenset({"claude", "codex", "opencode"})
+    forbidden_tokens: frozenset[str] = frozenset(
+        {"&&", "||", ";", "|", ">", ">>", "<", "--network", "--write", "--shell"}
+    )
+
+    def validate(self, argv: tuple[str, ...]) -> None:
+        executable = argv[0].rsplit("\\", 1)[-1].rsplit("/", 1)[-1]
+        if executable not in self.allowed_executables:
+            raise CliRunnerBlocked("CLI executable is outside the sandbox allowlist")
+        if any(token in self.forbidden_tokens for token in argv):
+            raise CliRunnerBlocked(
+                "CLI arguments request forbidden shell, network, or write behavior"
+            )
+        if any(
+            any(marker in token for marker in ("&&", "||", ";", "|", ">", "<"))
+            for token in argv
+        ):
+            raise CliRunnerBlocked("CLI arguments contain shell metacharacters")
+
+
+@dataclass(frozen=True, slots=True)
 class SandboxedCliRunner:
     executor: SandboxExecutor | None = None
+    policy: SandboxPolicy = SandboxPolicy()
 
     def run(
         self,
@@ -50,6 +73,7 @@ class SandboxedCliRunner:
             )
         if not invocation.argv or invocation.argv[0].startswith(("-", "/")):
             raise CliRunnerBlocked("prepared CLI argv is invalid")
+        self.policy.validate(invocation.argv)
         if invocation.permissions.model_shell_tools or invocation.permissions.model_network_tools:
             raise CliRunnerBlocked("prepared invocation requests forbidden model permissions")
         result = self.executor(

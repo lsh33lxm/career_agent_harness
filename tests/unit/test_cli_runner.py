@@ -1,6 +1,8 @@
 from decimal import Decimal
 
-from career_harness.adapters.cli_runner import SandboxedCliRunner
+import pytest
+
+from career_harness.adapters.cli_runner import CliRunnerBlocked, SandboxedCliRunner
 from career_harness.core.project.l2 import (
     AnalysisProvider,
     ExactRef,
@@ -43,3 +45,23 @@ def test_cli_runner_uses_only_injected_sandbox_executor() -> None:
     assert result.status == "completed"
     assert result.output == {"kind": "proposal"}
     assert calls == [(('claude', '--print'), "proposal only", 30, 1024)]
+
+
+def test_cli_runner_enforces_executable_and_argument_policy() -> None:
+    def executor(*_args: object) -> dict[str, str]:
+        return {"kind": "proposal"}
+    with pytest.raises(CliRunnerBlocked, match="allowlist"):
+        SandboxedCliRunner(executor).run(
+            _invocation().model_copy(update={"argv": ("powershell", "-Command", "echo ok")}),
+            approval_id="approval_001",
+        )
+    with pytest.raises(CliRunnerBlocked, match="forbidden"):
+        SandboxedCliRunner(executor).run(
+            _invocation().model_copy(update={"argv": ("claude", "--network")}),
+            approval_id="approval_001",
+        )
+    with pytest.raises(CliRunnerBlocked, match="metacharacters"):
+        SandboxedCliRunner(executor).run(
+            _invocation().model_copy(update={"argv": ("claude", "prompt && whoami")}),
+            approval_id="approval_001",
+        )

@@ -1,6 +1,6 @@
 # Agent Career Harness 当前状态
 
-更新时间：2026-09-23；分支：`refactor/v1.4-integration`；当前集成基线：`abc81c0`（G6 回归收口，含本地草稿撤销/重做）。
+更新时间：2026-09-23；分支：`refactor/v1.4-integration`；当前集成基线：`5aebdb3`（沟通限流按渠道统计与机会页阻断提示）。
 
 ## 当前结论
 
@@ -21,7 +21,7 @@
 
 ## 最新验证
 
-- Backend：`709 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；HEAD `abc81c0` 后全量回归无失败。
+- Backend：`711 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；HEAD `5aebdb3` 后全量回归无失败。
 - Frontend：`23 test files, 67 passed`，`npm run build` 通过；包含本地草稿撤销/重做覆盖，旧内部 ID 输入用例已由列表/选择流程用例替代。
 - Knowledge/Today focused：backend `2 passed`；frontend `7 passed`；真实 overview API 返回岗位 1,028、面试 503、问题 4,816、刷题 324、待复核 709。
 - Legacy preview：读取 7,575、新增 0、更新 0、未变化 7,575、重复 684、失败 0；FK errors 0，源 metadata signature 不变。
@@ -37,7 +37,7 @@
 
 禁止 main merge、push、生产 Feishu 写入、canonical cutover、legacy 修改和破坏性迁移。
 
-详见 [v2.1 求职智能操作系统 PRD](docs/prd/ACH_v2.1_PRD_求职智能操作系统.md)。
+详见 [v2.4 当前实现与下一阶段 PRD](docs/prd/ACH_v2.4_PRD_当前实现与下一阶段.md)。
 
 ## G1 离线求职闭环
 
@@ -45,7 +45,7 @@
 - G4 面试成长：**PARTIAL**。文本会话事件、面试复盘 proposal、规则化 STAR 结构与内容具体性信号、独立学习计划 proposal、批准后进入有界任务队列，以及批准后的 Memory consolidation 任务入队已实现；更丰富的模型化评分和跨会话编排仍待补齐。
 - G5 知识治理：**PARTIAL**。Memory 来源亲和度与 consolidation proposal、SourceConnector schedule metadata、有界运行、单次 scheduler enqueue tick、认证 MCP transport boundary、JSON-RPC stdio 适配器、有界 SSE 事件适配器和 CLI 命令白名单/危险参数拒绝已实现；真实网络监听/生产认证、常驻 dispatcher 和宿主级 sandbox 隔离仍待补齐。
 
-- G2 沟通草稿：**PARTIAL / proposal-only**。机会页支持本地保存、查看、批准或拒绝草稿；每日限额与回复监控读模型仍缺，不会执行真实发送。
+- G2 沟通草稿：**PARTIAL / proposal-only**。机会页支持本地保存、查看、批准或拒绝草稿；每日限额、按渠道统计、回复与待跟进摘要已可读，不会执行真实发送。
 
 - 新增 `/api/v1/career-loop/offline`：离线岗位 fixture → 可解释评分 → 用户 admission → Resume TargetProfile → EvidenceRef-backed 简历提案 → 观复主题 PDF/ATS 报告。
 - 提案不会自动批准或提交申请；闭环集成测试、Ruff 和 diff check 已通过。

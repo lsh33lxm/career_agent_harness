@@ -65,3 +65,25 @@ def test_cli_runner_enforces_executable_and_argument_policy() -> None:
             _invocation().model_copy(update={"argv": ("claude", "prompt && whoami")}),
             approval_id="approval_001",
         )
+
+
+def test_cli_runner_enforces_timeout_and_output_limits_before_executor() -> None:
+    calls = 0
+
+    def executor(*_args: object) -> dict[str, str]:
+        nonlocal calls
+        calls += 1
+        return {"kind": "proposal"}
+
+    runner = SandboxedCliRunner(executor)
+    with pytest.raises(CliRunnerBlocked, match="时长上限"):
+        runner.run(
+            _invocation().model_copy(update={"timeout_seconds": 301}),
+            approval_id="approval_001",
+        )
+    with pytest.raises(CliRunnerBlocked, match="大小上限"):
+        runner.run(
+            _invocation().model_copy(update={"max_output_bytes": 65_537}),
+            approval_id="approval_001",
+        )
+    assert calls == 0

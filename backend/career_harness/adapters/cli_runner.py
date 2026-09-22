@@ -32,6 +32,8 @@ class SandboxPolicy:
     forbidden_tokens: frozenset[str] = frozenset(
         {"&&", "||", ";", "|", ">", ">>", "<", "--network", "--write", "--shell"}
     )
+    max_timeout_seconds: int = 300
+    max_output_bytes: int = 65_536
 
     def validate(self, argv: tuple[str, ...]) -> None:
         executable = argv[0].rsplit("\\", 1)[-1].rsplit("/", 1)[-1]
@@ -46,6 +48,12 @@ class SandboxPolicy:
             for token in argv
         ):
             raise CliRunnerBlocked("CLI arguments contain shell metacharacters")
+
+    def validate_limits(self, *, timeout_seconds: int, max_output_bytes: int) -> None:
+        if not 1 <= timeout_seconds <= self.max_timeout_seconds:
+            raise CliRunnerBlocked("CLI 执行超出 sandbox 时长上限")
+        if not 1 <= max_output_bytes <= self.max_output_bytes:
+            raise CliRunnerBlocked("CLI 输出超出 sandbox 大小上限")
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +82,10 @@ class SandboxedCliRunner:
         if not invocation.argv or invocation.argv[0].startswith(("-", "/")):
             raise CliRunnerBlocked("prepared CLI argv is invalid")
         self.policy.validate(invocation.argv)
+        self.policy.validate_limits(
+            timeout_seconds=invocation.timeout_seconds,
+            max_output_bytes=invocation.max_output_bytes,
+        )
         if invocation.permissions.model_shell_tools or invocation.permissions.model_network_tools:
             raise CliRunnerBlocked("prepared invocation requests forbidden model permissions")
         result = self.executor(

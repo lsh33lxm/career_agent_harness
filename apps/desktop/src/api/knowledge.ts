@@ -75,6 +75,24 @@ export interface KnowledgeProposalInput {
   base_revision: number;
 }
 
+export interface WikiOperationProposal {
+  operation_id: string;
+  target_knowledge_id: string;
+  operation: "move" | "rename" | "archive";
+  new_title: string | null;
+  new_slug: string | null;
+  parent_knowledge_id: string | null;
+  status: "pending" | "approved" | "rejected";
+}
+
+export interface WikiOperationInput {
+  operation: "move" | "rename" | "archive";
+  requested_by: string;
+  new_title?: string;
+  new_slug?: string;
+  parent_knowledge_id?: string;
+}
+
 export const getWikiRevisions = (knowledgeId: string) =>
   apiRequest<KnowledgeRevision[]>(`/api/v1/wiki/pages/${encodeURIComponent(knowledgeId)}/revisions`);
 
@@ -91,5 +109,20 @@ export const reviewKnowledgeProposal = (
 ) => apiRequest<KnowledgeProposal>(
   `/api/v1/knowledge/proposals/${encodeURIComponent(proposalId)}/review`,
   { method: "POST", body: JSON.stringify({ decision, reviewer: "user", reason }) },
+);
+
+export const createWikiOperation = (knowledgeId: string, input: WikiOperationInput) =>
+  apiRequest<WikiOperationProposal>(
+    `/api/v1/wiki/pages/${encodeURIComponent(knowledgeId)}/operations`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
+export const reviewWikiOperation = (
+  operationId: string,
+  decision: "approved" | "rejected",
+  reason: string,
+) => apiRequest<WikiOperationProposal>(
+  `/api/v1/wiki/operations/${encodeURIComponent(operationId)}/review`,
+  { method: "POST", body: JSON.stringify({ decision, reviewer: "用户", reason }) },
 );
 import { apiRequest } from "./client";

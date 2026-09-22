@@ -70,6 +70,24 @@ async def test_knowledge_api_import_search_and_review(tmp_path: Path) -> None:
         )
         assert revisions.status_code == 200
         assert len(revisions.json()) == 1
+        operation = await client.post(
+            f"/api/v1/wiki/pages/knowledge_{proposal_id[9:]}/operations",
+            headers=headers,
+            json={
+                "operation": "rename",
+                "requested_by": "用户",
+                "new_title": "Python（已确认）",
+                "new_slug": "python-confirmed",
+            },
+        )
+        assert operation.status_code == 200
+        reviewed_operation = await client.post(
+            f"/api/v1/wiki/operations/{operation.json()['operation_id']}/review",
+            headers=headers,
+            json={"decision": "approved", "reviewer": "用户", "reason": "已核对来源"},
+        )
+        assert reviewed_operation.status_code == 200
+        assert reviewed_operation.json()["status"] == "approved"
         graph = await client.get("/api/v1/wiki/graph", headers=headers)
         assert graph.status_code == 200
         assert len(graph.json()["nodes"]) == 2

@@ -80,6 +80,20 @@ class KnowledgeRollbackRequest(FrozenModel):
     reviewer: str = Field(min_length=1, max_length=255)
 
 
+class WikiOperationRequest(FrozenModel):
+    operation: str = Field(pattern=r"^(move|rename|archive)$")
+    requested_by: str = Field(min_length=1, max_length=255)
+    new_title: str | None = Field(default=None, max_length=512)
+    new_slug: str | None = Field(default=None, max_length=255)
+    parent_knowledge_id: str | None = Field(default=None, max_length=128)
+
+
+class WikiOperationReviewRequest(FrozenModel):
+    decision: str = Field(pattern=r"^(approved|rejected)$")
+    reviewer: str = Field(min_length=1, max_length=255)
+    reason: str = Field(min_length=1, max_length=2048)
+
+
 IdempotencyHeader = Annotated[
     str | None, Header(alias="X-Idempotency-Key", min_length=8, max_length=255)
 ]
@@ -198,6 +212,37 @@ def create_knowledge_router(api: KnowledgeApi) -> APIRouter:
     ) -> Any:
         try:
             return api.repository.rollback(knowledge_id, **request.model_dump())
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/wiki/pages/{knowledge_id}/operations")
+    def propose_operation(
+        request: WikiOperationRequest,
+        knowledge_id: str = Path(min_length=3, max_length=128),
+    ) -> Any:
+        try:
+            return api.repository.create_wiki_operation_proposal(
+                target_knowledge_id=knowledge_id, **request.model_dump()
+            )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.get("/wiki/operations/{operation_id}")
+    def get_operation(operation_id: str = Path(min_length=3, max_length=128)) -> Any:
+        try:
+            return api.repository.get_wiki_operation_proposal(operation_id)
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/wiki/operations/{operation_id}/review")
+    def review_operation(
+        request: WikiOperationReviewRequest,
+        operation_id: str = Path(min_length=3, max_length=128),
+    ) -> Any:
+        try:
+            return api.repository.review_wiki_operation_proposal(
+                operation_id, **request.model_dump()
+            )
         except Exception as error:
             raise _error(error) from error
 

@@ -656,10 +656,14 @@ class KnowledgeRepository:
         proposal_id = proposal_id or f"proposal_{uuid.uuid4().hex}"
         now = datetime.now(UTC)
         with self.engine.begin() as connection:
-            existing = connection.execute(
-                text("SELECT * FROM knowledge_proposal WHERE proposal_id=:proposal_id"),
-                {"proposal_id": proposal_id},
-            ).mappings().first()
+            existing = (
+                connection.execute(
+                    text("SELECT * FROM knowledge_proposal WHERE proposal_id=:proposal_id"),
+                    {"proposal_id": proposal_id},
+                )
+                .mappings()
+                .first()
+            )
             if existing is not None:
                 if (
                     existing["category"] != category.value
@@ -933,6 +937,312 @@ class KnowledgeRepository:
             )
         return self.get_revision(knowledge_id, revision)
 
+    @staticmethod
+    def _wiki_slug(title: str) -> str:
+        slug = re.sub(r"[^\w\u4e00-\u9fff-]+", "-", title.casefold()).strip("-")
+        return slug[:240] or "wiki-page"
+
+    def _ensure_wiki_metadata(
+        self, connection: Any, knowledge_id: str, title: str, now: datetime
+    ) -> str:
+        row = connection.execute(
+            text("SELECT slug FROM wiki_page_metadata WHERE knowledge_id=:id"), {"id": knowledge_id}
+        ).first()
+        if row is not None:
+            return str(row[0])
+        base = self._wiki_slug(title)
+        slug = base
+        suffix = 2
+        while (
+            connection.execute(
+                text("SELECT 1 FROM wiki_page_metadata WHERE slug=:slug"), {"slug": slug}
+            ).first()
+            is not None
+        ):
+            slug = f"{base}-{suffix}"
+            suffix += 1
+        connection.execute(
+            text(
+                "INSERT INTO wiki_page_metadata "
+                "(knowledge_id, slug, parent_knowledge_id, updated_at) "
+                "VALUES (:id, :slug, NULL, :now)"
+            ),
+            {"id": knowledge_id, "slug": slug, "now": now},
+        )
+        return slug
+
+    def create_wiki_operation_proposal(
+        self,
+        *,
+        target_knowledge_id: str,
+        operation: str,
+        requested_by: str,
+        new_title: str | None = None,
+        new_slug: str | None = None,
+        parent_knowledge_id: str | None = None,
+        operation_id: str | None = None,
+    ) -> dict[str, Any]:
+        if operation not in {"move", "rename", "archive"}:
+            raise ValueError("Wiki 操作必须是 move、rename 或 archive")
+        if not requested_by.strip():
+            raise ValueError("requested_by is required")
+        if operation == "rename" and not (new_title or new_slug):
+            raise ValueError("重命名提案至少需要新标题或新 slug")
+        if operation == "move" and not parent_knowledge_id:
+            raise ValueError("移动提案需要目标父页面")
+        operation_id = operation_id or f"wiki_operation_{uuid.uuid4().hex}"
+        now = datetime.now(UTC)
+        with self.engine.begin() as connection:
+            target = connection.execute(
+                text("SELECT title FROM knowledge_entry WHERE knowledge_id=:id"),
+                {"id": target_knowledge_id},
+            ).first()
+            if target is None:
+                raise KeyError("Wiki 目标页面不存在")
+            if parent_knowledge_id is not None:
+                if parent_knowledge_id == target_knowledge_id:
+                    raise ValueError("Wiki 页面不能移动到自身下面")
+                parent = connection.execute(
+                    text("SELECT 1 FROM knowledge_entry WHERE knowledge_id=:id"),
+                    {"id": parent_knowledge_id},
+                ).first()
+                if parent is None:
+                    raise KeyError("Wiki 目标父页面不存在")
+            self._ensure_wiki_metadata(connection, target_knowledge_id, str(target[0]), now)
+            existing = (
+                connection.execute(
+                    text("SELECT * FROM wiki_operation_proposal WHERE operation_id=:id"),
+                    {"id": operation_id},
+                )
+                .mappings()
+                .first()
+            )
+            if existing is not None:
+                expected = {
+                    "target_knowledge_id": target_knowledge_id,
+                    "operation": operation,
+                    "new_title": new_title,
+                    "new_slug": new_slug,
+                    "parent_knowledge_id": parent_knowledge_id,
+                }
+                if any(existing[key] != value for key, value in expected.items()):
+                    raise ValueError("Wiki 操作提案 id 已存在且内容不同")
+                return dict(existing)
+            if new_slug is not None:
+                cleaned_slug = self._wiki_slug(new_slug)
+                conflict = connection.execute(
+                    text(
+                        "SELECT knowledge_id FROM wiki_page_metadata "
+                        "WHERE slug=:slug AND knowledge_id<>:id"
+                    ),
+                    {"slug": cleaned_slug, "id": target_knowledge_id},
+                ).first()
+                if conflict is not None:
+                    raise ValueError("Wiki slug 已被其他页面使用")
+                new_slug = cleaned_slug
+            connection.execute(
+                text(
+                    "INSERT INTO wiki_operation_proposal "
+                    "(operation_id, target_knowledge_id, operation, new_title, new_slug, "
+                    "parent_knowledge_id, status, requested_by, created_at) VALUES "
+                    "(:id, :target, :operation, :title, :slug, :parent, 'pending', "
+                    ":requested_by, :now)"
+                ),
+                {
+                    "id": operation_id,
+                    "target": target_knowledge_id,
+                    "operation": operation,
+                    "title": new_title,
+                    "slug": new_slug,
+                    "parent": parent_knowledge_id,
+                    "requested_by": requested_by,
+                    "now": now,
+                },
+            )
+            self._event(
+                connection,
+                action="wiki.operation.proposed",
+                entity_id=target_knowledge_id,
+                payload={"operation_id": operation_id, "operation": operation},
+                now=now,
+            )
+        return self.get_wiki_operation_proposal(operation_id)
+
+    def get_wiki_operation_proposal(self, operation_id: str) -> dict[str, Any]:
+        with self.engine.connect() as connection:
+            row = (
+                connection.execute(
+                    text("SELECT * FROM wiki_operation_proposal WHERE operation_id=:id"),
+                    {"id": operation_id},
+                )
+                .mappings()
+                .first()
+            )
+        if row is None:
+            raise KeyError("Wiki 操作提案不存在")
+        return dict(row)
+
+    def review_wiki_operation_proposal(
+        self, operation_id: str, *, decision: str, reviewer: str, reason: str
+    ) -> dict[str, Any]:
+        if decision not in {"approved", "rejected"}:
+            raise ValueError("Wiki 操作审核只能批准或拒绝")
+        if not reviewer.strip() or not reason.strip():
+            raise ValueError("reviewer 和 reason 不能为空")
+        now = datetime.now(UTC)
+        with self.engine.begin() as connection:
+            row = (
+                connection.execute(
+                    text("SELECT * FROM wiki_operation_proposal WHERE operation_id=:id"),
+                    {"id": operation_id},
+                )
+                .mappings()
+                .first()
+            )
+            if row is None:
+                raise KeyError("Wiki 操作提案不存在")
+            if row["status"] != "pending":
+                raise ValueError("Wiki 操作提案已经审核")
+            target = (
+                connection.execute(
+                    text(
+                        "SELECT title, current_revision FROM knowledge_entry WHERE knowledge_id=:id"
+                    ),
+                    {"id": row["target_knowledge_id"]},
+                )
+                .mappings()
+                .first()
+            )
+            if target is None:
+                raise KeyError("Wiki 目标页面不存在")
+            if decision == "approved":
+                self._ensure_wiki_metadata(
+                    connection, row["target_knowledge_id"], target["title"], now
+                )
+                if row["operation"] == "move":
+                    connection.execute(
+                        text(
+                            "UPDATE wiki_page_metadata SET parent_knowledge_id=:parent, "
+                            "updated_at=:now "
+                            "WHERE knowledge_id=:id"
+                        ),
+                        {
+                            "parent": row["parent_knowledge_id"],
+                            "now": now,
+                            "id": row["target_knowledge_id"],
+                        },
+                    )
+                elif row["operation"] == "archive":
+                    connection.execute(
+                        text(
+                            "UPDATE knowledge_entry SET status='archived', updated_at=:now "
+                            "WHERE knowledge_id=:id"
+                        ),
+                        {"now": now, "id": row["target_knowledge_id"]},
+                    )
+                else:
+                    if row["new_slug"] is not None:
+                        conflict = connection.execute(
+                            text(
+                                "SELECT knowledge_id FROM wiki_page_metadata WHERE slug=:slug "
+                                "AND knowledge_id<>:id"
+                            ),
+                            {"slug": row["new_slug"], "id": row["target_knowledge_id"]},
+                        ).first()
+                        if conflict is not None:
+                            raise ValueError("Wiki slug 已被其他页面使用")
+                        connection.execute(
+                            text(
+                                "UPDATE wiki_page_metadata SET slug=:slug, updated_at=:now "
+                                "WHERE knowledge_id=:id"
+                            ),
+                            {"slug": row["new_slug"], "now": now, "id": row["target_knowledge_id"]},
+                        )
+                    if row["new_title"] is not None:
+                        current = self.get_revision(
+                            row["target_knowledge_id"], int(target["current_revision"])
+                        )
+                        revision = int(target["current_revision"]) + 1
+                        connection.execute(
+                            text(
+                                "INSERT INTO knowledge_revision "
+                                "(knowledge_id, revision, title, content, content_sha256, "
+                                "source_type, source_locator, artifact_id, evidence_refs, "
+                                "authority, confidence, "
+                                "created_by, status, prompt_injection_flag, created_at) VALUES "
+                                "(:id, :revision, :title, :content, :hash, 'wiki_rename', "
+                                ":locator, :artifact_id, :refs, :authority, :confidence, "
+                                "'USER', 'approved', :flag, :now)"
+                            ),
+                            {
+                                "id": row["target_knowledge_id"],
+                                "revision": revision,
+                                "title": row["new_title"],
+                                "content": current.content,
+                                "hash": current.content_sha256,
+                                "locator": (
+                                    f"{row['target_knowledge_id']}#{target['current_revision']}"
+                                ),
+                                "artifact_id": current.artifact_id,
+                                "refs": _json(list(current.evidence_refs)),
+                                "authority": current.authority.value,
+                                "confidence": current.confidence,
+                                "flag": current.prompt_injection_flag,
+                                "now": now,
+                            },
+                        )
+                        for ordinal, evidence_ref in enumerate(current.evidence_refs):
+                            connection.execute(
+                                text(
+                                    "INSERT INTO knowledge_revision_evidence_ref "
+                                    "(knowledge_id, revision, ordinal, evidence_ref_id) VALUES "
+                                    "(:id, :revision, :ordinal, :ref)"
+                                ),
+                                {
+                                    "id": row["target_knowledge_id"],
+                                    "revision": revision,
+                                    "ordinal": ordinal,
+                                    "ref": evidence_ref,
+                                },
+                            )
+                        self._replace_chunks(
+                            connection, row["target_knowledge_id"], revision, current.content
+                        )
+                        connection.execute(
+                            text(
+                                "UPDATE knowledge_entry SET current_revision=:revision, "
+                                "title=:title, "
+                                "updated_at=:now WHERE knowledge_id=:id"
+                            ),
+                            {
+                                "revision": revision,
+                                "title": row["new_title"],
+                                "now": now,
+                                "id": row["target_knowledge_id"],
+                            },
+                        )
+                self._event(
+                    connection,
+                    action="wiki.operation.approved",
+                    entity_id=row["target_knowledge_id"],
+                    payload={"operation_id": operation_id, "operation": row["operation"]},
+                    now=now,
+                )
+            connection.execute(
+                text(
+                    "UPDATE wiki_operation_proposal SET status=:status, reviewed_by=:reviewer, "
+                    "review_reason=:reason, reviewed_at=:now WHERE operation_id=:id"
+                ),
+                {
+                    "status": decision,
+                    "reviewer": reviewer,
+                    "reason": reason,
+                    "now": now,
+                    "id": operation_id,
+                },
+            )
+        return self.get_wiki_operation_proposal(operation_id)
+
     def wiki_graph(self) -> WikiGraph:
         with self.engine.connect() as connection:
             entries = (
@@ -1028,9 +1338,9 @@ class KnowledgeRepository:
                 row = (
                     connection.execute(
                         text(
-                        "SELECT evidence_refs, authority, prompt_injection_flag "
-                        "FROM knowledge_revision "
-                        "WHERE knowledge_id=:id AND revision=:revision"
+                            "SELECT evidence_refs, authority, prompt_injection_flag "
+                            "FROM knowledge_revision "
+                            "WHERE knowledge_id=:id AND revision=:revision"
                         ),
                         {"id": node.knowledge_id, "revision": node.revision},
                     )

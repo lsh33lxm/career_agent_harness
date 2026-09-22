@@ -190,6 +190,71 @@ def test_wiki_graph_and_health_detect_orphans_and_stale_links(tmp_path: Path) ->
     assert health.score < 100
 
 
+def test_wiki_structural_operations_are_review_gated_and_reversible_in_data(
+    tmp_path: Path,
+) -> None:
+    repository = _repository(tmp_path)
+    parent = repository.import_document(
+        content=b"Parent page.",
+        media_type="text/plain",
+        source_type="fixture",
+        source_locator="fixture://wiki/parent",
+        category=KnowledgeCategory.PROJECT_EVIDENCE,
+        title="Parent",
+        authority=KnowledgeAuthority.DOCUMENT_SUPPORTED,
+    )
+    child = repository.import_document(
+        content=b"Child page with evidence.",
+        media_type="text/plain",
+        source_type="fixture",
+        source_locator="fixture://wiki/child",
+        category=KnowledgeCategory.PROJECT_EVIDENCE,
+        title="Child",
+        authority=KnowledgeAuthority.DOCUMENT_SUPPORTED,
+    )
+    rename = repository.create_wiki_operation_proposal(
+        target_knowledge_id=child.knowledge_id,
+        operation="rename",
+        new_title="Renamed child",
+        new_slug="renamed-child",
+        requested_by="user",
+    )
+    assert rename["status"] == "pending"
+    approved = repository.review_wiki_operation_proposal(
+        rename["operation_id"], decision="approved", reviewer="user", reason="confirmed"
+    )
+    assert approved["status"] == "approved"
+    assert repository.get_entry(child.knowledge_id).title == "Renamed child"
+    assert repository.get_revision(child.knowledge_id, 2).content == child.content
+
+    move = repository.create_wiki_operation_proposal(
+        target_knowledge_id=child.knowledge_id,
+        operation="move",
+        parent_knowledge_id=parent.knowledge_id,
+        requested_by="user",
+    )
+    repository.review_wiki_operation_proposal(
+        move["operation_id"], decision="approved", reviewer="user", reason="organize"
+    )
+    with repository.engine.connect() as connection:
+        metadata = connection.execute(
+            text("SELECT parent_knowledge_id, slug FROM wiki_page_metadata WHERE knowledge_id=:id"),
+            {"id": child.knowledge_id},
+        ).one()
+    assert metadata[0] == parent.knowledge_id
+    assert metadata[1] == "renamed-child"
+
+    archive = repository.create_wiki_operation_proposal(
+        target_knowledge_id=child.knowledge_id,
+        operation="archive",
+        requested_by="user",
+    )
+    repository.review_wiki_operation_proposal(
+        archive["operation_id"], decision="approved", reviewer="user", reason="archive"
+    )
+    assert repository.get_entry(child.knowledge_id).status.value == "archived"
+
+
 def test_standard_document_extractors_and_weknora_are_offline(tmp_path: Path) -> None:
     repository = _repository(tmp_path)
     html = repository.import_document(

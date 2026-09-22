@@ -6,10 +6,12 @@ import { FormEvent, useEffect, useState } from "react";
 
 import { apiRequest } from "../api/client";
 import {
+  createWikiOperation,
   createKnowledgeProposal,
   getWikiHealth,
   getWikiRevisions,
   reviewKnowledgeProposal,
+  reviewWikiOperation,
   type KnowledgeProposal,
   type KnowledgeSearchPage,
   type KnowledgeSearchResult,
@@ -76,6 +78,13 @@ export function KnowledgePage() {
   const [wikiDraft, setWikiDraft] = useState<WikiEditDraft | null>(null);
   const [wikiProposal, setWikiProposal] = useState<KnowledgeProposal | null>(null);
   const [wikiBusy, setWikiBusy] = useState(false);
+  const [operationTarget, setOperationTarget] = useState<string | null>(null);
+  const [operationTitle, setOperationTitle] = useState("");
+  const [operationSlug, setOperationSlug] = useState("");
+  const [operationProposal, setOperationProposal] = useState<{
+    operation_id: string;
+    operation: "rename" | "archive" | "move";
+  } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -175,6 +184,39 @@ export function KnowledgePage() {
     }
   }
 
+  async function proposePageOperation(operation: "rename" | "archive") {
+    if (!operationTarget) return;
+    setWikiBusy(true);
+    try {
+      const proposal = await createWikiOperation(operationTarget, {
+        operation,
+        requested_by: "用户",
+        ...(operation === "rename" ? { new_title: operationTitle, new_slug: operationSlug } : {}),
+      });
+      setOperationProposal({ operation_id: proposal.operation_id, operation: proposal.operation });
+      setMessage("页面治理提案已保存，等待你批准或拒绝。");
+    } catch (error) {
+      setMessage(`页面治理提案保存失败：${(error as Error).message}`);
+    } finally {
+      setWikiBusy(false);
+    }
+  }
+
+  async function reviewPageOperation(decision: "approved" | "rejected") {
+    if (!operationProposal) return;
+    setWikiBusy(true);
+    try {
+      await reviewWikiOperation(operationProposal.operation_id, decision, "用户确认页面治理操作");
+      setOperationTarget(null);
+      setOperationProposal(null);
+      setMessage(decision === "approved" ? "页面治理操作已批准。" : "页面治理操作已拒绝，页面未改变。");
+    } catch (error) {
+      setMessage(`页面治理审核失败：${(error as Error).message}`);
+    } finally {
+      setWikiBusy(false);
+    }
+  }
+
   return (
     <main className="page knowledge-page">
       <div className="page-heading">
@@ -265,7 +307,25 @@ export function KnowledgePage() {
               <small>引用 {item.knowledge_id}#{item.revision} · {item.citation.evidence_refs.join("、") || "无证据引用"}</small>
               <div className="plugin-actions">
                 <button type="button" disabled={wikiBusy} onClick={() => void startWikiEdit(item)}>提出修订</button>
+                <button type="button" disabled={wikiBusy} onClick={() => { setOperationTarget(item.knowledge_id); setOperationTitle(item.title); setOperationSlug(""); setOperationProposal(null); }}>页面治理</button>
               </div>
+              {operationTarget === item.knowledge_id && (
+                <div className="wiki-edit-form" aria-label="页面治理">
+                  <p>移动、重命名和归档都必须先形成提案，再由你批准。</p>
+                  {!operationProposal ? (
+                    <>
+                      <label>新标题<input value={operationTitle} maxLength={512} onChange={(event) => setOperationTitle(event.target.value)} /></label>
+                      <label>新 slug（可选）<input value={operationSlug} maxLength={255} onChange={(event) => setOperationSlug(event.target.value)} placeholder="例如 platform-engineering" /></label>
+                      <div className="plugin-actions"><button type="button" disabled={wikiBusy || !operationTitle.trim()} onClick={() => void proposePageOperation("rename")}>提出重命名</button><button type="button" disabled={wikiBusy} onClick={() => void proposePageOperation("archive")}>提出归档</button><button type="button" onClick={() => setOperationTarget(null)}>取消</button></div>
+                    </>
+                  ) : (
+                    <div className="wiki-review-actions" role="region" aria-label="页面治理审核">
+                      <p>治理提案已保存。批准后才会应用到 Wiki 页面。</p>
+                      <div className="plugin-actions"><button type="button" disabled={wikiBusy} onClick={() => void reviewPageOperation("approved")}>批准操作</button><button type="button" disabled={wikiBusy} onClick={() => void reviewPageOperation("rejected")}>拒绝操作</button></div>
+                    </div>
+                  )}
+                </div>
+              )}
               {wikiDraft?.knowledgeId === item.knowledge_id && (
                 <form className="wiki-edit-form" onSubmit={proposeWikiEdit}>
                   <p>当前版本 #{wikiDraft.baseRevision}。标题、分类和正文修改只会创建提案。</p>

@@ -82,6 +82,29 @@ class ResumeRepository:
                 )
             return tuple(sorted(result, key=lambda item: item.resume_id))
 
+    def list_base_revisions(self, resume_id: str) -> tuple[ResumeBase, ...]:
+        with Session(self.engine) as session:
+            identity = session.get(ResumeIdentityRow, resume_id)
+            if identity is None:
+                return ()
+            rows = session.scalars(
+                select(ResumeBaseRevisionRow)
+                .where(ResumeBaseRevisionRow.resume_id == resume_id)
+                .order_by(ResumeBaseRevisionRow.revision.desc())
+            ).all()
+            return tuple(
+                ResumeBase(
+                    resume_id=row.resume_id,
+                    candidate_id=identity.candidate_id,
+                    revision=row.revision,
+                    schema_version=row.schema_version,
+                    sections=row.sections,
+                    created_at=row.created_at,
+                    created_by=row.created_by,
+                )
+                for row in rows
+            )
+
     def list_revisions(self, resume_id: str) -> tuple[ResumeRevision, ...]:
         with Session(self.engine) as session:
             revision_ids = session.scalars(

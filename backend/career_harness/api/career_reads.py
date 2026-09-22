@@ -40,6 +40,12 @@ def create_career_read_router(api: CareerReadApi) -> APIRouter:
             raise _not_found("resume base not found")
         return result
 
+    @router.get("/resumes/{resume_id}/bases", response_model=list[ResumeBase])
+    def list_resume_base_revisions(resume_id: str) -> tuple[ResumeBase, ...]:
+        if api.resumes.get_base(resume_id) is None:
+            raise _not_found("resume not found")
+        return api.resumes.list_base_revisions(resume_id)
+
     @router.get("/resume-revisions/{revision_id}", response_model=ResumeRevision)
     def get_resume_revision(revision_id: str) -> ResumeRevision:
         result = api.resumes.get_revision(revision_id)

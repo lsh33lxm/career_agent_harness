@@ -13,7 +13,7 @@ Agent Career Harness 是本地优先、证据约束、人工审核的中文求�
 - Legacy Agent Radar：只读 inventory、hash、结构化导入、历史投影和 provenance；最近真实导入读取 7,575 条，岗位 staging 1,028，历史投影 6,547，重复 684，失败 0。
 - 离线求职闭环：岗位原文 Artifact → 评分与 gap → 用户 admission → Resume TargetProfile → EvidenceRef 简历 patch proposal → 观复 PDF/ATS → Application `PREPARING`。
 - Opportunity 与沟通：岗位筛选、去重、评分、沟通草稿 proposal、批准/拒绝和摘要读模型；不会自动发送。
-- Resume Studio：ResumeData 校验、base/revision/patch review、观复 HTML/CSS、受控 Typst contract、PDF、ATS、JSON/Markdown 导出。`/api/v1/resume/import-text` 与 `/api/v1/resume/import-file` 产生待确认草稿；`/api/v1/resume/bases` 保存确认后的 ResumeBase；`/api/v1/resume/restore` 从不可变历史修订创建新的用户恢复点。PDF 使用无依赖文本 fallback，图片 OCR 明确返回未配置。
+- Resume Studio：ResumeData 校验、base/revision/patch review、观复 HTML/CSS、受控 Typst contract、PDF、ATS、JSON/Markdown 导出。`/api/v1/resume/import-text` 与 `/api/v1/resume/import-file` 产生待确认草稿；`/api/v1/resume/bases` 保存确认后的 ResumeBase；`/api/v1/resume/restore` 从不可变历史修订创建新的用户恢复点；`/api/v1/resumes/{resume_id}/bases` 读取全部基础版本。PDF 使用无依赖文本 fallback，图片 OCR 明确返回未配置。
 - Interview：只读面试查询、技术/行为准备 proposal、已完成面试的回答复盘 proposal；`0032_interview_session_events` 持久化用户/助手文本事件并校验 EvidenceRef；回答不会直接写入 Career Core。
 - Knowledge/Wiki/Memory：本地检索、引用、Wiki revision/proposal、Memory proposal/review/tombstone。
 - Task Queue：有界 `POST /api/v1/tasks/stages/{stage}/run?max_batches=N` 调度；不启动常驻后台或 shell。SourceConnector 支持 5 分钟至 7 天的 schedule metadata、到期查询和显式有界运行。
@@ -47,7 +47,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 | --- | --- | --- |
 | G1 离线求职闭环 | 部分完成 | 主链路与 proposal/audit 已通过；公司研究、STAR、Outcome/Wiki/Memory 全编排仍未闭环 |
 | G2 职位与沟通 | 部分完成 | 排名、来源 policy、草稿和摘要已实现；平台采集、每日限流、回复监控未完成 |
-| G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点已实现；图片 OCR、细粒度 undo/redo 和完整历史 UI 未完成 |
+| G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点和基础版本历史 API 已实现；图片 OCR、细粒度 undo/redo 和完整历史 UI 未完成 |
 | G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件已实现；STAR 自动结构化反馈、学习计划、跨会话记忆 consolidation 未完成 |
 | G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、memory affinity/consolidation、SourceConnector、Task Queue、bounded multi-stage dispatcher、Tool Registry、approval-gated CLI runner、显式 scheduled sync metadata 已实现；认证 MCP、完整 sandbox policy enforcement 和常驻调度仍未完成 |
 

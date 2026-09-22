@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from career_harness.adapters.job_sources import OfflineFixtureJobSource
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef
+from career_harness.core.knowledge.models import (
+    KnowledgeAuthority,
+    KnowledgeCategory,
+    KnowledgeCreatedBy,
+)
 from career_harness.core.resume import ResumePatchAction, ResumePatchOperation
+from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.services.application_service import ApplicationService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.resume_service import canonical_value_hash
@@ -30,6 +36,8 @@ class OfflineCareerLoopResult:
     application_id: str
     application_revision: int
     application_state: str
+    company_research_proposal_id: str | None = None
+    star_prep_proposal_id: str | None = None
 
 
 class OfflineCareerLoopService:
@@ -39,9 +47,11 @@ class OfflineCareerLoopService:
         self,
         radar: OpportunityRadarService,
         resume_studio: ResumeStudioService,
+        knowledge: KnowledgeRepository | None = None,
     ) -> None:
         self.radar = radar
         self.resume_studio = resume_studio
+        self.knowledge = knowledge
         self.applications = ApplicationService(resume_studio.commands)
 
     def run(
@@ -139,6 +149,35 @@ class OfflineCareerLoopService:
             opportunity_id=opportunity.entity_id,
             opportunity_revision=opportunity.revision,
         )
+        company_research_proposal_id = None
+        star_prep_proposal_id = None
+        if self.knowledge is not None:
+            company = seed.company or "待确认公司"
+            company_proposal = self.knowledge.create_proposal(
+                category=KnowledgeCategory.COMPANY,
+                title=f"{company} 公司研究草稿",
+                content=(
+                    f"岗位来源提供的公司名称：{company}\n"
+                    "这是离线准备草稿，不代表已验证的公司事实。请用户补充并审核官网、业务与团队信息。"
+                ),
+                authority=KnowledgeAuthority.AI_INFERRED,
+                created_by=KnowledgeCreatedBy.RULE,
+                evidence_refs=(seed.evidence_ref_id,),
+            )
+            company_research_proposal_id = company_proposal.proposal_id
+            star_proposal = self.knowledge.create_proposal(
+                category=KnowledgeCategory.STAR_STORY,
+                title=f"{seed.title} STAR 面试准备草稿",
+                content=(
+                    f"目标岗位：{seed.title}\n"
+                    f"待准备主题：{', '.join(seed.keyword_gaps) or '根据岗位要求补充'}\n"
+                    "请从已确认经历中选择 2-4 个故事；本草稿不生成新的个人事实。"
+                ),
+                authority=KnowledgeAuthority.AI_INFERRED,
+                created_by=KnowledgeCreatedBy.RULE,
+                evidence_refs=(seed.evidence_ref_id,),
+            )
+            star_prep_proposal_id = star_proposal.proposal_id
         return OfflineCareerLoopResult(
             staging_id=record.staging_id,
             opportunity_id=opportunity.entity_id,
@@ -155,4 +194,6 @@ class OfflineCareerLoopService:
             application_id=application.entity_id,
             application_revision=application.revision,
             application_state=application.state.value,
+            company_research_proposal_id=company_research_proposal_id,
+            star_prep_proposal_id=star_prep_proposal_id,
         )

@@ -91,7 +91,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         engine, ArtifactStore(active_paths.artifacts)
     )
     offline_career_loop_service = OfflineCareerLoopService(
-        opportunity_radar_service, resume_studio_service
+        opportunity_radar_service, resume_studio_service, knowledge_repository
     )
     plugin_service = PluginLifecycleManager(
         engine,

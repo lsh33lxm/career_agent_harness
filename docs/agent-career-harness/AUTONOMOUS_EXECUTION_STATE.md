@@ -7,7 +7,7 @@
 - 产品依据：`docs/prd/ACH_v2.0_PRD_插件化职业智能平台.md`
 - 执行依据：`docs/prd/ACH_v2.0_Codex_长期自主执行提示词.md`
 - 当前分支：`refactor/v1.4-integration`
-- 当前实现提交：`7c5183a`（简历与历史用户文案中文化）
+- 当前实现提交：`7bda536`（沟通摘要读模型与机会页展示）
 - 起始基线：`084017c`
 - Legacy Agent Radar：只读；本轮不修改原始文件
 
@@ -44,7 +44,8 @@
 - 状态：PARTIAL / proposal-only backend foundation。
 - 新增 `communication_draft` migration、Core 状态模型、repository 和 `/api/v1/communications/drafts` API。
 - 支持待确认、批准、拒绝、已发送、已回复、跟进、已结束、阻塞状态；当前只允许创建草稿和用户审核，不执行发送。
-- 离线 fixture 测试通过；桌面看板入口和每日上限/回复监控读模型仍未完成。
+- 离线 fixture 测试通过；桌面看板已展示每日新增/剩余上限、已回复和待跟进摘要。摘要通过 `GET /api/v1/communications/summary` 提供，仍不执行外部发送。
+- Verification：沟通集成 `2 passed`；前端 `23 files / 64 passed`；Vite production build、Ruff 与 diff check 通过。
 
 ## G3 Resume Studio checkpoint (2026-09-22)
 

@@ -1,7 +1,7 @@
 # Agent Career Harness v2.2
 
 日期：2026-09-22  
-基线：integration branch `refactor/v1.4-integration`，最终提交将包含本 PRD；当前代码 checkpoint `33165bd`
+基线：integration branch `refactor/v1.4-integration`，当前代码 checkpoint `7bda536`
 
 ## 1. 当前结论
 
@@ -14,6 +14,7 @@ Agent Career Harness 当前是一个本地优先、证据约束、人工审核�
 - Opportunity Radar：manual/offline source、原文 Artifact、SHA-256、fingerprint 去重、评分、gap、source policy 和用户 admission。
 - 离线闭环：`backend/career_harness/services/offline_career_loop_service.py` 串联 fixture 岗位、用户 admission、Resume TargetProfile、EvidenceRef-backed patch proposal、PDF/ATS 和 Application `PREPARING`。
 - 沟通草稿：`0031_communication_drafts`、`core/communication.py`、`db/communication_repository.py`、`api/communication.py` 与 Opportunities 页面入口。支持待确认/批准/拒绝等状态，但不发送外部消息。
+- 沟通摘要：`GET /api/v1/communications/summary` 与 Opportunities 页面摘要条，展示每日新增、剩余额度、已回复和待跟进数量；每日上限仍是读模型约束，不代表自动限流或自动发送。
 - Resume Studio：自有 HTML/CSS 与受控 Typst renderer contract、patch review、immutable revision、PDF、ATS、render review、JSON/Markdown export。
 - Interview read model：`/api/v1/applications/{id}/interviews` 与 `/api/v1/interviews/{id}`。
 - Knowledge/Wiki/Memory：本地检索、来源引用、Wiki revision/proposal、Memory proposal/review/tombstone。
@@ -67,7 +68,7 @@ Career Core 是已确认职业事实、Opportunity、Application、Interview、O
 
 ## 6. 真实验证
 
-- 后端全量：`682 passed, 5 skipped`。跳过项是 Windows symlink 权限限制。
+- 后端全量基线：`682 passed, 5 skipped`；本轮沟通摘要 focused `2 passed`。跳过项是 Windows symlink 权限限制。
 - Resume/Opportunity/Communication/Interview focused tests：通过；最近沟通 migration 回归 `49 passed`，Interview/Career read `8 passed`，Resume Studio API `1 passed`。
 - Ruff：`backend tests migrations` 通过。
 - `git diff --check`：通过。

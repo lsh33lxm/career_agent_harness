@@ -1,6 +1,6 @@
 # Agent Career Harness 当前状态
 
-更新时间：2026-09-23；分支：`refactor/v1.4-integration`；当前集成基线：`7c5183a`（简历与历史用户文案中文化）。
+更新时间：2026-09-23；分支：`refactor/v1.4-integration`；当前集成基线：`abc81c0`（G6 回归收口，含本地草稿撤销/重做）。
 
 ## 当前结论
 
@@ -21,8 +21,8 @@
 
 ## 最新验证
 
-- Backend：`706 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；本次全量回归无失败。
-- Frontend：`23 test files, 66 passed`，`npm run build` 通过；旧内部 ID 输入用例已由列表/选择流程用例替代。
+- Backend：`709 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；HEAD `abc81c0` 后全量回归无失败。
+- Frontend：`23 test files, 67 passed`，`npm run build` 通过；包含本地草稿撤销/重做覆盖，旧内部 ID 输入用例已由列表/选择流程用例替代。
 - Knowledge/Today focused：backend `2 passed`；frontend `7 passed`；真实 overview API 返回岗位 1,028、面试 503、问题 4,816、刷题 324、待复核 709。
 - Legacy preview：读取 7,575、新增 0、更新 0、未变化 7,575、重复 684、失败 0；FK errors 0，源 metadata signature 不变。
 - Clean-install migration：首轮读取 7,575、新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575，导入前后源签名一致；`Python` 查询返回 10 条并抽样核对源文件、SHA-256、行号、批次与 JD。默认 `%LOCALAPPDATA%\AgentCareerHarness` 也已完成一次同样的幂等导入，岗位 staging 1,028、历史投影 6,547、失败 0。
@@ -41,7 +41,7 @@
 
 ## G1 离线求职闭环
 
-- G3 简历导出：**PARTIAL**。ResumeRevision JSON/Markdown 导出、ResumeData 校验、文本/PDF fallback 导入预览、可注入 OCR adapter 边界、用户确认后的 ResumeBase 保存、基础版本历史查看、旧版本追加式恢复和按需差异查看已实现；当前环境没有 OCR 引擎，图片 OCR 实际解析和细粒度字段级 undo/redo 仍待补齐。
+- G3 简历导出：**PARTIAL**。ResumeRevision JSON/Markdown 导出、ResumeData 校验、文本/PDF fallback 导入预览、可注入 OCR adapter 边界、用户确认后的 ResumeBase 保存、基础版本历史查看、旧版本追加式恢复、按需差异查看和本地草稿 undo/redo 已实现；当前环境没有 OCR 引擎，图片 OCR 实际解析和字段级服务端 undo/redo 仍待补齐。
 - G4 面试成长：**PARTIAL**。文本会话事件、面试复盘 proposal、规则化 STAR 结构与内容具体性信号、独立学习计划 proposal、批准后进入有界任务队列，以及批准后的 Memory consolidation 任务入队已实现；更丰富的模型化评分和跨会话编排仍待补齐。
 - G5 知识治理：**PARTIAL**。Memory 来源亲和度与 consolidation proposal、SourceConnector schedule metadata、有界运行、单次 scheduler enqueue tick、认证 MCP transport boundary、JSON-RPC stdio 适配器、有界 SSE 事件适配器和 CLI 命令白名单/危险参数拒绝已实现；真实网络监听/生产认证、常驻 dispatcher 和宿主级 sandbox 隔离仍待补齐。
 

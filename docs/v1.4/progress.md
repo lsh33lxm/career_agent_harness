@@ -240,7 +240,14 @@ path validation, not OS isolation or real executor replacement; see pluggability
 
 ## 2026-09-21 current-state reconciliation
 
-The historical entries above are retained for audit. Current integration is `f760053` and the following supersede older counts: visual baseline `babf9c0`; archive/rehearsal `b13d0f3`; evidence projection `f760053`; data baseline `64dba1e`. Backend regression is 602 passed / 5 Windows symlink skips; frontend is 56 passed/build. Legacy preservation is complete for the reversible subset, while canonical authority mapping and cutover remain user-gated. Projects and Resume narrow desktop clients are integrated (`12315f4`); Feishu external write is BLOCKED_EXTERNAL_ACTION.
+The historical entries above are retained for audit. The current integration HEAD is `abc81c0`; earlier checkpoint counts (`f760053`, 602 backend passes, 56 frontend passes) are superseded by the 2026-09-23 closeout below. Legacy preservation is complete for the reversible subset, while canonical authority mapping and cutover remain user-gated. Projects and Resume narrow desktop clients are integrated (`12315f4`); Feishu external write is BLOCKED_EXTERNAL_ACTION.
+
+## 2026-09-23 — G6 cross-slice regression closeout
+
+- Integration HEAD: `abc81c0` (`feat: add resume draft undo and redo`); Capability Visualization remains integrated at `62f1ce8`.
+- Backend full suite: `709 passed, 5 skipped`; all skips are Windows symlink privilege limitations. Ruff checks for `backend tests migrations importers` passed and `git diff --check` passed.
+- Frontend: 23 test files / 67 tests passed; `npm run build` passed. The additional test covers local resume draft undo/redo.
+- Remaining partial boundaries are unchanged: configured OCR is unavailable, MCP/CLI production listeners and host sandbox are not enabled, external Feishu/Gmail/Notion writes and canonical Legacy cutover remain blocked or user-gated.
 
 ## Legacy structured projection and job visibility — 2026-09-21
 

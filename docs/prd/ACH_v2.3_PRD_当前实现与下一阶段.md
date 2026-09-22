@@ -85,19 +85,19 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 
 ## 6. 质量与安全
 
-- 后端全量：`706 passed, 5 skipped`；跳过项是 Windows symlink 权限限制。
-- 前端：23 个测试文件、66 项测试通过；`npm run build` 通过。
-- Ruff：`ruff check backend tests` 通过；`git diff --check` 通过。
+- 后端全量：`709 passed, 5 skipped`；跳过项是 Windows symlink 权限限制；验证基于 HEAD `abc81c0`。
+- 前端：23 个测试文件、67 项测试通过；`npm run build` 通过，包含本地草稿撤销/重做用例。
+- Ruff：`ruff check backend tests migrations importers` 通过；`git diff --check` 通过。
 - 未执行真实 ATS 提交、消息发送、Feishu/Gmail/Notion 写入或 canonical cutover。
 - API key 仍由现有安全存储边界管理；本轮没有新增凭据或外部写入。
 
 ## 7. 下一阶段顺序
 
 1. 将规则化 STAR 缺失维度建议编排为用户可审核的学习任务 proposal，并补充自动评分的更多可解释信号。
-2. 补齐 Resume PDF/图片导入校验、revision history 与可逆 undo/redo UI。
+2. 补齐 Resume 图片导入校验、OCR adapter 实际配置与字段级服务端 undo/redo；本地草稿 undo/redo UI 已完成。
 3. 将 SourceConnector 的显式 schedule metadata 接入可恢复后台 dispatcher；保持失败不误删本地知识。
 4. 实现认证 MCP/CLI 的只读 sandbox、scope、principal、schema 和审计；真实写工具继续 approval-gated。
-5. 完成 G1–G5 离线 E2E 与主题回归后，再更新下一版本 PRD。
+5. 继续补齐 G1–G5 尚未完成的外部边界后，再更新下一版本 PRD；本轮 G6 回归已完成。
 
 ## 8. 当前阻塞
 

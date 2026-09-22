@@ -135,3 +135,9 @@ frontend 18 files / 55 tests passed and production build passed; Ruff/diff check
   passed. Synthetic public/private flows passed.
 - Live public fetch remains blocked: this environment cannot reach `github.com:443`; no failed fetch
   record was persisted. Real acceptance must be rerun when GitHub network access is available.
+
+## 2026-09-23 — G6 cross-slice regression closeout
+
+- Integration HEAD `abc81c0` passed the full backend suite: `709 passed, 5 skipped`; skips are Windows symlink privilege limitations.
+- Ruff `check backend tests migrations importers`, frontend `npm test -- --run`, frontend `npm run build`, and `git diff --check` all passed. Frontend result: 23 files / 67 tests.
+- This closeout includes local resume draft undo/redo. No Legacy mutation, canonical cutover, main merge, push, or external write occurred.

@@ -19,6 +19,8 @@ from career_harness.core.memory.models import (
 from career_harness.db.memory_repository import MemoryRepository
 from career_harness.db.migrations import alembic_config, upgrade_to_head
 from career_harness.db.session import create_sqlite_engine, sqlite_url
+from career_harness.db.task_repository import TaskRepository
+from career_harness.services.task_service import RegisteredTaskHandler, TaskService
 
 
 def _repository(tmp_path: Path) -> tuple[MemoryRepository, object]:
@@ -123,7 +125,15 @@ def test_memory_affinity_and_consolidation_remain_review_gated(tmp_path: Path) -
 @pytest.mark.asyncio
 async def test_memory_api_exposes_chinese_workflow_without_internal_ids(tmp_path: Path) -> None:
     repository, _engine = _repository(tmp_path)
-    app = create_app(Settings.for_test("memory-api-test-token"), memory_api=MemoryApi(repository))
+    tasks = TaskService(
+        TaskRepository(_engine),
+        handlers=(
+            RegisteredTaskHandler("memory.consolidation", "learning", lambda payload: payload),
+        ),
+    )
+    app = create_app(
+        Settings.for_test("memory-api-test-token"), memory_api=MemoryApi(repository, tasks)
+    )
     headers = {"Authorization": "Bearer memory-api-test-token"}
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         created = await client.post(
@@ -141,6 +151,26 @@ async def test_memory_api_exposes_chinese_workflow_without_internal_ids(tmp_path
             json={"decision": "approved", "reason": "用户确认"},
         )
         assert approved.status_code == 200
+        task_proposal = await client.post(
+            "/api/v1/memory/proposals",
+            headers=headers,
+            json={
+                "memory_type": "task",
+                "source_type": "memory_consolidation",
+                "content": "复盘系统设计回答",
+            },
+        )
+        task_proposal_id = task_proposal.json()["proposal_id"]
+        await client.post(
+            f"/api/v1/memory/proposals/{task_proposal_id}/review",
+            headers=headers,
+            json={"decision": "approved", "reason": "用户确认"},
+        )
+        queued = await client.post(
+            f"/api/v1/memory/proposals/{task_proposal_id}/tasks", headers=headers
+        )
+        assert queued.status_code == 201
+        assert queued.json()["task_type"] == "memory.consolidation"
         searched = await client.get("/api/v1/memory", headers=headers, params={"query": "Agent"})
         assert searched.status_code == 200
         memory_id = searched.json()[0]["memory"]["memory_id"]

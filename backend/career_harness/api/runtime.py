@@ -162,6 +162,11 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
                 stage="learning",
                 handler=lambda payload: {"queued": True, "proposal_id": payload["proposal_id"]},
             ),
+            RegisteredTaskHandler(
+                task_type="memory.consolidation",
+                stage="learning",
+                handler=lambda payload: {"queued": True, "proposal_id": payload["proposal_id"]},
+            ),
         ),
         stage_limits={"evaluation": 2, "source_sync": 1, "learning": 1},
     )
@@ -239,7 +244,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         github_project_api=GitHubProjectApi(
             github_project_service, github_connector_service
         ),
-        memory_api=MemoryApi(MemoryRepository(engine)),
+        memory_api=MemoryApi(MemoryRepository(engine), task_service),
         task_api=TaskApi(task_service, task_repository),
         source_connector_api=SourceConnectorApi(
             source_connector_service,

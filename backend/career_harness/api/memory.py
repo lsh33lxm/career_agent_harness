@@ -14,6 +14,7 @@ from career_harness.core.memory.models import (
     MemoryType,
 )
 from career_harness.db.memory_repository import MemoryRepository
+from career_harness.services.task_service import TaskService
 
 
 class MemoryProposalRequest(FrozenModel):
@@ -50,6 +51,7 @@ class MemoryConsolidationRequest(FrozenModel):
 @dataclass(frozen=True, slots=True)
 class MemoryApi:
     repository: MemoryRepository
+    tasks: TaskService | None = None
 
 
 def _error(error: Exception) -> HTTPException:
@@ -126,6 +128,30 @@ def create_memory_router(api: MemoryApi) -> APIRouter:
     def consolidate(request: MemoryConsolidationRequest) -> Any:
         try:
             return api.repository.propose_consolidation(**request.model_dump())
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/proposals/{proposal_id}/tasks", status_code=201)
+    def enqueue_task(proposal_id: str) -> Any:
+        if api.tasks is None:
+            raise HTTPException(409, "memory task queue is not configured")
+        try:
+            proposal = api.repository.get_proposal(proposal_id)
+            if proposal.status is not MemoryProposalStatus.APPROVED:
+                raise ValueError("memory proposal must be approved before enqueue")
+            if (
+                proposal.memory_type is not MemoryType.TASK
+                and proposal.source_type != "memory_consolidation"
+            ):
+                raise ValueError("only task or consolidation memory proposals can be enqueued")
+            return api.tasks.enqueue(
+                "memory.consolidation",
+                {
+                    "proposal_id": proposal.proposal_id,
+                    "source_refs": list(proposal.source_refs),
+                    "content": proposal.approved_content or proposal.content,
+                },
+            )
         except Exception as error:
             raise _error(error) from error
 

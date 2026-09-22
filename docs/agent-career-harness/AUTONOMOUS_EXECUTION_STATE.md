@@ -7,7 +7,7 @@
 - 产品依据：`docs/prd/ACH_v2.0_PRD_插件化职业智能平台.md`
 - 执行依据：`docs/prd/ACH_v2.0_Codex_长期自主执行提示词.md`
 - 当前分支：`refactor/v1.4-integration`
-- 当前实现提交：`7bda536`（沟通摘要读模型与机会页展示）
+- 当前实现提交：`8385bd9`（离线闭环公司研究与 STAR 提案）
 - 起始基线：`084017c`
 - Legacy Agent Radar：只读；本轮不修改原始文件
 
@@ -24,7 +24,7 @@
 ## Final audit
 
 - 状态：DONE — Slice A–E 均已完成 local/offline Definition of Done；当前没有阻塞本地继续工作的 P0/P1。
-- Backend：`681 passed, 5 skipped`；跳过项均是 Windows symlink 创建权限/能力限制。
+- Backend：`684 passed, 5 skipped`；跳过项均是 Windows symlink 创建权限/能力限制。
 - Frontend：`23 test files, 64 passed`；Vite production build passed。
 - Quality：Ruff `backend tests migrations` passed；`git diff --check` passed。
 - Recovery：migration upgrade/downgrade、backup/restore、plugin lifecycle rehearsal 均通过；Legacy Agent Radar 仍只读。
@@ -38,6 +38,8 @@
 - 提案保持 proposal 状态；不会自动批准简历事实、提交申请或写入外部系统。
 - Verification：离线闭环集成测试通过；相关 Opportunity Radar、Resume Studio 测试通过；Ruff 与 `git diff --check` 通过。
 - 下一步：将闭环结果接入现有桌面 Today/Opportunities 操作入口，并补齐 Application/Interview/Outcome 的 proposal-only 归档编排。
+- 本次推进：离线闭环在 Application `PREPARING` 后创建带岗位 EvidenceRef 的公司研究与 STAR 面试准备知识提案；提案保持 pending，需用户审核后才可发布或索引。
+- Verification：全量后端 `684 passed, 5 skipped`；前端 `23 files / 64 passed`；Vite production build、Ruff 与 diff check 通过。
 
 ## G2 controlled communication checkpoint (2026-09-22)
 

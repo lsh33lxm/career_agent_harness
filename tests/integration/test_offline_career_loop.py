@@ -3,6 +3,7 @@ from pathlib import Path
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef
 from career_harness.db.knowledge_repository import KnowledgeRepository
+from career_harness.db.memory_repository import MemoryRepository
 from career_harness.db.resume_studio_repository import ResumeStudioRepository
 from career_harness.services.command_service import CommandService
 from career_harness.services.offline_career_loop_service import OfflineCareerLoopService
@@ -53,6 +54,7 @@ def test_offline_career_loop_is_review_gated_and_replayable(tmp_path: Path) -> N
         OpportunityRadarService(engine, artifacts),
         studio,
         KnowledgeRepository(engine, artifacts),
+        MemoryRepository(engine),
     )
 
     result = loop.run(
@@ -69,6 +71,7 @@ def test_offline_career_loop_is_review_gated_and_replayable(tmp_path: Path) -> N
     assert result.application_revision == 1
     assert result.company_research_proposal_id is not None
     assert result.star_prep_proposal_id is not None
+    assert result.memory_proposal_id is not None
     assert studio.repository.resumes.get_patch(result.patch_id) is not None
     assert studio.repository.get_render(result.render_run_id) is not None
     assert studio.repository.get_render_review(result.render_run_id) is None

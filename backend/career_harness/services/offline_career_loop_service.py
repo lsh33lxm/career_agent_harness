@@ -11,8 +11,10 @@ from career_harness.core.knowledge.models import (
     KnowledgeCategory,
     KnowledgeCreatedBy,
 )
+from career_harness.core.memory.models import MemoryCreator, MemoryScope, MemoryType
 from career_harness.core.resume import ResumePatchAction, ResumePatchOperation
 from career_harness.db.knowledge_repository import KnowledgeRepository
+from career_harness.db.memory_repository import MemoryRepository
 from career_harness.services.application_service import ApplicationService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.resume_service import canonical_value_hash
@@ -38,6 +40,7 @@ class OfflineCareerLoopResult:
     application_state: str
     company_research_proposal_id: str | None = None
     star_prep_proposal_id: str | None = None
+    memory_proposal_id: str | None = None
 
 
 class OfflineCareerLoopService:
@@ -48,10 +51,12 @@ class OfflineCareerLoopService:
         radar: OpportunityRadarService,
         resume_studio: ResumeStudioService,
         knowledge: KnowledgeRepository | None = None,
+        memory: MemoryRepository | None = None,
     ) -> None:
         self.radar = radar
         self.resume_studio = resume_studio
         self.knowledge = knowledge
+        self.memory = memory
         self.applications = ApplicationService(resume_studio.commands)
 
     def run(
@@ -151,6 +156,7 @@ class OfflineCareerLoopService:
         )
         company_research_proposal_id = None
         star_prep_proposal_id = None
+        memory_proposal_id = None
         if self.knowledge is not None:
             company = seed.company or "待确认公司"
             company_proposal = self.knowledge.create_proposal(
@@ -178,6 +184,22 @@ class OfflineCareerLoopService:
                 evidence_refs=(seed.evidence_ref_id,),
             )
             star_prep_proposal_id = star_proposal.proposal_id
+        if self.memory is not None:
+            memory_proposal = self.memory.create_proposal(
+                memory_type=MemoryType.TASK,
+                scope_kind=MemoryScope.USER,
+                scope_id=candidate_id,
+                content=(
+                    f"准备岗位 {seed.title}：先审核公司研究与 STAR 面试提案，"
+                    "再决定是否进入下一步。"
+                ),
+                source_type="offline_job_fixture",
+                source_locator=f"job-staging://{record.staging_id}",
+                source_refs=(seed.evidence_ref_id,),
+                confidence=0.5,
+                created_by=MemoryCreator.RULE,
+            )
+            memory_proposal_id = memory_proposal.proposal_id
         return OfflineCareerLoopResult(
             staging_id=record.staging_id,
             opportunity_id=opportunity.entity_id,
@@ -196,4 +218,5 @@ class OfflineCareerLoopService:
             application_state=application.state.value,
             company_research_proposal_id=company_research_proposal_id,
             star_prep_proposal_id=star_prep_proposal_id,
+            memory_proposal_id=memory_proposal_id,
         )

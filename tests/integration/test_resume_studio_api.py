@@ -1,3 +1,4 @@
+import base64
 from pathlib import Path
 
 import httpx
@@ -73,6 +74,24 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
             headers=AUTH,
             json={"content": {"education": ["invalid-item"]}},
         )
+        imported_text = await client.post(
+            "/api/v1/resume/import-file",
+            headers=AUTH,
+            json={
+                "media_type": "text/markdown",
+                "content_base64": base64.b64encode(
+                    "# Minnn\n\n## 技能\nPython\nSQLite\n\n## 项目\n本地求职工作台".encode()
+                ).decode(),
+            },
+        )
+        imported_image = await client.post(
+            "/api/v1/resume/import-file",
+            headers=AUTH,
+            json={
+                "media_type": "image/png",
+                "content_base64": base64.b64encode(b"png-fixture").decode(),
+            },
+        )
         target = await client.post(
             "/api/v1/resume/target-profiles",
             headers=AUTH,
@@ -117,6 +136,9 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
     assert valid_resume.json()["valid"] is True
     assert valid_resume.json()["data"]["skills"] == ["Python"]
     assert invalid_resume.json()["valid"] is False
+    assert imported_text.json()["valid"] is True
+    assert imported_text.json()["data"]["skills"] == ["Python", "SQLite"]
+    assert imported_image.json()["valid"] is False
     assert {item["template_id"] for item in templates.json()} == {
         "resume-render-html",
         "resume-render-typst",

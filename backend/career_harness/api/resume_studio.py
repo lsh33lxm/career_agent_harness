@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import base64
+import binascii
+import re
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -85,6 +88,13 @@ class ResumeValidationRequest(FrozenModel):
 
 class ResumeTextImportRequest(FrozenModel):
     text: str = Field(min_length=1, max_length=100_000)
+
+
+class ResumeFileImportRequest(FrozenModel):
+    media_type: str = Field(
+        pattern=r"^(text/plain|text/markdown|application/pdf|image/png|image/jpeg)$"
+    )
+    content_base64: str = Field(min_length=4, max_length=4_000_000)
 
 
 class ResumeBaseSaveRequest(FrozenModel):
@@ -199,6 +209,36 @@ def create_resume_studio_router(api: ResumeStudioApi) -> APIRouter:
         if not data.contact:
             warnings.append("未识别到联系方式")
         return ResumeValidationResult(valid=True, data=data, warnings=tuple(warnings))
+
+    @router.post("/import-file", response_model=ResumeValidationResult)
+    def import_file(request: ResumeFileImportRequest) -> ResumeValidationResult:
+        try:
+            raw = base64.b64decode(request.content_base64, validate=True)
+        except (ValueError, binascii.Error) as error:
+            raise HTTPException(422, "导入文件内容不是有效的 Base64") from error
+        if len(raw) > 2_000_000:
+            raise HTTPException(422, "导入文件不能超过 2 MB")
+        if request.media_type.startswith("image/"):
+            return ResumeValidationResult(
+                valid=False,
+                warnings=("当前本地构建未启用 OCR 解析器，请先将图片转换为文本后导入。",),
+                errors=("图片 OCR 解析器尚未配置",),
+            )
+        if request.media_type == "application/pdf":
+            # Keep the fallback dependency-free: extract visible PDF string literals for review.
+            text = "\n".join(
+                value.decode("utf-8", "ignore")
+                for value in re.findall(rb"\(([^()]*)\)", raw)
+                if value.strip()
+            )
+            if not text.strip():
+                return ResumeValidationResult(
+                    valid=False,
+                    errors=("PDF 未提取到可读文本，请先导出为文本或配置 PDF 解析器。",),
+                )
+        else:
+            text = raw.decode("utf-8", "replace")
+        return import_text(ResumeTextImportRequest(text=text))
 
     @router.post("/bases", response_model=ResumeBase, status_code=status.HTTP_201_CREATED)
     def save_base(

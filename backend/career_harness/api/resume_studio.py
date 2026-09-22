@@ -85,6 +85,12 @@ class ResumeBaseRestoreRequest(FrozenModel):
     expected_base_revision: int = Field(ge=1)
 
 
+class ResumeUndoRequest(FrozenModel):
+    command_id: OpaqueId
+    resume_id: OpaqueId
+    expected_base_revision: int = Field(ge=2)
+
+
 class RenderRequest(FrozenModel):
     resume_revision_id: OpaqueId
     target_profile_id: OpaqueId | None = None
@@ -452,6 +458,28 @@ def create_resume_studio_router(api: ResumeStudioApi) -> APIRouter:
         try:
             return api.service.resumes.restore_base_revision(
                 command, source_revision=request.source_base_revision
+            )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/undo", response_model=ResumeBase, status_code=status.HTTP_201_CREATED)
+    def undo_base(
+        request: ResumeUndoRequest,
+        idempotency_key: IdempotencyHeader,
+    ) -> ResumeBase:
+        """Append a new base revision containing the immediately previous version."""
+        command = _command(
+            command_id=request.command_id,
+            kind=EntityKind.RESUME,
+            entity_id=request.resume_id,
+            expected_revision=request.expected_base_revision,
+            idempotency_key=idempotency_key,
+            actor="user",
+            command_type="resume.base.undo",
+        )
+        try:
+            return api.service.resumes.restore_base_revision(
+                command, source_revision=request.expected_base_revision - 1
             )
         except Exception as error:
             raise _error(error) from error

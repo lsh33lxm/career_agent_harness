@@ -80,6 +80,46 @@ def test_memory_is_review_gated_scoped_revisioned_and_tombstoned(tmp_path: Path)
     assert events == ["memory.confirmed", "memory.tombstoned"]
 
 
+def test_memory_affinity_and_consolidation_remain_review_gated(tmp_path: Path) -> None:
+    repository, _engine_instance = _repository(tmp_path)
+    proposals = [
+        repository.create_proposal(
+            memory_type=MemoryType.PREFERENCE,
+            scope_kind=MemoryScope.USER,
+            scope_id="candidate_001",
+            content=content,
+            source_type="conversation",
+            source_locator=f"conversation://{index}",
+            source_refs=(f"evidence_{index}",),
+        )
+        for index, content in enumerate(("偏好本地优先工作方式", "偏好可审计的工作方式"), 1)
+    ]
+    tuple(
+        repository.review_proposal(
+            item.proposal_id, decision=MemoryProposalStatus.APPROVED, reason="确认"
+        )
+        for item in proposals
+    )
+    affinity = repository.affinity(
+        scope_kind=MemoryScope.USER,
+        scope_id="candidate_001",
+        source_ref="evidence_1",
+    )
+    assert len(affinity) == 1
+    first_memory_id = affinity[0].memory.memory_id
+    second_memory_id = repository.search(
+        scope_kind=MemoryScope.USER, scope_id="candidate_001", query="可审计"
+    )[0].memory.memory_id
+    consolidated = repository.propose_consolidation(
+        scope_kind=MemoryScope.USER,
+        scope_id="candidate_001",
+        memory_ids=(first_memory_id, second_memory_id),
+        source_locator="memory://consolidation/1",
+    )
+    assert consolidated.status is MemoryProposalStatus.PENDING
+    assert consolidated.source_refs == ("evidence_1", "evidence_2")
+
+
 @pytest.mark.asyncio
 async def test_memory_api_exposes_chinese_workflow_without_internal_ids(tmp_path: Path) -> None:
     repository, _engine = _repository(tmp_path)

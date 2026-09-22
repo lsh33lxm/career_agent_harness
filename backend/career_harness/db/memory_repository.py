@@ -346,6 +346,58 @@ class MemoryRepository:
         results.sort(key=lambda item: (-item.relevance, item.memory.memory_id))
         return tuple(results[:limit])
 
+    def affinity(
+        self,
+        *,
+        scope_kind: MemoryScope,
+        scope_id: str,
+        source_ref: str,
+        limit: int = 50,
+    ) -> tuple[MemorySearchResult, ...]:
+        """Return confirmed memories explicitly citing one document/evidence ref."""
+        if not source_ref.strip():
+            raise ValueError("source_ref 不能为空")
+        results = self.search(scope_kind=scope_kind, scope_id=scope_id, limit=limit)
+        return tuple(item for item in results if source_ref in item.memory.source_refs)
+
+    def propose_consolidation(
+        self,
+        *,
+        scope_kind: MemoryScope,
+        scope_id: str,
+        memory_ids: tuple[str, ...],
+        source_locator: str,
+    ) -> MemoryProposal:
+        """Create a review-gated consolidation proposal from confirmed memories."""
+        if not memory_ids:
+            raise ValueError("consolidation 至少需要一条记忆")
+        indexed = {
+            item.memory.memory_id: item.memory
+            for item in self.search(scope_kind=scope_kind, scope_id=scope_id, limit=1000)
+        }
+        try:
+            memories = tuple(indexed[memory_id] for memory_id in dict.fromkeys(memory_ids))
+        except KeyError as error:
+            raise KeyError("consolidation 只能引用已确认且未删除的记忆") from error
+        if any(
+            item.scope_kind is not scope_kind or item.scope_id != scope_id
+            for item in memories
+        ):
+            raise ValueError("只能合并同一作用域内的记忆")
+        content = "\n".join(f"- {item.content}" for item in memories)
+        refs = tuple(dict.fromkeys(ref for item in memories for ref in item.source_refs))
+        return self.create_proposal(
+            memory_type=memories[0].memory_type,
+            scope_kind=scope_kind,
+            scope_id=scope_id,
+            content=content,
+            source_type="memory_consolidation",
+            source_locator=source_locator,
+            source_refs=refs,
+            confidence=min(item.confidence for item in memories),
+            created_by=MemoryCreator.RULE,
+        )
+
     def tombstone(self, memory_id: str, *, reason: str, actor: str = "user") -> MemoryRevision:
         if actor != "user":
             raise ValueError("only the user may delete memory")

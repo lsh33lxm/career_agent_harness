@@ -40,6 +40,13 @@ class MemoryDeleteRequest(FrozenModel):
     reason: str = Field(min_length=1, max_length=2048)
 
 
+class MemoryConsolidationRequest(FrozenModel):
+    scope_kind: MemoryScope = MemoryScope.USER
+    scope_id: str = Field(default="local-user", min_length=1, max_length=128)
+    memory_ids: tuple[str, ...] = Field(min_length=1, max_length=20)
+    source_locator: str = Field(min_length=1, max_length=2048)
+
+
 @dataclass(frozen=True, slots=True)
 class MemoryApi:
     repository: MemoryRepository
@@ -97,6 +104,30 @@ def create_memory_router(api: MemoryApi) -> APIRouter:
         return api.repository.search(
             scope_kind=scope_kind, scope_id=scope_id, query=query, limit=limit
         )
+
+    @router.get("/affinity")
+    def affinity(
+        source_ref: str = Query(min_length=1, max_length=512),
+        scope_kind: MemoryScope = MemoryScope.USER,
+        scope_id: str = Query(default="local-user", min_length=1, max_length=128),
+        limit: int = Query(default=50, ge=1, le=100),
+    ) -> Any:
+        try:
+            return api.repository.affinity(
+                scope_kind=scope_kind,
+                scope_id=scope_id,
+                source_ref=source_ref,
+                limit=limit,
+            )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/consolidation-proposals", status_code=201)
+    def consolidate(request: MemoryConsolidationRequest) -> Any:
+        try:
+            return api.repository.propose_consolidation(**request.model_dump())
+        except Exception as error:
+            raise _error(error) from error
 
     @router.post("/{memory_id}/delete")
     def delete(

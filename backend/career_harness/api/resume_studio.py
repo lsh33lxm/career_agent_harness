@@ -10,6 +10,7 @@ from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef, FrozenModel, OpaqueId
 from career_harness.core.resume import (
     ResumeAtsReport,
+    ResumeBase,
     ResumeData,
     ResumePatch,
     ResumePatchOperation,
@@ -82,6 +83,17 @@ class ResumeValidationRequest(FrozenModel):
     content: dict[str, object]
 
 
+class ResumeTextImportRequest(FrozenModel):
+    text: str = Field(min_length=1, max_length=100_000)
+
+
+class ResumeBaseSaveRequest(FrozenModel):
+    command_id: OpaqueId
+    resume_id: OpaqueId
+    candidate_id: OpaqueId
+    sections: dict[str, object]
+
+
 @dataclass(frozen=True, slots=True)
 class ResumeStudioApi:
     service: ResumeStudioService
@@ -138,6 +150,79 @@ def create_resume_studio_router(api: ResumeStudioApi) -> APIRouter:
         if not data.skills:
             warnings.append("尚未填写技能")
         return ResumeValidationResult(valid=True, data=data, warnings=tuple(warnings))
+
+    @router.post("/import-text", response_model=ResumeValidationResult)
+    def import_text(request: ResumeTextImportRequest) -> ResumeValidationResult:
+        """Parse a local text/Markdown resume into a reviewable, non-canonical shape."""
+        lines = [line.strip() for line in request.text.splitlines() if line.strip()]
+        sections: dict[str, list[str]] = {}
+        current = "summary"
+        for line in lines:
+            if line.startswith("#"):
+                heading = line.lstrip("#").strip().lower()
+                current = next(
+                    (name for name, aliases in {
+                        "experience": ("experience", "经历", "工作经历"),
+                        "projects": ("projects", "项目"),
+                        "education": ("education", "教育", "教育经历"),
+                        "skills": ("skills", "技能"),
+                        "certifications": ("certifications", "证书"),
+                        "summary": ("summary", "简介", "个人简介"),
+                    }.items() if heading in aliases),
+                    "custom_sections",
+                )
+                sections.setdefault(current, [])
+            else:
+                sections.setdefault(current, []).append(line)
+        payload: dict[str, object] = {
+            "name": lines[0].lstrip("#").strip() if lines else None,
+            "summary": "\n".join(sections.get("summary", ())) or None,
+            "contact": next((line for line in lines if "@" in line), None),
+            "skills": tuple(sections.get("skills", ())),
+            "experience": tuple({"text": value} for value in sections.get("experience", ())),
+            "projects": tuple({"text": value} for value in sections.get("projects", ())),
+            "education": tuple({"text": value} for value in sections.get("education", ())),
+            "certifications": tuple(
+                {"text": value} for value in sections.get("certifications", ())
+            ),
+            "custom_sections": tuple(
+                {"title": key, "items": values}
+                for key, values in sections.items()
+                if key == "custom_sections"
+            ),
+        }
+        try:
+            data = ResumeData.model_validate(payload)
+        except ValueError as error:
+            return ResumeValidationResult(valid=False, errors=(str(error),))
+        warnings = ["导入内容仅是待确认草稿，保存前请核对职业事实。"]
+        if not data.contact:
+            warnings.append("未识别到联系方式")
+        return ResumeValidationResult(valid=True, data=data, warnings=tuple(warnings))
+
+    @router.post("/bases", response_model=ResumeBase, status_code=status.HTTP_201_CREATED)
+    def save_base(
+        request: ResumeBaseSaveRequest,
+        idempotency_key: IdempotencyHeader,
+    ) -> ResumeBase:
+        command = _command(
+            command_id=request.command_id,
+            kind=EntityKind.RESUME,
+            entity_id=request.resume_id,
+            expected_revision=0,
+            idempotency_key=idempotency_key,
+            actor="user",
+            command_type="resume.base.save",
+        )
+        try:
+            data = ResumeData.model_validate(request.sections)
+            return api.service.resumes.save_base_revision(
+                command,
+                candidate_id=request.candidate_id,
+                sections=data.model_dump(mode="json"),
+            )
+        except Exception as error:
+            raise _error(error) from error
 
     @router.post(
         "/target-profiles",

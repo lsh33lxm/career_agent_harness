@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -121,6 +122,7 @@ class ResumeBaseSaveRequest(FrozenModel):
 @dataclass(frozen=True, slots=True)
 class ResumeStudioApi:
     service: ResumeStudioService
+    ocr: Callable[[bytes, str], str] | None = None
 
 
 def _error(error: Exception) -> HTTPException:
@@ -233,6 +235,13 @@ def create_resume_studio_router(api: ResumeStudioApi) -> APIRouter:
         if len(raw) > 2_000_000:
             raise HTTPException(422, "导入文件不能超过 2 MB")
         if request.media_type.startswith("image/"):
+            if api.ocr is not None:
+                try:
+                    text = api.ocr(raw, request.media_type)
+                except Exception as error:
+                    raise HTTPException(422, "图片 OCR 解析失败，请改用文本导入") from error
+                if text.strip():
+                    return import_text(ResumeTextImportRequest(text=text))
             return ResumeValidationResult(
                 valid=False,
                 warnings=("当前本地构建未启用 OCR 解析器，请先将图片转换为文本后导入。",),

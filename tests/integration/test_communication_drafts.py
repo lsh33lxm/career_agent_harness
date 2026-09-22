@@ -44,7 +44,12 @@ def test_communication_draft_is_proposal_only_and_user_reviewed(tmp_path: Path) 
 
 def test_communication_summary_tracks_daily_limit_and_statuses(tmp_path: Path) -> None:
     repository = CommunicationRepository(_engine(tmp_path))
-    for index, status in enumerate((CommunicationStatus.PENDING_REVIEW, CommunicationStatus.REPLIED, CommunicationStatus.FOLLOW_UP)):
+    statuses = (
+        CommunicationStatus.PENDING_REVIEW,
+        CommunicationStatus.REPLIED,
+        CommunicationStatus.FOLLOW_UP,
+    )
+    for index, status in enumerate(statuses):
         repository.create(
             CommunicationDraft(
                 draft_id=f"draft_summary_{index}",

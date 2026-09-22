@@ -58,6 +58,19 @@ def _studio(tmp_path: Path) -> tuple[ResumeStudioService, ResumeStudioRepository
     return ResumeStudioService(commands, repository), repository
 
 
+def test_user_can_restore_immutable_revision_as_new_base(tmp_path: Path) -> None:
+    studio, repository = _studio(tmp_path)
+    restored = studio.resumes.restore_revision(
+        _command("resume_001", EntityKind.RESUME, "command_restore").model_copy(
+            update={"expected_revision": 1}
+        ),
+        revision_id="resume_revision_001",
+    )
+    assert restored.revision == 2
+    assert restored.sections["name"] == "Minnn"
+    assert repository.resumes.get_base("resume_001", 1) is not None
+
+
 def test_target_profile_render_pdf_ats_and_exact_artifact_provenance(tmp_path: Path) -> None:
     service, repository = _studio(tmp_path)
     profile = service.create_target_profile(

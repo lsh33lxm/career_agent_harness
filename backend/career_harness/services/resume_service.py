@@ -186,6 +186,29 @@ class ResumeService:
             raise RuntimeError("ResumeRevision commit did not persist the typed aggregate")
         return persisted
 
+    def restore_revision(
+        self,
+        command: Command,
+        *,
+        revision_id: OpaqueId,
+    ) -> ResumeBase:
+        """Create a new user-owned base revision from an immutable revision."""
+        self._require(command, EntityKind.RESUME, user=True)
+        revision = self.repository.get_revision(revision_id)
+        if revision is None or revision.resume_id != command.target.entity_id:
+            raise ValueError("恢复需要同一份简历的精确 ResumeRevision")
+        return self.save_base_revision(
+            command,
+            candidate_id=self._candidate_id(command.target.entity_id),
+            sections=revision.content,
+        )
+
+    def _candidate_id(self, resume_id: OpaqueId) -> OpaqueId:
+        base = self.repository.get_base(resume_id)
+        if base is None:
+            raise ValueError("恢复需要现有 ResumeBase")
+        return base.candidate_id
+
     def _validate_operations(self, operations: tuple[ResumePatchOperation, ...]) -> None:
         for operation in operations:
             for ref in operation.fact_refs:

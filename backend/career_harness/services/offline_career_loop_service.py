@@ -7,6 +7,7 @@ from career_harness.adapters.job_sources import OfflineFixtureJobSource
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef
 from career_harness.core.resume import ResumePatchAction, ResumePatchOperation
+from career_harness.services.application_service import ApplicationService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.resume_service import canonical_value_hash
 from career_harness.services.resume_studio_service import ResumeStudioService
@@ -26,6 +27,9 @@ class OfflineCareerLoopResult:
     render_run_id: str
     ats_status: str
     keyword_gaps: tuple[str, ...]
+    application_id: str
+    application_revision: int
+    application_state: str
 
 
 class OfflineCareerLoopService:
@@ -38,6 +42,7 @@ class OfflineCareerLoopService:
     ) -> None:
         self.radar = radar
         self.resume_studio = resume_studio
+        self.applications = ApplicationService(resume_studio.commands)
 
     def run(
         self,
@@ -117,6 +122,23 @@ class OfflineCareerLoopService:
             template_id=None,
             actor="user",
         )
+        application_digest = hashlib.sha256(
+            (record.staging_id + resume_id).encode()
+        ).hexdigest()[:24]
+        application_id = f"application_{application_digest}"
+        application_command = Command(
+            command_id=f"command_{application_id}",
+            command_type="application.create",
+            target=EntityRef(entity_id=application_id, kind=EntityKind.APPLICATION),
+            expected_revision=0,
+            idempotency_key=f"offline-loop-{application_id}",
+            actor="user",
+        )
+        application = self.applications.create(
+            application_command,
+            opportunity_id=opportunity.entity_id,
+            opportunity_revision=opportunity.revision,
+        )
         return OfflineCareerLoopResult(
             staging_id=record.staging_id,
             opportunity_id=opportunity.entity_id,
@@ -130,4 +152,7 @@ class OfflineCareerLoopService:
             render_run_id=run.render_run_id,
             ats_status=report.status.value,
             keyword_gaps=report.keyword_gaps,
+            application_id=application.entity_id,
+            application_revision=application.revision,
+            application_state=application.state.value,
         )

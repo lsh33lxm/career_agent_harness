@@ -63,6 +63,8 @@ def test_offline_career_loop_is_review_gated_and_replayable(tmp_path: Path) -> N
     assert result.evidence_ref_id.startswith("evidence_job_staging_")
     assert result.patch_id is not None
     assert result.ats_status in {"passed", "warnings"}
+    assert result.application_state == "preparing"
+    assert result.application_revision == 1
     assert studio.repository.resumes.get_patch(result.patch_id) is not None
     assert studio.repository.get_render(result.render_run_id) is not None
     assert studio.repository.get_render_review(result.render_run_id) is None

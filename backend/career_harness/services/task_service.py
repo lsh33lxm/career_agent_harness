@@ -114,3 +114,14 @@ class TaskService:
             if not progressed:
                 break
         return tuple(results[:max_tasks])
+
+    def enqueue_tick(
+        self,
+        jobs: tuple[tuple[str, dict[str, Any]], ...],
+        *,
+        max_jobs: int = 100,
+    ) -> tuple[TaskRecord, ...]:
+        """Enqueue one bounded scheduler tick without starting a background thread."""
+        if max_jobs < 1 or max_jobs > 1000:
+            raise ValueError("max_jobs must be between 1 and 1000")
+        return tuple(self.enqueue(task_type, payload) for task_type, payload in jobs[:max_jobs])

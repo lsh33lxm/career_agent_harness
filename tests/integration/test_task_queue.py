@@ -181,6 +181,16 @@ async def test_task_api_allows_controlled_registered_work_without_shell(tmp_path
         assert dispatched.status_code == 200
 
 
+def test_task_service_enqueue_tick_is_bounded_and_replayable(tmp_path: Path) -> None:
+    _, service, _engine = _queue(tmp_path)
+    jobs = tuple(("test.echo", {"value": str(index)}) for index in range(3))
+    queued = service.enqueue_tick(jobs, max_jobs=2)
+    assert len(queued) == 2
+    assert [item.payload["value"] for item in queued] == ["0", "1"]
+    with pytest.raises(ValueError, match="between 1 and 1000"):
+        service.enqueue_tick(jobs, max_jobs=0)
+
+
 def test_task_migration_is_reversible(tmp_path: Path) -> None:
     database_url = sqlite_url(tmp_path / "migration.db")
     config = alembic_config(database_url)

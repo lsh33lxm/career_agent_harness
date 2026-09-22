@@ -7,7 +7,7 @@
 - 产品依据：`docs/prd/ACH_v2.0_PRD_插件化职业智能平台.md`
 - 执行依据：`docs/prd/ACH_v2.0_Codex_长期自主执行提示词.md`
 - 当前分支：`refactor/v1.4-integration`
-- 当前实现提交：`8385bd9`（离线闭环公司研究与 STAR 提案）
+- 当前实现提交：`ab5f63c`（离线闭环公司研究、STAR 与 Memory 提案）
 - 起始基线：`084017c`
 - Legacy Agent Radar：只读；本轮不修改原始文件
 
@@ -39,6 +39,7 @@
 - Verification：离线闭环集成测试通过；相关 Opportunity Radar、Resume Studio 测试通过；Ruff 与 `git diff --check` 通过。
 - 下一步：将闭环结果接入现有桌面 Today/Opportunities 操作入口，并补齐 Application/Interview/Outcome 的 proposal-only 归档编排。
 - 本次推进：离线闭环在 Application `PREPARING` 后创建带岗位 EvidenceRef 的公司研究与 STAR 面试准备知识提案；提案保持 pending，需用户审核后才可发布或索引。
+- 同一闭环还创建带岗位 EvidenceRef 的用户级 Memory task proposal；未确认记忆不会进入强事实检索或工具权限。
 - Verification：全量后端 `684 passed, 5 skipped`；前端 `23 files / 64 passed`；Vite production build、Ruff 与 diff check 通过。
 
 ## G2 controlled communication checkpoint (2026-09-22)

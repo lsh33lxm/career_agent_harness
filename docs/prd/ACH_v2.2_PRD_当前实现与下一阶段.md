@@ -1,7 +1,7 @@
 # Agent Career Harness v2.2
 
 日期：2026-09-22  
-基线：integration branch `refactor/v1.4-integration`，当前代码 checkpoint `8385bd9`
+基线：integration branch `refactor/v1.4-integration`，当前代码 checkpoint `ab5f63c`
 
 ## 1. 当前结论
 
@@ -14,6 +14,7 @@ Agent Career Harness 当前是一个本地优先、证据约束、人工审核�
 - Opportunity Radar：manual/offline source、原文 Artifact、SHA-256、fingerprint 去重、评分、gap、source policy 和用户 admission。
 - 离线闭环：`backend/career_harness/services/offline_career_loop_service.py` 串联 fixture 岗位、用户 admission、Resume TargetProfile、EvidenceRef-backed patch proposal、PDF/ATS 和 Application `PREPARING`。
 - 申请准备提案：同一离线闭环会为公司研究与 STAR 面试准备创建带岗位 EvidenceRef 的 Knowledge proposal；仍需用户审核，不会自动发布或提升为 Career Core 事实。
+- Memory proposal：同一闭环会创建带岗位 EvidenceRef 的用户级 task memory proposal；需用户确认，不能授予工具权限或覆盖本轮用户指令。
 - 沟通草稿：`0031_communication_drafts`、`core/communication.py`、`db/communication_repository.py`、`api/communication.py` 与 Opportunities 页面入口。支持待确认/批准/拒绝等状态，但不发送外部消息。
 - 沟通摘要：`GET /api/v1/communications/summary` 与 Opportunities 页面摘要条，展示每日新增、剩余额度、已回复和待跟进数量；每日上限仍是读模型约束，不代表自动限流或自动发送。
 - Resume Studio：自有 HTML/CSS 与受控 Typst renderer contract、patch review、immutable revision、PDF、ATS、render review、JSON/Markdown export。

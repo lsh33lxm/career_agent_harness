@@ -88,3 +88,16 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
   expect(createObjectURL).toHaveBeenCalled();
   expect(window.localStorage.getItem("ach.resume-studio.draft.v1")).toContain("resume_001");
 });
+
+it("supports local draft undo and redo without changing Career Core", () => {
+  window.__ACH_CONFIG__ = { apiBaseUrl: "http://127.0.0.1:8765", launchToken: "resume-ui-token" };
+  vi.stubGlobal("fetch", vi.fn());
+  render(<ResumeStudioPanel />);
+  const editor = screen.getByLabelText("简历建议草稿");
+  fireEvent.change(editor, { target: { value: '{"summary":"第一版"}' } });
+  fireEvent.change(editor, { target: { value: '{"summary":"第二版"}' } });
+  fireEvent.click(screen.getByRole("button", { name: "撤销" }));
+  expect((editor as HTMLTextAreaElement).value).toBe('{"summary":"第一版"}');
+  fireEvent.click(screen.getByRole("button", { name: "重做" }));
+  expect((editor as HTMLTextAreaElement).value).toBe('{"summary":"第二版"}');
+});

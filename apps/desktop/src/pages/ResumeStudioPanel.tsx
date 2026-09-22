@@ -66,6 +66,8 @@ export function ResumeStudioPanel() {
     },
   ]);
   const [draftContent, setDraftContent] = useState("");
+  const [draftHistory, setDraftHistory] = useState<string[]>([]);
+  const [draftFuture, setDraftFuture] = useState<string[]>([]);
   const [loadedRevision, setLoadedRevision] = useState<ResumeRevisionRead | null>(null);
   const [evidenceRef, setEvidenceRef] = useState("");
   const [previewTheme, setPreviewTheme] = useState("warm-paper");
@@ -137,6 +139,39 @@ export function ResumeStudioPanel() {
     }
   }, [draftContent]);
 
+  function updateDraftContent(next: string) {
+    setDraftContent((current) => {
+      if (current === next) return current;
+      setDraftHistory((history) => [...history.slice(-49), current]);
+      setDraftFuture([]);
+      return next;
+    });
+  }
+
+  function undoDraft() {
+    setDraftHistory((history) => {
+      const previous = history.at(-1);
+      if (previous === undefined) return history;
+      setDraftContent((current) => {
+        setDraftFuture((future) => [...future.slice(-49), current]);
+        return previous;
+      });
+      return history.slice(0, -1);
+    });
+  }
+
+  function redoDraft() {
+    setDraftFuture((future) => {
+      const next = future.at(-1);
+      if (next === undefined) return future;
+      setDraftContent((current) => {
+        setDraftHistory((history) => [...history.slice(-49), current]);
+        return next;
+      });
+      return future.slice(0, -1);
+    });
+  }
+
   async function loadRevisionDraft() {
     try {
       const revision = await getResumeRevision(revisionId);
@@ -146,6 +181,8 @@ export function ResumeStudioPanel() {
       setReview(null);
       setReviewReason("");
       setDraftContent(JSON.stringify(revision.content, null, 2));
+      setDraftHistory([]);
+      setDraftFuture([]);
       setMessage("已加载为本地提案草稿；修改不会写回职业核心。");
     } catch (error) {
       setMessage("版本读取失败：" + (error as Error).message);
@@ -312,7 +349,7 @@ export function ResumeStudioPanel() {
       </div>
       <p className="resume-studio-message">{message}</p>
       <div className="resume-draft-workspace">
-        <div><label>建议草稿（JSON，本地自动保存）<textarea aria-label="简历建议草稿" value={draftContent} onChange={(event) => setDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></label><div className="button-row"><button className="button button-secondary" type="button" onClick={() => void validateDraft()} disabled={!parsedDraft}>校验简历结构</button><button className="button button-primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新修订</button></div>{validationMessage && <p role="status">{validationMessage}</p>}<label>证据精确引用<input aria-label="草稿证据精确引用" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="输入证据引用" /></label></div>
+        <div><label>建议草稿（JSON，本地自动保存）<textarea aria-label="简历建议草稿" value={draftContent} onChange={(event) => updateDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></label><div className="button-row"><button className="button button-secondary" type="button" onClick={undoDraft} disabled={draftHistory.length === 0}>撤销</button><button className="button button-secondary" type="button" onClick={redoDraft} disabled={draftFuture.length === 0}>重做</button><button className="button button-secondary" type="button" onClick={() => void validateDraft()} disabled={!parsedDraft}>校验简历结构</button><button className="button button-primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新修订</button></div>{validationMessage && <p role="status">{validationMessage}</p>}<label>证据精确引用<input aria-label="草稿证据精确引用" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="输入证据引用" /></label></div>
         <div>
           <label>预览主题<select aria-label="预览主题" value={previewTheme} onChange={(event) => setPreviewTheme(event.target.value)}><option value="warm-paper">暖纸</option><option value="compact-ink">紧凑墨色</option></select></label>
           <article className={`resume-draft-preview ${previewTheme}`} aria-label="草稿实时预览">

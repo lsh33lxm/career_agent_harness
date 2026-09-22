@@ -45,7 +45,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 | 目标 | 状态 | 当前边界 |
 | --- | --- | --- |
 | G1 离线求职闭环 | 部分完成 | 主链路、公司研究/STAR/结果归档/Wiki/Memory proposal 与确定性重放已通过；用户批准、提交后 Outcome 证据仍需真实用户流程 |
-| G2 职位与沟通 | 部分完成 | 排名、来源 policy、草稿和摘要已实现；平台采集、每日限流、回复监控未完成 |
+| G2 职位与沟通 | 部分完成 | 排名、来源 policy、草稿、每日限流、按渠道统计和回复/跟进摘要已实现；平台采集与真实发送仍未完成 |
 | G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点、基础版本历史查看、追加式旧版本恢复、按需差异 UI 和本地草稿撤销/重做已实现；图片 OCR、字段级服务端 undo/redo 未完成 |
 | G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件、基于规则信号的 STAR 结构与内容具体性评分、独立学习计划 proposal、批准后有界任务入队和 Memory consolidation 任务入队已实现；更丰富的模型化评分和跨会话编排未完成 |
 | G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、memory affinity/consolidation、SourceConnector、Task Queue、bounded multi-stage dispatcher、单次 scheduler enqueue tick、Tool Registry、approval-gated CLI runner、CLI 命令白名单/危险参数拒绝/资源上限、认证 MCP transport boundary、JSON-RPC stdio 适配器（输入消息上限）、有界 SSE 事件适配器、显式 scheduled sync metadata 已实现；真实网络监听/生产认证接入、宿主级 sandbox 隔离和常驻调度仍未完成 |
@@ -67,26 +67,17 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 
 ## 5. 上游参考仓库采用方式
 
-本轮只读审阅主仓库 `reference-repos/<name>/<name>/` 下的十个本地快照，不复制源码、主题、模板或依赖。快照均无 `.git`；当前工作树也没有 `_archives` ZIP 文件，因此无法提供 ZIP SHA-256，按“本地未版本化快照”记录，不伪造 commit 或 ZIP 哈希。`CapyMock` 没有根目录 LICENSE，`WeKnora` 带 `THIRD_PARTY_NOTICES.md`；参考目录未被修改或提交。
+当前 integration 工作树不存在 `reference-repos/`，因此本轮不能声称已读取十个本地快照的 README、LICENSE、目录或关键实现；也没有伪造 commit、ZIP SHA-256 或许可证结论。待快照挂载后再进行只读审阅；在此之前只沿用仓库内已有行为契约进行等价实现，不复制第三方源码、主题、模板或依赖。
 
 | 仓库 | 采用方式 |
 | --- | --- |
-| ApplyPilot | AGPL；行为参考 pipeline、评分和事实保护 |
-| JobHuntBot | MIT；行为参考 onboarding、never-guess、人工确认 |
-| BossHunter | PolyForm Noncommercial；仅参考中文采集、限流和草稿 |
-| ai-job-search | MIT；行为参考 rank、ATS、面试准备 |
-| career-ops | MIT；行为参考本地优先、fingerprint、评估 |
-| CapyMock | 本地未发现 LICENSE；仅行为参考面试和项目分析 |
-| seeking-stars | MIT Non-Commercial；仅 README/行为参考 |
-| CareerDesk | MIT；行为参考 proposal/approve/reject/undo |
-| magic-resume | Apache 标识与商业限制并存；仅参考 ResumeData/导出结构 |
-| WeKnora | MIT，含第三方许可；仅参考只读 adapter、检索和治理边界 |
+| 十个 reference-repos 快照 | 当前不可验证 | 目录缺失；不得据此声称已审阅、复用或确认许可证 |
 
 ## 6. 质量与安全
 
-- 后端全量：`709 passed, 5 skipped`；跳过项是 Windows symlink 权限限制；验证基于 HEAD `abc81c0`。
+- 后端全量：`711 passed, 5 skipped`；跳过项是 Windows symlink 权限限制；验证基于 HEAD `5aebdb3` 之后的代码。
 - 前端：23 个测试文件、67 项测试通过；`npm run build` 通过，包含本地草稿撤销/重做用例。
-- Ruff：`ruff check backend tests migrations importers` 通过；`git diff --check` 通过。
+- Ruff：`ruff check backend tests migrations` 通过；`git diff --check` 通过。
 - 未执行真实 ATS 提交、消息发送、Feishu/Gmail/Notion 写入或 canonical cutover。
 - API key 仍由现有安全存储边界管理；本轮没有新增凭据或外部写入。
 

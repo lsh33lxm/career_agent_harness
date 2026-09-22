@@ -21,6 +21,7 @@ export interface CommunicationSummary {
   created_today: number;
   remaining_today: number;
   counts: Record<string, number>;
+  channel_counts: Record<string, number>;
   reply_count: number;
   follow_up_count: number;
 }

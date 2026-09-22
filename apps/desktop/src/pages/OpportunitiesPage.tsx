@@ -159,11 +159,13 @@ export function OpportunitiesPage() {
           <span>剩余 {communicationSummary.remaining_today}</span>
           <span>已回复 {communicationSummary.reply_count}</span>
           <span>待跟进 {communicationSummary.follow_up_count}</span>
+          <span>邮件 {communicationSummary.channel_counts.email ?? 0}</span>
+          <span>平台消息 {communicationSummary.channel_counts.platform_message ?? 0}</span>
         </div>}
         <textarea aria-label="沟通草稿内容" value={draftBody} onChange={(event) => setDraftBody(event.target.value)} placeholder="写下跟进或沟通草稿" />
         <button className="button button-primary" type="button" onClick={() => void createDraft()} disabled={!items.length || !draftBody.trim()}>保存草稿</button>
         {draftMessage && <p role="status">{draftMessage}</p>}
-        {drafts.map((draft) => <article className="opportunity-record" key={draft.draft_id}><p>{draft.body}</p><small>{draft.status === "pending_review" ? "待确认" : draft.status === "approved" ? "已批准" : draft.status === "rejected" ? "已拒绝" : draft.status}</small>{draft.status === "pending_review" && <div><button type="button" onClick={() => void reviewDraft(draft, "approved")}>确认草稿</button><button type="button" onClick={() => void reviewDraft(draft, "rejected")}>拒绝</button></div>}</article>)}
+        {drafts.map((draft) => { const statusLabel = draft.status === "pending_review" ? "待确认" : draft.status === "approved" ? "已批准" : draft.status === "rejected" ? "已拒绝" : draft.status === "blocked" ? "已阻断" : draft.status; const blockedReason = draft.provenance.blocked_reason === "daily_communication_limit" ? "已达到今日沟通上限，草稿仍保留在本地。" : null; return <article className="opportunity-record" key={draft.draft_id}><p>{draft.body}</p><small>{statusLabel}</small>{blockedReason && <p className="muted">{blockedReason}</p>}{draft.status === "pending_review" && <div><button type="button" onClick={() => void reviewDraft(draft, "approved")}>确认草稿</button><button type="button" onClick={() => void reviewDraft(draft, "rejected")}>拒绝</button></div>}</article>; })}
       </section>
 
       <section className="opportunity-list" aria-labelledby="opportunity-list-title">

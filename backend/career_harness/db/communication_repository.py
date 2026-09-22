@@ -55,6 +55,26 @@ class CommunicationRepository:
             rows = connection.execute(text(query), params).mappings().all()
         return tuple(self._read(row) for row in rows)
 
+    def summary(self, *, daily_limit: int = 10) -> dict[str, Any]:
+        if daily_limit < 1:
+            raise ValueError("每日沟通上限必须为正数")
+        with self.engine.connect() as connection:
+            rows = connection.execute(
+                text("SELECT status, COUNT(*) AS count FROM communication_draft GROUP BY status")
+            ).mappings().all()
+            today = connection.execute(
+                text("SELECT COUNT(*) FROM communication_draft WHERE date(created_at)=date('now')")
+            ).scalar_one()
+        counts = {str(row["status"]): int(row["count"]) for row in rows}
+        return {
+            "daily_limit": daily_limit,
+            "created_today": int(today),
+            "remaining_today": max(0, daily_limit - int(today)),
+            "counts": counts,
+            "reply_count": counts.get(CommunicationStatus.REPLIED.value, 0),
+            "follow_up_count": counts.get(CommunicationStatus.FOLLOW_UP.value, 0),
+        }
+
     def review(
         self, draft_id: str, *, decision: CommunicationStatus, reason: str
     ) -> CommunicationDraft:

@@ -9,7 +9,7 @@ import {
   type PriorityLevel,
 } from "../api/client";
 import { JobRadarPanel } from "./JobRadarPanel";
-import { createCommunicationDraft, listCommunicationDrafts, reviewCommunicationDraft, type CommunicationDraft } from "../api/communications";
+import { createCommunicationDraft, getCommunicationSummary, listCommunicationDrafts, reviewCommunicationDraft, type CommunicationDraft, type CommunicationSummary } from "../api/communications";
 
 const priorityLevels: PriorityLevel[] = ["low", "medium", "high", "urgent"];
 const priorityLabels: Record<PriorityLevel, string> = {
@@ -49,6 +49,7 @@ export function OpportunitiesPage() {
   const [priorityPending, setPriorityPending] = useState<Record<string, boolean>>({});
   const [priorityErrors, setPriorityErrors] = useState<Record<string, string>>({});
   const [drafts, setDrafts] = useState<CommunicationDraft[]>([]);
+  const [communicationSummary, setCommunicationSummary] = useState<CommunicationSummary | null>(null);
   const [draftBody, setDraftBody] = useState("");
   const [draftMessage, setDraftMessage] = useState("");
 
@@ -74,7 +75,9 @@ export function OpportunitiesPage() {
   }, [load]);
 
   useEffect(() => {
-    void listCommunicationDrafts().then(setDrafts).catch(() => setDraftMessage("沟通草稿暂不可用"));
+    void Promise.all([listCommunicationDrafts(), getCommunicationSummary()])
+      .then(([draftItems, summary]) => { setDrafts(draftItems); setCommunicationSummary(summary); })
+      .catch(() => setDraftMessage("沟通草稿暂不可用"));
   }, []);
 
   async function createDraft() {
@@ -151,6 +154,12 @@ export function OpportunitiesPage() {
       <section className="opportunity-list" aria-labelledby="communication-drafts-title">
         <div className="section-heading"><div><p className="eyebrow">人工确认</p><h2 id="communication-drafts-title">沟通草稿</h2></div><span>{drafts.length} 条</span></div>
         <p>草稿只保存在本地，批准也不会自动发送。</p>
+        {communicationSummary && <div className="summary-strip" aria-label="沟通摘要">
+          <span>今日新增 {communicationSummary.created_today}/{communicationSummary.daily_limit}</span>
+          <span>剩余 {communicationSummary.remaining_today}</span>
+          <span>已回复 {communicationSummary.reply_count}</span>
+          <span>待跟进 {communicationSummary.follow_up_count}</span>
+        </div>}
         <textarea aria-label="沟通草稿内容" value={draftBody} onChange={(event) => setDraftBody(event.target.value)} placeholder="写下跟进或沟通草稿" />
         <button className="button button-primary" type="button" onClick={() => void createDraft()} disabled={!items.length || !draftBody.trim()}>保存草稿</button>
         {draftMessage && <p role="status">{draftMessage}</p>}

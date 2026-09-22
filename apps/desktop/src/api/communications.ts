@@ -16,8 +16,21 @@ export interface CommunicationDraft {
   review_reason: string | null;
 }
 
+export interface CommunicationSummary {
+  daily_limit: number;
+  created_today: number;
+  remaining_today: number;
+  counts: Record<string, number>;
+  reply_count: number;
+  follow_up_count: number;
+}
+
 export function listCommunicationDrafts(): Promise<CommunicationDraft[]> {
   return apiRequest<CommunicationDraft[]>("/api/v1/communications/drafts");
+}
+
+export function getCommunicationSummary(): Promise<CommunicationSummary> {
+  return apiRequest<CommunicationSummary>("/api/v1/communications/summary");
 }
 
 export function createCommunicationDraft(input: {

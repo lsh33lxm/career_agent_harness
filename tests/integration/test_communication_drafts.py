@@ -40,3 +40,24 @@ def test_communication_draft_is_proposal_only_and_user_reviewed(tmp_path: Path) 
     ) == approved
     with pytest.raises(ValueError, match="不能覆盖"):
         repository.review(draft.draft_id, decision=CommunicationStatus.REJECTED, reason="改写")
+
+
+def test_communication_summary_tracks_daily_limit_and_statuses(tmp_path: Path) -> None:
+    repository = CommunicationRepository(_engine(tmp_path))
+    for index, status in enumerate((CommunicationStatus.PENDING_REVIEW, CommunicationStatus.REPLIED, CommunicationStatus.FOLLOW_UP)):
+        repository.create(
+            CommunicationDraft(
+                draft_id=f"draft_summary_{index}",
+                opportunity_id="opportunity_summary_001",
+                channel=CommunicationChannel.FOLLOW_UP_NOTE,
+                body=f"草稿 {index}",
+                status=status,
+                created_by="user",
+            )
+        )
+    summary = repository.summary(daily_limit=5)
+    assert summary["created_today"] == 3
+    assert summary["remaining_today"] == 2
+    assert summary["reply_count"] == 1
+    assert summary["follow_up_count"] == 1
+    assert summary["counts"][CommunicationStatus.PENDING_REVIEW.value] == 1

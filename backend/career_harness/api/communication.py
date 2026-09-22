@@ -50,6 +50,13 @@ def create_communication_router(api: CommunicationApi) -> APIRouter:
     def list_drafts(status: CommunicationStatus | None = None):
         return api.repository.list(status)
 
+    @router.get("/summary")
+    def summary(daily_limit: int = 10):
+        try:
+            return api.repository.summary(daily_limit=daily_limit)
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from error
+
     @router.post("/drafts/{draft_id}/review")
     def review(draft_id: str, request: CommunicationReviewRequest):
         try:

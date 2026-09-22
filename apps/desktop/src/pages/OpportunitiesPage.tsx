@@ -9,6 +9,7 @@ import {
   type PriorityLevel,
 } from "../api/client";
 import { JobRadarPanel } from "./JobRadarPanel";
+import { createCommunicationDraft, listCommunicationDrafts, reviewCommunicationDraft, type CommunicationDraft } from "../api/communications";
 
 const priorityLevels: PriorityLevel[] = ["low", "medium", "high", "urgent"];
 const priorityLabels: Record<PriorityLevel, string> = {
@@ -47,6 +48,9 @@ export function OpportunitiesPage() {
   const [priorityReasons, setPriorityReasons] = useState<Record<string, string>>({});
   const [priorityPending, setPriorityPending] = useState<Record<string, boolean>>({});
   const [priorityErrors, setPriorityErrors] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<CommunicationDraft[]>([]);
+  const [draftBody, setDraftBody] = useState("");
+  const [draftMessage, setDraftMessage] = useState("");
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoadState("loading");
@@ -68,6 +72,30 @@ export function OpportunitiesPage() {
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
+
+  useEffect(() => {
+    void listCommunicationDrafts().then(setDrafts).catch(() => setDraftMessage("沟通草稿暂不可用"));
+  }, []);
+
+  async function createDraft() {
+    const item = items[0];
+    if (!item || !draftBody.trim()) return;
+    try {
+      const created = await createCommunicationDraft({
+        draft_id: requestId("draft"), opportunity_id: item.opportunity.entity_id,
+        channel: "follow_up_note", body: draftBody.trim(), provenance: { source: "user", mode: "local" },
+      });
+      setDrafts((current) => [created, ...current]);
+      setDraftBody(""); setDraftMessage("草稿已保存，等待你审核；不会自动发送。");
+    } catch (error) { setDraftMessage(errorMessage(error)); }
+  }
+
+  async function reviewDraft(draft: CommunicationDraft, decision: "approved" | "rejected") {
+    try {
+      const updated = await reviewCommunicationDraft(draft.draft_id, decision, decision === "approved" ? "用户确认草稿" : "用户拒绝草稿");
+      setDrafts((current) => current.map((item) => item.draft_id === updated.draft_id ? updated : item));
+    } catch (error) { setDraftMessage(errorMessage(error)); }
+  }
 
   async function handlePriority(event: FormEvent<HTMLFormElement>, item: OpportunitySummary) {
     event.preventDefault();
@@ -119,6 +147,15 @@ export function OpportunitiesPage() {
       </div>
 
       <JobRadarPanel />
+
+      <section className="opportunity-list" aria-labelledby="communication-drafts-title">
+        <div className="section-heading"><div><p className="eyebrow">人工确认</p><h2 id="communication-drafts-title">沟通草稿</h2></div><span>{drafts.length} 条</span></div>
+        <p>草稿只保存在本地，批准也不会自动发送。</p>
+        <textarea aria-label="沟通草稿内容" value={draftBody} onChange={(event) => setDraftBody(event.target.value)} placeholder="写下跟进或沟通草稿" />
+        <button className="button button-primary" type="button" onClick={() => void createDraft()} disabled={!items.length || !draftBody.trim()}>保存草稿</button>
+        {draftMessage && <p role="status">{draftMessage}</p>}
+        {drafts.map((draft) => <article className="opportunity-record" key={draft.draft_id}><p>{draft.body}</p><small>{draft.status === "pending_review" ? "待确认" : draft.status === "approved" ? "已批准" : draft.status === "rejected" ? "已拒绝" : draft.status}</small>{draft.status === "pending_review" && <div><button type="button" onClick={() => void reviewDraft(draft, "approved")}>确认草稿</button><button type="button" onClick={() => void reviewDraft(draft, "rejected")}>拒绝</button></div>}</article>)}
+      </section>
 
       <section className="opportunity-list" aria-labelledby="opportunity-list-title">
         <div className="section-heading">

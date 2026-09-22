@@ -13,7 +13,7 @@ Agent Career Harness 当前是一个本地优先、证据约束、人工审核�
 - Legacy：只读导入与 historical projection；真实导入 7,575 条，岗位 staging 1,028，历史投影 6,547，重复 684，失败 0。
 - Opportunity Radar：manual/offline source、原文 Artifact、SHA-256、fingerprint 去重、评分、gap、source policy 和用户 admission。
 - 离线闭环：`backend/career_harness/services/offline_career_loop_service.py` 串联 fixture 岗位、用户 admission、Resume TargetProfile、EvidenceRef-backed patch proposal、PDF/ATS 和 Application `PREPARING`。
-- 沟通草稿：`0031_communication_drafts`、`core/communication.py`、`db/communication_repository.py`、`api/communication.py`。支持待确认/批准/拒绝等状态，但不发送外部消息。
+- 沟通草稿：`0031_communication_drafts`、`core/communication.py`、`db/communication_repository.py`、`api/communication.py` 与 Opportunities 页面入口。支持待确认/批准/拒绝等状态，但不发送外部消息。
 - Resume Studio：自有 HTML/CSS 与受控 Typst renderer contract、patch review、immutable revision、PDF、ATS、render review、JSON/Markdown export。
 - Interview read model：`/api/v1/applications/{id}/interviews` 与 `/api/v1/interviews/{id}`。
 - Knowledge/Wiki/Memory：本地检索、来源引用、Wiki revision/proposal、Memory proposal/review/tombstone。
@@ -43,7 +43,7 @@ Career Core 是已确认职业事实、Opportunity、Application、Interview、O
 | --- | --- | --- |
 | G0 参考审计 | 已完成 | 十个本地目录已检查 README、LICENSE/声明、目录；ApplyPilot AGPL，BossHunter/Seeking Stars/Magic Resume 有非商用或额外限制，CapyMock 根目录无 LICENSE；均未复制源码 |
 | G1 离线闭环 | 部分完成 | 岗位→Artifact→评分→admission→简历 proposal→PDF/ATS→Application PREPARING 已通过；公司研究、STAR、Outcome/Wiki/Memory 编排未串联 |
-| G2 职位与沟通 | 部分完成 | staging/ranking/source policy 与 proposal-only communication draft 已实现；桌面看板、每日上限、回复监控未完成 |
+| G2 职位与沟通 | 部分完成 | staging/ranking/source policy 与桌面 proposal 草稿入口已实现；每日上限、回复监控未完成 |
 | G3 Resume Studio | 部分完成 | render/ATS/patch/review/export 已实现；PDF/图片导入、完整 ResumeData、undo/redo、版本历史 UI 未完成 |
 | G4 面试与成长 | 部分完成 | Interview Core 和只读读模型已实现；文本面试、STAR、结构化反馈、学习计划、跨会话会话流未完成 |
 | G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、Task Queue、Tool Registry、SourceConnector 已存在；dispatcher、scheduled sync、memory affinity/consolidation、认证 MCP、CLI sandbox 未完成 |

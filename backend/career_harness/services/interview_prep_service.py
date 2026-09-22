@@ -3,7 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from career_harness.core.common import FrozenModel
-from career_harness.core.interview import InterviewStatus
+from career_harness.core.interview import (
+    InterviewSessionEvent,
+    InterviewSessionRole,
+    InterviewStatus,
+)
 from career_harness.core.knowledge.models import (
     KnowledgeAuthority,
     KnowledgeCategory,
@@ -11,6 +15,7 @@ from career_harness.core.knowledge.models import (
     KnowledgeProposal,
 )
 from career_harness.db.interview_repository import InterviewRepository
+from career_harness.db.interview_session_repository import InterviewSessionRepository
 from career_harness.db.knowledge_repository import KnowledgeRepository
 
 
@@ -24,10 +29,49 @@ class InterviewFeedbackRequest(FrozenModel):
     question: str = ""
 
 
+class InterviewSessionEventRequest(FrozenModel):
+    session_id: str
+    role: InterviewSessionRole
+    content: str
+    source_refs: tuple[str, ...] = ()
+
+
 @dataclass(frozen=True, slots=True)
 class InterviewPrepService:
     interviews: InterviewRepository
     knowledge: KnowledgeRepository
+    sessions: InterviewSessionRepository | None = None
+
+    def append_session_event(
+        self, interview_id: str, request: InterviewSessionEventRequest
+    ) -> InterviewSessionEvent:
+        interview = self.interviews.get(interview_id)
+        if interview is None:
+            raise KeyError("interview not found")
+        if self.sessions is None:
+            raise RuntimeError("面试会话存储未配置")
+        if any(ref not in interview.evidence_refs for ref in request.source_refs):
+            raise ValueError("面试会话引用必须来自该面试的 exact EvidenceRef")
+        return self.sessions.append(
+            interview_id=interview_id,
+            session_id=request.session_id,
+            role=request.role,
+            content=request.content,
+            source_refs=request.source_refs,
+        )
+
+    def list_session_events(
+        self, interview_id: str, session_id: str
+    ) -> tuple[InterviewSessionEvent, ...]:
+        interview = self.interviews.get(interview_id)
+        if interview is None:
+            raise KeyError("interview not found")
+        if self.sessions is None:
+            raise RuntimeError("面试会话存储未配置")
+        events = self.sessions.list(session_id)
+        if any(item.interview_id != interview_id for item in events):
+            raise ValueError("会话与面试记录不匹配")
+        return events
 
     def propose(self, interview_id: str, *, mode: str, focus: str) -> KnowledgeProposal:
         if mode not in {"technical", "behavioral"}:

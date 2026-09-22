@@ -9,6 +9,7 @@ from career_harness.services.interview_prep_service import (
     InterviewFeedbackRequest,
     InterviewPrepRequest,
     InterviewPrepService,
+    InterviewSessionEventRequest,
 )
 
 
@@ -40,6 +41,24 @@ def create_interview_prep_router(api: InterviewPrepApi) -> APIRouter:
         except KeyError as error:
             raise HTTPException(404, str(error)) from error
         except ValueError as error:
+            raise HTTPException(422, str(error)) from error
+
+    @router.post("/{interview_id}/sessions/events", status_code=201)
+    def append_event(interview_id: str, request: InterviewSessionEventRequest) -> Any:
+        try:
+            return api.service.append_session_event(interview_id, request)
+        except KeyError as error:
+            raise HTTPException(404, str(error)) from error
+        except (RuntimeError, ValueError) as error:
+            raise HTTPException(422, str(error)) from error
+
+    @router.get("/{interview_id}/sessions/{session_id}/events")
+    def list_events(interview_id: str, session_id: str) -> Any:
+        try:
+            return api.service.list_session_events(interview_id, session_id)
+        except KeyError as error:
+            raise HTTPException(404, str(error)) from error
+        except (RuntimeError, ValueError) as error:
             raise HTTPException(422, str(error)) from error
 
     return router

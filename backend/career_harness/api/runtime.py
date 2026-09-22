@@ -41,6 +41,7 @@ from career_harness.db.capability_repository import CapabilityRepository
 from career_harness.db.communication_repository import CommunicationRepository
 from career_harness.db.evidence_repository import EvidenceRepository
 from career_harness.db.interview_repository import InterviewRepository
+from career_harness.db.interview_session_repository import InterviewSessionRepository
 from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.memory_repository import MemoryRepository
 from career_harness.db.migrations import upgrade_to_head
@@ -214,7 +215,11 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         offline_career_loop_api=OfflineCareerLoopApi(offline_career_loop_service),
         communication_api=CommunicationApi(CommunicationRepository(engine)),
         interview_prep_api=InterviewPrepApi(
-            InterviewPrepService(InterviewRepository(engine), knowledge_repository)
+            InterviewPrepService(
+                InterviewRepository(engine),
+                knowledge_repository,
+                InterviewSessionRepository(engine),
+            )
         ),
         legacy_import_api=LegacyImportApi(
             legacy_import_service, legacy_connector_service

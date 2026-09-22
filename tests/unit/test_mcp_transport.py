@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import io
+import json
+
 import pytest
 
 from career_harness.adapters.mcp_transport import (
     AuthenticatedMcpTransport,
     McpAuthenticationError,
     McpPrincipal,
+    McpStdioServer,
 )
 from career_harness.core.tools.registry import (
     ToolCallError,
@@ -71,3 +75,33 @@ def test_mcp_transport_cannot_expand_scope_or_permissions() -> None:
             scope_kind=ToolScopeKind.WORKSPACE,
             scope_id="other-workspace",
         )
+
+
+def test_stdio_adapter_handles_tools_and_redacts_auth_from_protocol_output() -> None:
+    server = McpStdioServer(_transport())
+    listed = json.loads(
+        server.handle(json.dumps({
+            "jsonrpc": "2.0", "id": 1, "method": "tools/list",
+            "params": {"auth_token": "valid-token"},
+        }))
+    )
+    assert listed["result"]["tools"][0]["name"] == "knowledge.search"
+    called = json.loads(
+        server.handle(json.dumps({
+            "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+            "params": {
+                "auth_token": "valid-token", "name": "knowledge.search",
+                "arguments": {"query": "resume"},
+            },
+        }))
+    )
+    assert called["result"] == {"query": "resume"}
+    output = io.StringIO()
+    server.serve(
+        io.StringIO(
+            '{"jsonrpc":"2.0","id":3,"method":"tools/list",'
+            '"params":{"auth_token":"valid-token"}}\n'
+        ),
+        output,
+    )
+    assert "valid-token" not in output.getvalue()

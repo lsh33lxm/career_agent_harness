@@ -145,3 +145,29 @@ class McpStdioServer:
                 output_stream.write(self.handle(line))
                 output_stream.write("\n")
                 output_stream.flush()
+
+
+@dataclass(frozen=True, slots=True)
+class McpSseAdapter:
+    """Encode authenticated JSON-RPC responses as bounded SSE message events."""
+
+    server: McpStdioServer
+    max_event_bytes: int = 256_000
+
+    def __post_init__(self) -> None:
+        if not 1 <= self.max_event_bytes <= 1_000_000:
+            raise ValueError("SSE event limit must be between 1 and 1000000 bytes")
+
+    def event(self, message: str) -> str:
+        response = self.server.handle(message)
+        if len(response.encode("utf-8")) > self.max_event_bytes:
+            response = json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": None,
+                    "error": {"code": -32002, "message": "SSE response exceeds limit"},
+                },
+                ensure_ascii=False,
+            )
+        lines = response.splitlines() or [""]
+        return "event: message\n" + "".join(f"data: {line}\n" for line in lines) + "\n"

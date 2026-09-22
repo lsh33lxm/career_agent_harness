@@ -9,6 +9,7 @@ from career_harness.adapters.mcp_transport import (
     AuthenticatedMcpTransport,
     McpAuthenticationError,
     McpPrincipal,
+    McpSseAdapter,
     McpStdioServer,
 )
 from career_harness.core.tools.registry import (
@@ -105,3 +106,21 @@ def test_stdio_adapter_handles_tools_and_redacts_auth_from_protocol_output() -> 
         output,
     )
     assert "valid-token" not in output.getvalue()
+
+
+def test_sse_adapter_reuses_authenticated_handler_and_bounds_output() -> None:
+    server = McpStdioServer(_transport())
+    adapter = McpSseAdapter(server, max_event_bytes=1000)
+    event = adapter.event(json.dumps({
+        "jsonrpc": "2.0", "id": 4, "method": "tools/list",
+        "params": {"auth_token": "valid-token"},
+    }))
+    assert event.startswith("event: message\ndata: ")
+    assert "knowledge.search" in event
+    assert "valid-token" not in event
+
+    bounded = McpSseAdapter(server, max_event_bytes=1).event(json.dumps({
+        "jsonrpc": "2.0", "id": 5, "method": "tools/list",
+        "params": {"auth_token": "valid-token"},
+    }))
+    assert "SSE response exceeds limit" in bounded

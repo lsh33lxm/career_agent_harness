@@ -63,6 +63,17 @@ def _score_star_answer(answer: str) -> tuple[int, tuple[str, ...], tuple[str, ..
     return score, present, missing
 
 
+def _score_answer_specificity(answer: str) -> tuple[int, tuple[str, ...]]:
+    signals: list[str] = []
+    if len(answer.strip()) >= 80:
+        signals.append("回答包含足够上下文")
+    if any(character.isdigit() for character in answer) or any(
+        marker in answer for marker in ("%", "百分点", "毫秒", "小时", "天")
+    ):
+        signals.append("回答包含可核验的量化线索")
+    return len(signals), tuple(signals)
+
+
 @dataclass(frozen=True, slots=True)
 class InterviewPrepService:
     interviews: InterviewRepository
@@ -142,6 +153,7 @@ class InterviewPrepService:
             raise ValueError("面试回答超过 20000 字限制")
         question_text = question.strip() or "未记录题目（待用户补充）"
         star_score, star_present, star_missing = _score_star_answer(answer_text)
+        content_score, content_signals = _score_answer_specificity(answer_text)
         learning_steps = [f"补充{item}部分的事实与 EvidenceRef" for item in star_missing]
         if not learning_steps:
             learning_steps.append("核对结果中的量化指标，并准备一个可复述的追问答案")
@@ -156,6 +168,8 @@ class InterviewPrepService:
             f"STAR 结构评分（规则信号）：{star_score}/4；"
             f"识别到：{('、'.join(star_present) or '无')}\n"
             f"待补充维度：{('、'.join(star_missing) or '无')}\n"
+            f"内容具体性评分（规则信号）：{content_score}/2；"
+            f"识别到：{('、'.join(content_signals) or '无')}\n"
             "学习下一步 proposal：\n"
             + "".join(f"- {step}\n" for step in learning_steps)
             + "- 为每个结论补充可核验来源\n"

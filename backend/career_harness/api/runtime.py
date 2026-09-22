@@ -12,6 +12,7 @@ from career_harness.api.career_reads import CareerReadApi
 from career_harness.api.communication import CommunicationApi
 from career_harness.api.evidence import EvidenceApi
 from career_harness.api.github_projects import GitHubProjectApi
+from career_harness.api.interview_prep import InterviewPrepApi
 from career_harness.api.job_radar import JobRadarApi
 from career_harness.api.knowledge import KnowledgeApi
 from career_harness.api.legacy_import import LegacyImportApi
@@ -58,6 +59,7 @@ from career_harness.services.capability_review_service import CapabilityReviewSe
 from career_harness.services.capability_workspace_service import CapabilityWorkspaceService
 from career_harness.services.command_service import CommandService
 from career_harness.services.github_project_service import GitHubProjectService
+from career_harness.services.interview_prep_service import InterviewPrepService
 from career_harness.services.legacy_import_service import LegacyImportService
 from career_harness.services.model_provider_service import ModelProviderService
 from career_harness.services.offline_career_loop_service import OfflineCareerLoopService
@@ -211,6 +213,9 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         ),
         offline_career_loop_api=OfflineCareerLoopApi(offline_career_loop_service),
         communication_api=CommunicationApi(CommunicationRepository(engine)),
+        interview_prep_api=InterviewPrepApi(
+            InterviewPrepService(InterviewRepository(engine), knowledge_repository)
+        ),
         legacy_import_api=LegacyImportApi(
             legacy_import_service, legacy_connector_service
         ),

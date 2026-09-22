@@ -13,6 +13,7 @@ from career_harness.core.commands import Command, RevisionConflict
 from career_harness.core.common import EntityKind, EntityRef
 from career_harness.core.interview import Interview, InterviewRound, InterviewStatus
 from career_harness.db.interview_writes import InterviewWrite
+from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.models import (
     ApplicationRevisionRow,
     DomainEventRow,
@@ -23,7 +24,9 @@ from career_harness.db.models import (
     OutcomeRecordRow,
 )
 from career_harness.services.command_service import CommandService
+from career_harness.services.interview_prep_service import InterviewPrepService
 from career_harness.services.interview_service import InterviewService
+from career_harness.storage import ArtifactStore
 from tests.integration.test_application_service import _command, _seed_dependencies
 from tests.integration.test_fact_service import EVIDENCE_REF_ID
 
@@ -133,6 +136,33 @@ def test_interview_schedule_complete_cancel_is_exact_and_idempotent(tmp_path: Pa
                 "status",
                 "evidence_count",
             }
+
+
+def test_interview_prep_creates_evidence_backed_proposal(tmp_path: Path) -> None:
+    engine, _, interviews = _services(tmp_path)
+    interviews.schedule_interview(
+        _schedule_command(),
+        application_id="application_001",
+        application_revision=3,
+        round=InterviewRound.TECHNICAL,
+        scheduled_at=SCHEDULED_AT,
+    )
+    interviews.complete_interview(
+        _command(
+            "interview_001", EntityKind.INTERVIEW, "command_complete", expected_revision=1
+        ),
+        evidence_refs=(EVIDENCE_REF_ID,),
+    )
+    service = InterviewPrepService(
+        interviews.repository,
+        KnowledgeRepository(engine, ArtifactStore(tmp_path / "artifacts")),
+    )
+    proposal = service.propose(
+        "interview_001", mode="technical", focus="系统设计和故障复盘"
+    )
+    assert proposal.status.value == "pending"
+    assert proposal.category.value == "interview_story"
+    assert proposal.evidence_refs == (EVIDENCE_REF_ID,)
 
 
 def test_interview_writes_never_touch_other_domains(tmp_path: Path) -> None:

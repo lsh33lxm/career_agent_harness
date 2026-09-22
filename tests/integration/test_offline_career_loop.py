@@ -72,6 +72,8 @@ def test_offline_career_loop_is_review_gated_and_replayable(tmp_path: Path) -> N
     assert result.company_research_proposal_id is not None
     assert result.star_prep_proposal_id is not None
     assert result.memory_proposal_id is not None
+    assert result.application_history_proposal_id is not None
+    assert result.wiki_proposal_id is not None
     assert studio.repository.resumes.get_patch(result.patch_id) is not None
     assert studio.repository.get_render(result.render_run_id) is not None
     assert studio.repository.get_render_review(result.render_run_id) is None

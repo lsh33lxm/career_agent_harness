@@ -41,6 +41,8 @@ class OfflineCareerLoopResult:
     company_research_proposal_id: str | None = None
     star_prep_proposal_id: str | None = None
     memory_proposal_id: str | None = None
+    application_history_proposal_id: str | None = None
+    wiki_proposal_id: str | None = None
 
 
 class OfflineCareerLoopService:
@@ -157,6 +159,8 @@ class OfflineCareerLoopService:
         company_research_proposal_id = None
         star_prep_proposal_id = None
         memory_proposal_id = None
+        application_history_proposal_id = None
+        wiki_proposal_id = None
         if self.knowledge is not None:
             company = seed.company or "待确认公司"
             company_proposal = self.knowledge.create_proposal(
@@ -184,6 +188,30 @@ class OfflineCareerLoopService:
                 evidence_refs=(seed.evidence_ref_id,),
             )
             star_prep_proposal_id = star_proposal.proposal_id
+            history_proposal = self.knowledge.create_proposal(
+                category=KnowledgeCategory.APPLICATION_HISTORY,
+                title=f"{seed.title} 求职结果归档草稿",
+                content=(
+                    f"申请状态：{application.state.value}\n"
+                    "这是本地闭环产生的结果归档草稿；提交、面试和结果均需用户补充证据后审核。"
+                ),
+                authority=KnowledgeAuthority.AI_INFERRED,
+                created_by=KnowledgeCreatedBy.RULE,
+                evidence_refs=(seed.evidence_ref_id,),
+            )
+            application_history_proposal_id = history_proposal.proposal_id
+            wiki_proposal = self.knowledge.create_proposal(
+                category=KnowledgeCategory.MARKET_SIGNAL,
+                title=f"{seed.title} 岗位 Wiki 索引草稿",
+                content=(
+                    f"岗位：{seed.title}\n公司：{company}\n"
+                    "仅整理已有岗位证据，发布前必须由用户审核来源和交叉引用。"
+                ),
+                authority=KnowledgeAuthority.AI_INFERRED,
+                created_by=KnowledgeCreatedBy.RULE,
+                evidence_refs=(seed.evidence_ref_id,),
+            )
+            wiki_proposal_id = wiki_proposal.proposal_id
         if self.memory is not None:
             memory_proposal = self.memory.create_proposal(
                 memory_type=MemoryType.TASK,
@@ -219,4 +247,6 @@ class OfflineCareerLoopService:
             company_research_proposal_id=company_research_proposal_id,
             star_prep_proposal_id=star_prep_proposal_id,
             memory_proposal_id=memory_proposal_id,
+            application_history_proposal_id=application_history_proposal_id,
+            wiki_proposal_id=wiki_proposal_id,
         )

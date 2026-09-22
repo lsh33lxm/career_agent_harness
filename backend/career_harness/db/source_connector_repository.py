@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import Engine, text
@@ -172,6 +172,84 @@ class SourceConnectorRepository:
                 raise KeyError("source connector not found")
             self._event(
                 connection, f"source.connector.{status.value}", connector_id, {}, now
+            )
+        return self.get(connector_id)
+
+    def set_schedule(
+        self, connector_id: str, *, enabled: bool, interval_minutes: int
+    ) -> SourceConnector:
+        if interval_minutes < 5 or interval_minutes > 7 * 24 * 60:
+            raise ValueError("同步间隔必须在 5 分钟到 7 天之间")
+        connector = self.get(connector_id)
+        now = datetime.now(UTC)
+        config = dict(connector.config)
+        config.update(
+            {
+                "schedule_enabled": enabled,
+                "schedule_interval_minutes": interval_minutes,
+                "next_run_at": (now + timedelta(minutes=interval_minutes)).isoformat()
+                if enabled
+                else None,
+            }
+        )
+        with self.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE source_connector SET config=:config,updated_at=:now "
+                    "WHERE connector_id=:id"
+                ),
+                {"id": connector_id, "config": _json(config), "now": now},
+            )
+            self._event(
+                connection,
+                "source.connector.schedule_updated",
+                connector_id,
+                {
+                    "enabled": enabled,
+                    "interval_minutes": interval_minutes,
+                },
+                now,
+            )
+        return self.get(connector_id)
+
+    def list_due(self, *, now: datetime | None = None) -> tuple[SourceConnector, ...]:
+        current = now or datetime.now(UTC)
+        due: list[SourceConnector] = []
+        for connector in self.list():
+            if connector.status is not ConnectorStatus.ACTIVE:
+                continue
+            if not connector.config.get("schedule_enabled"):
+                continue
+            raw_next = connector.config.get("next_run_at")
+            if not isinstance(raw_next, str):
+                continue
+            try:
+                next_run = datetime.fromisoformat(raw_next)
+            except ValueError:
+                continue
+            if next_run.tzinfo is None:
+                next_run = next_run.replace(tzinfo=UTC)
+            if next_run <= current:
+                due.append(connector)
+        return tuple(due)
+
+    def advance_schedule(
+        self, connector_id: str, *, now: datetime | None = None
+    ) -> SourceConnector:
+        connector = self.get(connector_id)
+        interval = int(connector.config.get("schedule_interval_minutes", 0))
+        if not connector.config.get("schedule_enabled") or interval < 1:
+            return connector
+        current = now or datetime.now(UTC)
+        config = dict(connector.config)
+        config["next_run_at"] = (current + timedelta(minutes=interval)).isoformat()
+        with self.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE source_connector SET config=:config,updated_at=:now "
+                    "WHERE connector_id=:id"
+                ),
+                {"id": connector_id, "config": _json(config), "now": current},
             )
         return self.get(connector_id)
 

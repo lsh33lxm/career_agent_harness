@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -328,3 +329,20 @@ def test_source_connector_migration_is_reversible(tmp_path: Path) -> None:
     assert "source_connector" not in inspect(engine).get_table_names()
     command.upgrade(config, "head")
     assert "source_connector" in inspect(engine).get_table_names()
+
+
+def test_connector_schedule_is_explicit_and_due_only(tmp_path: Path) -> None:
+    repository, service, _tasks, source = _service(tmp_path)
+    connector = service.create(display_name="定时资料", root_path=str(source))
+    configured = repository.set_schedule(
+        connector.connector_id, enabled=True, interval_minutes=5
+    )
+    assert configured.config["schedule_enabled"] is True
+    assert repository.list_due(now=datetime.now(UTC)) == ()
+    due = repository.list_due(
+        now=datetime.now(UTC) + timedelta(minutes=6)
+    )
+    assert [item.connector_id for item in due] == [connector.connector_id]
+    paused = repository.set_status(connector.connector_id, ConnectorStatus.PAUSED)
+    assert repository.list_due(now=datetime.now(UTC) + timedelta(days=1)) == ()
+    assert paused.status is ConnectorStatus.PAUSED

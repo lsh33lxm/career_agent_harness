@@ -38,6 +38,11 @@ class SyncRequest(FrozenModel):
     mode: SyncMode = SyncMode.INCREMENTAL
 
 
+class ScheduleRequest(FrozenModel):
+    enabled: bool = True
+    interval_minutes: int = Field(ge=5, le=10080)
+
+
 @dataclass(frozen=True, slots=True)
 class SourceConnectorApi:
     service: LocalFolderConnectorService
@@ -114,9 +119,43 @@ def create_source_connector_router(api: SourceConnectorApi) -> APIRouter:
                 {"connector_id": connector_id, "mode": request.mode.value},
             )
             completed = api.tasks.run_one("source_sync")
+            if completed is not None and completed.status.value == "completed":
+                api.repository.advance_schedule(connector_id)
             return completed or queued
         except Exception as error:
             raise _error(error) from error
+
+    @router.post("/{connector_id}/schedule")
+    def schedule(
+        request: ScheduleRequest, connector_id: str = Path(min_length=3, max_length=128)
+    ) -> Any:
+        try:
+            return api.repository.set_schedule(
+                connector_id,
+                enabled=request.enabled,
+                interval_minutes=request.interval_minutes,
+            )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/scheduled/run")
+    def run_scheduled(max_connectors: int = 10) -> Any:
+        if max_connectors < 1 or max_connectors > 100:
+            raise HTTPException(422, "一次最多运行 100 个到期连接器")
+        results = []
+        for connector in api.repository.list_due()[:max_connectors]:
+            try:
+                queued = api.tasks.enqueue(
+                    f"source.{connector.connector_type}_sync",
+                    {"connector_id": connector.connector_id, "mode": SyncMode.INCREMENTAL.value},
+                )
+                completed = api.tasks.run_one("source_sync")
+                if completed is not None and completed.status.value == "completed":
+                    api.repository.advance_schedule(connector.connector_id)
+                results.append(completed or queued)
+            except Exception as error:
+                results.append({"connector_id": connector.connector_id, "error": str(error)})
+        return results
 
     @router.get("/{connector_id}/runs")
     def runs(connector_id: str = Path(min_length=3, max_length=128)) -> Any:

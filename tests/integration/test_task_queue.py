@@ -74,6 +74,18 @@ def test_task_service_drain_ready_runs_multiple_bounded_batches(tmp_path: Path) 
         service.drain_ready("evaluation", max_batches=0)
 
 
+def test_task_service_dispatches_multiple_stages_with_total_limit(tmp_path: Path) -> None:
+    repository, service, _engine = _queue(tmp_path)
+    first = service.enqueue("test.echo", {"value": "一"})
+    second = service.enqueue("test.echo", {"value": "二"})
+    result = service.dispatch_stages(("evaluation", "missing"), max_batches=2, max_tasks=1)
+    assert len(result) == 1
+    assert result[0].task_id == first.task_id
+    assert repository.get(second.task_id).status is TaskStatus.PENDING
+    with pytest.raises(ValueError, match="unique"):
+        service.dispatch_stages(("evaluation", "evaluation"))
+
+
 def test_retry_backoff_dead_letter_manual_retry_and_version_guard(tmp_path: Path) -> None:
     repository, _service, _engine = _queue(tmp_path)
     task = repository.enqueue(
@@ -155,6 +167,18 @@ async def test_task_api_allows_controlled_registered_work_without_shell(tmp_path
         detail = await client.get(f"/api/v1/tasks/{task_id}", headers=headers)
         assert detail.json()["task"]["status"] == "completed"
         assert detail.json()["attempts"][0]["status"] == "completed"
+        created_two = await client.post(
+            "/api/v1/tasks",
+            headers=headers,
+            json={"task_type": "test.echo", "payload": {"value": "多阶段"}},
+        )
+        dispatched = await client.post(
+            "/api/v1/tasks/dispatch",
+            headers=headers,
+            json={"stages": ["evaluation"], "max_tasks": 1},
+        )
+        assert created_two.status_code == 200
+        assert dispatched.status_code == 200
 
 
 def test_task_migration_is_reversible(tmp_path: Path) -> None:

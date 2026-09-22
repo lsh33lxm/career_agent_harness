@@ -81,3 +81,36 @@ class TaskService:
                 break
             completed.extend(batch)
         return tuple(completed)
+
+    def dispatch_stages(
+        self,
+        stages: tuple[str, ...],
+        *,
+        max_batches: int = 1,
+        max_tasks: int = 100,
+    ) -> tuple[TaskRecord, ...]:
+        """Run a bounded, deterministic local dispatcher across registered stages."""
+        if not stages or len(stages) > 32 or len(set(stages)) != len(stages):
+            raise ValueError("stages must contain 1 to 32 unique stage names")
+        if max_batches < 1 or max_batches > 100:
+            raise ValueError("max_batches must be between 1 and 100")
+        if max_tasks < 1 or max_tasks > 1000:
+            raise ValueError("max_tasks must be between 1 and 1000")
+        results: list[TaskRecord] = []
+        for _ in range(max_batches):
+            progressed = False
+            for stage in stages:
+                remaining = max_tasks - len(results)
+                if remaining <= 0:
+                    return tuple(results)
+                batch = tuple(
+                    result
+                    for _ in range(min(self.stage_limits.get(stage, 1), remaining))
+                    if (result := self.run_one(stage)) is not None
+                )
+                if batch:
+                    progressed = True
+                    results.extend(batch[:remaining])
+            if not progressed:
+                break
+        return tuple(results[:max_tasks])

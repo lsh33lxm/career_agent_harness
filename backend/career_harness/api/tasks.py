@@ -18,6 +18,12 @@ class TaskCreateRequest(FrozenModel):
     max_attempts: int = Field(default=3, ge=1, le=20)
 
 
+class DispatchRequest(FrozenModel):
+    stages: tuple[str, ...] = Field(min_length=1, max_length=32)
+    max_batches: int = Field(default=1, ge=1, le=100)
+    max_tasks: int = Field(default=100, ge=1, le=1000)
+
+
 @dataclass(frozen=True, slots=True)
 class TaskApi:
     service: TaskService
@@ -87,5 +93,16 @@ def create_task_router(api: TaskApi) -> APIRouter:
     ) -> Any:
         """Run a bounded local dispatch cycle; no background process or shell is spawned."""
         return api.service.drain_ready(stage, max_batches=max_batches)
+
+    @router.post("/dispatch")
+    def dispatch(request: DispatchRequest) -> Any:
+        try:
+            return api.service.dispatch_stages(
+                request.stages,
+                max_batches=request.max_batches,
+                max_tasks=request.max_tasks,
+            )
+        except Exception as error:
+            raise _error(error) from error
 
     return router

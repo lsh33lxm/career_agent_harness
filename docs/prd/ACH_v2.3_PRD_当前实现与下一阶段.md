@@ -21,6 +21,7 @@ Agent Career Harness 是本地优先、证据约束、人工审核的中文求�
 - Communication：草稿批准后可由用户记录已发送、已回复、待跟进、已结束或已阻塞状态；状态更新不触发外部写入。
 - Memory：支持按来源 EvidenceRef 查询已确认记忆，并从同一作用域的已确认记忆生成 consolidation proposal；不会自动合并、删除或授予权限。
 - Plugins/Tools：manifest、权限、scope、schema、审计、quarantine 与只读 registry。
+- CLI runner：`adapters/cli_runner.py` 提供 approval-gated sandbox boundary；没有注入 sandbox executor 时明确 blocked，应用本身不启动任意 shell。
 - GitHub：受控只读 clone 与静态项目分析；当前网络限制下未伪造公网验收。
 - Desktop：Tauri + Python sidecar、中文观复主题、Windows NSIS 构建与离线数据目录。
 
@@ -48,7 +49,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 | G2 职位与沟通 | 部分完成 | 排名、来源 policy、草稿和摘要已实现；平台采集、每日限流、回复监控未完成 |
 | G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点已实现；图片 OCR、细粒度 undo/redo 和完整历史 UI 未完成 |
 | G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件已实现；STAR 自动结构化反馈、学习计划、跨会话记忆 consolidation 未完成 |
-| G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、memory affinity/consolidation、SourceConnector、Task Queue、bounded multi-stage dispatcher、Tool Registry、显式 scheduled sync metadata 已实现；常驻 dispatcher、认证 MCP、CLI sandbox 未完成 |
+| G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、memory affinity/consolidation、SourceConnector、Task Queue、bounded multi-stage dispatcher、Tool Registry、approval-gated CLI runner、显式 scheduled sync metadata 已实现；认证 MCP、完整 sandbox policy enforcement 和常驻调度仍未完成 |
 
 ## 4. 本轮代码切片
 
@@ -62,6 +63,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 - `backend/career_harness/db/communication_repository.py`、`api/communication.py`：人工记录沟通状态转换。
 - `backend/career_harness/db/memory_repository.py`、`api/memory.py`：来源亲和度查询与 review-gated consolidation proposal。
 - `backend/career_harness/services/task_service.py`、`api/tasks.py`：有界多阶段 dispatcher，支持总任务数限制。
+- `backend/career_harness/adapters/cli_runner.py`：仅允许注入 sandbox executor 且需要 approval 的 CLI runner 边界。
 
 ## 5. 上游参考仓库采用方式
 

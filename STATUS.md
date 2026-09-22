@@ -42,6 +42,8 @@
 ## G1 离线求职闭环
 
 - G3 简历导出：**PARTIAL**。ResumeRevision JSON/Markdown 导出、ResumeData 校验、文本/PDF fallback 导入预览、用户确认后的 ResumeBase 保存与历史恢复已实现；图片 OCR、细粒度 undo/redo 和完整版本历史仍待补齐。
+- G4 面试成长：**PARTIAL**。文本会话事件、面试复盘 proposal、结构化能力缺口和学习下一步提示已实现；STAR 自动评估和完整学习计划仍待补齐。
+- G5 知识治理：**PARTIAL**。Memory 来源亲和度与 consolidation proposal、SourceConnector schedule metadata 和有界运行已实现；常驻 dispatcher、认证 MCP、CLI sandbox 仍待补齐。
 
 - G2 沟通草稿：**PARTIAL / proposal-only**。机会页支持本地保存、查看、批准或拒绝草稿；每日限额与回复监控读模型仍缺，不会执行真实发送。
 

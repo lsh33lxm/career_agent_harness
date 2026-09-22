@@ -39,6 +39,13 @@
 - Verification：离线闭环集成测试通过；相关 Opportunity Radar、Resume Studio 测试通过；Ruff 与 `git diff --check` 通过。
 - 下一步：将闭环结果接入现有桌面 Today/Opportunities 操作入口，并补齐 Application/Interview/Outcome 的 proposal-only 归档编排。
 
+## G2 controlled communication checkpoint (2026-09-22)
+
+- 状态：PARTIAL / proposal-only backend foundation。
+- 新增 `communication_draft` migration、Core 状态模型、repository 和 `/api/v1/communications/drafts` API。
+- 支持待确认、批准、拒绝、已发送、已回复、跟进、已结束、阻塞状态；当前只允许创建草稿和用户审核，不执行发送。
+- 离线 fixture 测试通过；桌面看板入口和每日上限/回复监控读模型仍未完成。
+
 ## Desktop productization checkpoint (2026-09-22)
 
 - 状态：Windows NSIS desktop lifecycle and clean-install acceptance passed。

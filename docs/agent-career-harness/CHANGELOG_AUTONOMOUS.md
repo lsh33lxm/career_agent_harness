@@ -4,6 +4,7 @@
 
 - 新增本地离线求职闭环服务与 API：岗位 fixture → 可解释评分 → 用户 admission → Resume TargetProfile → EvidenceRef-backed patch proposal → 观复主题 PDF/ATS；集成测试通过，未产生任何外部写入。
 - 离线闭环补齐 Career Core Application `PREPARING` 创建与审计边界；仍不执行真实提交，进入 G2 职位看板与受控沟通草稿。
+- G2 新增 proposal-only 沟通草稿状态机、可逆 `0031_communication_drafts` migration、repository 和审核 API；离线测试通过，真实发送保持禁止。
 
 - 完成桌面用户可见状态中文化收口（`8c3370b`）：新增共享展示标签映射，覆盖能力审核、证据来源、项目复核、历史记录、工具与模型、任务阶段、资料源同步、简历渲染/ATS、Today 来源与市场信号；同步修正 UI 回归断言。前端 `23` 个测试文件、`64` 项测试，TypeScript/Vite build、Ruff、`git diff --check` 通过。
 - 补齐简历与历史用户文案中文化（`7c5183a`）：将提案草稿、简历修订、目标岗位档案、模板名称和录用状态统一为中文；前端 `23` 个测试文件、`64` 项测试与 Vite build 通过。

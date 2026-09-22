@@ -9,6 +9,7 @@ from career_harness.api.app import create_app
 from career_harness.api.capabilities import CapabilityApi
 from career_harness.api.capability_inbox import CapabilityInboxApi
 from career_harness.api.career_reads import CareerReadApi
+from career_harness.api.communication import CommunicationApi
 from career_harness.api.evidence import EvidenceApi
 from career_harness.api.github_projects import GitHubProjectApi
 from career_harness.api.job_radar import JobRadarApi
@@ -36,6 +37,7 @@ from career_harness.core.tools.registry import (
 )
 from career_harness.db.application_repository import ApplicationRepository
 from career_harness.db.capability_repository import CapabilityRepository
+from career_harness.db.communication_repository import CommunicationRepository
 from career_harness.db.evidence_repository import EvidenceRepository
 from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.memory_repository import MemoryRepository
@@ -203,6 +205,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
             opportunity_radar_service
         ),
         offline_career_loop_api=OfflineCareerLoopApi(offline_career_loop_service),
+        communication_api=CommunicationApi(CommunicationRepository(engine)),
         legacy_import_api=LegacyImportApi(
             legacy_import_service, legacy_connector_service
         ),

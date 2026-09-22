@@ -41,6 +41,8 @@
 
 ## G1 离线求职闭环
 
+- G2 沟通草稿：**PARTIAL / proposal-only**。新增 `communication_draft` 表、状态模型和审核 API；仍缺桌面入口、每日限额与回复监控读模型，不会执行真实发送。
+
 - 新增 `/api/v1/career-loop/offline`：离线岗位 fixture → 可解释评分 → 用户 admission → Resume TargetProfile → EvidenceRef-backed 简历提案 → 观复主题 PDF/ATS 报告。
 - 提案不会自动批准或提交申请；闭环集成测试、Ruff 和 diff check 已通过。
 

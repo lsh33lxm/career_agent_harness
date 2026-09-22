@@ -75,6 +75,7 @@ class MemoryRepository:
         created_by: MemoryCreator = MemoryCreator.LLM,
         target_memory_id: str | None = None,
         base_revision: int | None = None,
+        proposal_id: str | None = None,
     ) -> MemoryProposal:
         cleaned = content.strip()
         if not cleaned:
@@ -83,9 +84,24 @@ class MemoryRepository:
             raise ValueError("memory proposal content exceeds limit")
         if not scope_id.strip() or not source_locator.strip():
             raise ValueError("memory scope and source locator are required")
-        proposal_id = f"memory_proposal_{uuid.uuid4().hex}"
+        proposal_id = proposal_id or f"memory_proposal_{uuid.uuid4().hex}"
         now = datetime.now(UTC)
         with self.engine.begin() as connection:
+            existing = connection.execute(
+                text("SELECT * FROM memory_proposal WHERE proposal_id=:id"),
+                {"id": proposal_id},
+            ).mappings().first()
+            if existing is not None:
+                if (
+                    existing["memory_type"] != memory_type.value
+                    or existing["scope_kind"] != scope_kind.value
+                    or existing["scope_id"] != scope_id
+                    or existing["content"] != cleaned
+                    or existing["source_type"] != source_type
+                    or existing["source_locator"] != source_locator
+                ):
+                    raise ValueError("memory proposal id already exists with different content")
+                return self._proposal(existing)
             if target_memory_id is not None:
                 target = (
                     connection.execute(

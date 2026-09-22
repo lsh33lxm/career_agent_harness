@@ -45,7 +45,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 
 | 目标 | 状态 | 当前边界 |
 | --- | --- | --- |
-| G1 离线求职闭环 | 部分完成 | 主链路与 proposal/audit 已通过；公司研究、STAR、Outcome/Wiki/Memory 全编排仍未闭环 |
+| G1 离线求职闭环 | 部分完成 | 主链路、公司研究/STAR/结果归档/Wiki/Memory proposal 与确定性重放已通过；用户批准、提交后 Outcome 证据仍需真实用户流程 |
 | G2 职位与沟通 | 部分完成 | 排名、来源 policy、草稿和摘要已实现；平台采集、每日限流、回复监控未完成 |
 | G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点、基础版本历史查看、追加式旧版本恢复和按需差异 UI 已实现；图片 OCR、字段级 undo/redo 未完成 |
 | G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件、基于规则信号的 STAR 结构与内容具体性评分、独立学习计划 proposal、批准后有界任务入队和 Memory consolidation 任务入队已实现；更丰富的模型化评分和跨会话编排未完成 |
@@ -64,6 +64,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 - `backend/career_harness/db/memory_repository.py`、`api/memory.py`：来源亲和度查询与 review-gated consolidation proposal。
 - `backend/career_harness/services/task_service.py`、`api/tasks.py`：有界多阶段 dispatcher，支持总任务数限制。
 - `backend/career_harness/adapters/cli_runner.py`：仅允许注入 sandbox executor 且需要 approval 的 CLI runner 边界。
+- `backend/career_harness/services/offline_career_loop_service.py`：同一岗位、简历和查询输入支持确定性重放；研究、STAR、历史、Wiki 与 Memory proposal 使用稳定 ID，重复运行不会产生重复 proposal。
 
 ## 5. 上游参考仓库采用方式
 

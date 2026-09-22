@@ -15,6 +15,7 @@ from career_harness.core.memory.models import MemoryCreator, MemoryScope, Memory
 from career_harness.core.resume import ResumePatchAction, ResumePatchOperation
 from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.memory_repository import MemoryRepository
+from career_harness.db.opportunity_repository import OpportunityRepository
 from career_harness.services.application_service import ApplicationService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.resume_service import canonical_value_hash
@@ -60,6 +61,7 @@ class OfflineCareerLoopService:
         self.knowledge = knowledge
         self.memory = memory
         self.applications = ApplicationService(resume_studio.commands)
+        self.opportunity_repository = OpportunityRepository(radar.engine)
 
     def run(
         self,
@@ -79,9 +81,15 @@ class OfflineCareerLoopService:
             raise ValueError("离线职位源没有返回可处理的岗位")
         record = next((item for item in staged if item.status.value == "staged"), None)
         if record is None:
+            record = next((item for item in staged if item.status.value == "admitted"), None)
+        if record is None:
             raise ValueError("离线职位均已处理，无法启动新的闭环")
-        admission = self.radar.admit(record.staging_id, actor="user")
-        opportunity = admission.admission.opportunity
+        if record.status.value == "staged":
+            admission = self.radar.admit(record.staging_id, actor="user")
+            opportunity = admission.admission.opportunity
+        else:
+            detail = self.opportunity_repository.get(record.admitted_opportunity_id or "")
+            opportunity = detail.opportunity if detail is not None else None
         if opportunity is None:
             raise RuntimeError("岗位 admission 未返回 Opportunity")
         seed = self.radar.resume_proposal_seed(record.staging_id)
@@ -173,6 +181,7 @@ class OfflineCareerLoopService:
                 authority=KnowledgeAuthority.AI_INFERRED,
                 created_by=KnowledgeCreatedBy.RULE,
                 evidence_refs=(seed.evidence_ref_id,),
+                proposal_id=f"proposal_offline_company_{record.staging_id[8:24]}",
             )
             company_research_proposal_id = company_proposal.proposal_id
             star_proposal = self.knowledge.create_proposal(
@@ -186,6 +195,7 @@ class OfflineCareerLoopService:
                 authority=KnowledgeAuthority.AI_INFERRED,
                 created_by=KnowledgeCreatedBy.RULE,
                 evidence_refs=(seed.evidence_ref_id,),
+                proposal_id=f"proposal_offline_star_{record.staging_id[8:24]}",
             )
             star_prep_proposal_id = star_proposal.proposal_id
             history_proposal = self.knowledge.create_proposal(
@@ -198,6 +208,7 @@ class OfflineCareerLoopService:
                 authority=KnowledgeAuthority.AI_INFERRED,
                 created_by=KnowledgeCreatedBy.RULE,
                 evidence_refs=(seed.evidence_ref_id,),
+                proposal_id=f"proposal_offline_history_{record.staging_id[8:24]}",
             )
             application_history_proposal_id = history_proposal.proposal_id
             wiki_proposal = self.knowledge.create_proposal(
@@ -210,6 +221,7 @@ class OfflineCareerLoopService:
                 authority=KnowledgeAuthority.AI_INFERRED,
                 created_by=KnowledgeCreatedBy.RULE,
                 evidence_refs=(seed.evidence_ref_id,),
+                proposal_id=f"proposal_offline_wiki_{record.staging_id[8:24]}",
             )
             wiki_proposal_id = wiki_proposal.proposal_id
         if self.memory is not None:
@@ -226,6 +238,7 @@ class OfflineCareerLoopService:
                 source_refs=(seed.evidence_ref_id,),
                 confidence=0.5,
                 created_by=MemoryCreator.RULE,
+                proposal_id=f"memory_proposal_offline_{record.staging_id[8:24]}",
             )
             memory_proposal_id = memory_proposal.proposal_id
         return OfflineCareerLoopResult(

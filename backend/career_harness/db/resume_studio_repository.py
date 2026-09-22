@@ -80,7 +80,9 @@ class ResumeStudioRepository:
             ).mappings().first()
             if existing is not None:
                 current = self._target_profile(existing)
-                if current != profile:
+                if current.model_dump(exclude={"created_at"}) != profile.model_dump(
+                    exclude={"created_at"}
+                ):
                     raise ValueError("target profile id already exists with different content")
                 return current
             connection.execute(

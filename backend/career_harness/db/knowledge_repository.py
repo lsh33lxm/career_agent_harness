@@ -650,11 +650,26 @@ class KnowledgeRepository:
         evidence_refs: tuple[str, ...] = (),
         target_knowledge_id: str | None = None,
         base_revision: int | None = None,
+        proposal_id: str | None = None,
     ) -> KnowledgeProposal:
         text_content = _clean_content(content)
-        proposal_id = f"proposal_{uuid.uuid4().hex}"
+        proposal_id = proposal_id or f"proposal_{uuid.uuid4().hex}"
         now = datetime.now(UTC)
         with self.engine.begin() as connection:
+            existing = connection.execute(
+                text("SELECT * FROM knowledge_proposal WHERE proposal_id=:proposal_id"),
+                {"proposal_id": proposal_id},
+            ).mappings().first()
+            if existing is not None:
+                if (
+                    existing["category"] != category.value
+                    or existing["title"] != title
+                    or existing["proposed_content"] != text_content
+                    or existing["authority"] != authority.value
+                    or existing["created_by"] != created_by.value
+                ):
+                    raise ValueError("knowledge proposal id already exists with different content")
+                return self._proposal(existing)
             if target_knowledge_id is not None:
                 target = connection.execute(
                     text("SELECT current_revision FROM knowledge_entry WHERE knowledge_id=:id"),

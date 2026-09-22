@@ -91,6 +91,10 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
             f"/api/v1/resume/render-runs/{render_id}/review", headers=AUTH
         )
         diff = await client.get("/api/v1/resume/diff/resume_revision_001", headers=AUTH)
+        exported = await client.get(
+            "/api/v1/resume/revisions/resume_revision_001/export?format=markdown",
+            headers=AUTH,
+        )
 
     assert unauthorized.status_code == 401
     assert templates.status_code == 200
@@ -109,3 +113,6 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
     assert review.status_code == 200
     assert loaded_review.json() == review.json()
     assert diff.json()["resume_revision_id"] == "resume_revision_001"
+    assert exported.status_code == 200
+    assert exported.headers["content-type"].startswith("text/markdown")
+    assert "Minnn" in exported.text

@@ -46,6 +46,12 @@
 - 支持待确认、批准、拒绝、已发送、已回复、跟进、已结束、阻塞状态；当前只允许创建草稿和用户审核，不执行发送。
 - 离线 fixture 测试通过；桌面看板入口和每日上限/回复监控读模型仍未完成。
 
+## G3 Resume Studio checkpoint (2026-09-22)
+
+- 状态：PARTIAL。
+- 新增 `GET /api/v1/resume/revisions/{revision_id}/export?format=json|markdown`，从不可变 ResumeRevision 生成可重放导出，不改变 Core 事实。
+- 模板、PDF、ATS、patch/review 已有；PDF/图片导入、完整 ResumeData 校验、undo/redo 和版本历史 UI 仍未完成。
+
 ## Desktop productization checkpoint (2026-09-22)
 
 - 状态：Windows NSIS desktop lifecycle and clean-install acceptance passed。

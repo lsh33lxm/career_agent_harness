@@ -254,6 +254,33 @@ def create_resume_studio_router(api: ResumeStudioApi) -> APIRouter:
         except Exception as error:
             raise _error(error) from error
 
+    @router.get("/revisions/{resume_revision_id}/export")
+    def export_revision(
+        resume_revision_id: str = Path(min_length=3, max_length=128),
+        format: str = Query(default="json", pattern="^(json|markdown)$"),
+    ) -> Response:
+        revision = api.service.repository.resumes.get_revision(resume_revision_id)
+        if revision is None:
+            raise HTTPException(404, "resume revision not found")
+        if format == "json":
+            content = revision.model_dump_json(indent=2).encode("utf-8")
+            media_type = "application/json"
+            filename = f"{resume_revision_id}.json"
+        else:
+            lines = [f"# {revision.content.get('name', '简历')}"]
+            for key, value in revision.content.items():
+                if key != "name":
+                    rendered = value if isinstance(value, str) else str(value)
+                    lines.append(f"\n## {key}\n\n{rendered}")
+            content = "\n".join(lines).encode("utf-8")
+            media_type = "text/markdown"
+            filename = f"{resume_revision_id}.md"
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
     @router.post("/render", response_model=ResumeRenderRun, status_code=status.HTTP_201_CREATED)
     def render(request: RenderRequest) -> ResumeRenderRun:
         try:

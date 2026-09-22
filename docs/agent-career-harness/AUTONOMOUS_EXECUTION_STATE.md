@@ -7,7 +7,7 @@
 - 产品依据：`docs/prd/ACH_v2.0_PRD_插件化职业智能平台.md`
 - 执行依据：`docs/prd/ACH_v2.0_Codex_长期自主执行提示词.md`
 - 当前分支：`refactor/v1.4-integration`
-- 当前实现提交：`1e01ce3`（结构化 ResumeData 校验与桌面入口）
+- 当前实现提交：`60d93da`（证据约束的面试准备提案与职业历程入口）
 - 起始基线：`084017c`
 - Legacy Agent Radar：只读；本轮不修改原始文件
 
@@ -210,3 +210,5 @@ Start with `git status --short --branch`, inspect this file, then continue at th
 
 - 状态：PARTIAL；新增申请关联面试列表与面试详情只读 API，保留 exact revision 和 EvidenceRef。
 - InterviewService 已有排期/完成/取消边界；STAR、结构化反馈、学习计划和会话流仍未完成。
+- 新增 `POST /api/v1/interviews/{interview_id}/prep-proposals`，复用 Interview 的 exact EvidenceRef 创建技术/行为面试准备 Knowledge proposal；职业历程页可对真实面试记录发起草稿。无证据的面试不会生成提案。
+- Verification：Interview focused `7 passed`；前端 `23 files / 64 passed`；Vite production build、Ruff 与 diff check 通过。

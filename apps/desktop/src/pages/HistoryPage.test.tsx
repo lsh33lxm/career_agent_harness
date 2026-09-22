@@ -2,11 +2,11 @@ import { MemoryRouter } from "react-router-dom";
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { listApplications, listOutcomes } from "../api/history";
+import { listApplications, listInterviews, listOutcomes } from "../api/history";
 import type { ApplicationRead, OutcomeRead } from "../api/history";
 import { HistoryPage } from "./HistoryPage";
 
-vi.mock("../api/history", () => ({ listApplications: vi.fn(), listOutcomes: vi.fn() }));
+vi.mock("../api/history", () => ({ listApplications: vi.fn(), listInterviews: vi.fn(), listOutcomes: vi.fn() }));
 const application = (id: string): ApplicationRead => ({
   entity_id: id, revision: 4, opportunity_id: "opportunity_a", opportunity_revision: 2,
   state: "interview", resume_revision_id: "resume_revision_a", submission_authority: "user_confirmed",
@@ -17,7 +17,10 @@ const outcome = (id: string): OutcomeRead => ({
   result: "rejection", occurred_at: "2026-09-21T12:00:00", authority: "portal_receipt",
   evidence_refs: ["evidence_1"], recorded_by: "user",
 });
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(listInterviews).mockResolvedValue([]);
+});
 afterEach(cleanup);
 
 it("renders real current state separately from historical outcome revisions and evidence", async () => {

@@ -1,7 +1,7 @@
 # Agent Career Harness v2.2
 
 日期：2026-09-22  
-基线：integration branch `refactor/v1.4-integration`，当前代码 checkpoint `1e01ce3`
+基线：integration branch `refactor/v1.4-integration`，当前代码 checkpoint `60d93da`
 
 ## 1. 当前结论
 
@@ -20,6 +20,7 @@ Agent Career Harness 当前是一个本地优先、证据约束、人工审核�
 - Resume Studio：自有 HTML/CSS 与受控 Typst renderer contract、patch review、immutable revision、PDF、ATS、render review、JSON/Markdown export。
 - ResumeData 校验：`core/resume/studio_models.py`、`api/resume_studio.py` 与 Resume Studio 页面提供离线结构化校验和警告；内容仍停留在本地草稿，不自动进入 Career Core。
 - Interview read model：`/api/v1/applications/{id}/interviews` 与 `/api/v1/interviews/{id}`。
+- Interview prep：`services/interview_prep_service.py`、`api/interview_prep.py` 与职业历程页生成带 exact Interview EvidenceRef 的技术/行为准备 proposal；没有证据时 fail closed，不修改 Career Core。
 - Knowledge/Wiki/Memory：本地检索、来源引用、Wiki revision/proposal、Memory proposal/review/tombstone。
 - Plugins/Tools：manifest、权限、scope、schema、运行审计、quarantine、生命周期与 read-only tool registry。
 - GitHub：受控只读 clone 和静态项目分析；真实公网验收受当前网络限制。
@@ -71,7 +72,7 @@ Career Core 是已确认职业事实、Opportunity、Application、Interview、O
 
 ## 6. 真实验证
 
-- 后端全量基线：`684 passed, 5 skipped`；Resume focused `1 passed`、沟通摘要 focused `2 passed`、离线闭环 focused `1 passed`。本次结构化校验没有改变全量计数。跳过项是 Windows symlink 权限限制。
+- 后端全量基线：`684 passed, 5 skipped`；Interview focused `7 passed`、Resume focused `1 passed`、沟通摘要 focused `2 passed`、离线闭环 focused `1 passed`。跳过项是 Windows symlink 权限限制。
 - Resume/Opportunity/Communication/Interview focused tests：通过；最近沟通 migration 回归 `49 passed`，Interview/Career read `8 passed`，Resume Studio API `1 passed`。
 - Ruff：`backend tests migrations` 通过。
 - `git diff --check`：通过。
@@ -92,7 +93,7 @@ Career Core 是已确认职业事实、Opportunity、Application、Interview、O
 1. 将离线闭环继续编排到 Interview prep 的结构化反馈、Outcome 与 proposal-only Memory/Wiki；公司研究和 STAR 提案已完成第一步。
 2. 将 communication draft 摘要接入 Today，并增加回复事件的离线录入与跟进读模型。
 3. 补 ResumeData 的 PDF/图片/文本离线导入、revision history、undo/redo；当前已完成 JSON 结构化校验。
-4. 增加文本面试会话事件、STAR feedback、学习计划和 GitHub/JD 引用。
+4. 增加文本面试会话事件、STAR feedback、学习计划和 GitHub/JD 引用；当前已完成带证据的准备 proposal 入口。
 5. 实现本地 dispatcher 与任务恢复；再评估认证 MCP 和 CLI sandbox，所有写工具继续 approval-gated。
 
 ## 9. v2.2 Definition of Done

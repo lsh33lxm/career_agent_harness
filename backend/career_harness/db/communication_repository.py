@@ -111,6 +111,41 @@ class CommunicationRepository:
             )
         return self.get(draft_id) or reviewed
 
+    def transition(self, draft_id: str, *, status: CommunicationStatus) -> CommunicationDraft:
+        """Record a user-observed communication state; never sends anything externally."""
+        allowed = {
+            CommunicationStatus.APPROVED: {
+                CommunicationStatus.SENT,
+                CommunicationStatus.BLOCKED,
+                CommunicationStatus.CLOSED,
+            },
+            CommunicationStatus.SENT: {
+                CommunicationStatus.REPLIED,
+                CommunicationStatus.FOLLOW_UP,
+                CommunicationStatus.CLOSED,
+            },
+            CommunicationStatus.REPLIED: {
+                CommunicationStatus.FOLLOW_UP,
+                CommunicationStatus.CLOSED,
+            },
+            CommunicationStatus.FOLLOW_UP: {
+                CommunicationStatus.REPLIED,
+                CommunicationStatus.CLOSED,
+            },
+            CommunicationStatus.BLOCKED: {CommunicationStatus.CLOSED},
+        }
+        current = self.get(draft_id)
+        if current is None:
+            raise KeyError("沟通草稿不存在")
+        if status not in allowed.get(current.status, set()):
+            raise ValueError(f"不允许从 {current.status.value} 转为 {status.value}")
+        with self.engine.begin() as connection:
+            connection.execute(
+                text("UPDATE communication_draft SET status=:status WHERE draft_id=:id"),
+                {"id": draft_id, "status": status.value},
+            )
+        return self.get(draft_id) or current.model_copy(update={"status": status})
+
     @staticmethod
     def _read(row: Any) -> CommunicationDraft:
         provenance = row["provenance"]

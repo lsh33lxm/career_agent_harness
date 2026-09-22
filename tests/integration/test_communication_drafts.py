@@ -66,3 +66,25 @@ def test_communication_summary_tracks_daily_limit_and_statuses(tmp_path: Path) -
     assert summary["reply_count"] == 1
     assert summary["follow_up_count"] == 1
     assert summary["counts"][CommunicationStatus.PENDING_REVIEW.value] == 1
+
+
+def test_communication_state_transitions_are_explicit_and_local(tmp_path: Path) -> None:
+    repository = CommunicationRepository(_engine(tmp_path))
+    draft = repository.create(
+        CommunicationDraft(
+            draft_id="draft_transition_001",
+            opportunity_id="opportunity_transition_001",
+            channel=CommunicationChannel.FOLLOW_UP_NOTE,
+            body="人工确认后的草稿",
+            status=CommunicationStatus.APPROVED,
+            created_by="user",
+        )
+    )
+    sent = repository.transition(draft.draft_id, status=CommunicationStatus.SENT)
+    assert sent.status is CommunicationStatus.SENT
+    replied = repository.transition(draft.draft_id, status=CommunicationStatus.REPLIED)
+    assert replied.status is CommunicationStatus.REPLIED
+    follow_up = repository.transition(draft.draft_id, status=CommunicationStatus.FOLLOW_UP)
+    assert follow_up.status is CommunicationStatus.FOLLOW_UP
+    with pytest.raises(ValueError, match="不允许"):
+        repository.transition(draft.draft_id, status=CommunicationStatus.PENDING_REVIEW)

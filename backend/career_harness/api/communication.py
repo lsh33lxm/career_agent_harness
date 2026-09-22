@@ -29,6 +29,10 @@ class CommunicationReviewRequest(FrozenModel):
     reason: str = Field(min_length=1, max_length=2048)
 
 
+class CommunicationTransitionRequest(FrozenModel):
+    status: CommunicationStatus
+
+
 @dataclass(frozen=True, slots=True)
 class CommunicationApi:
     repository: CommunicationRepository
@@ -61,6 +65,15 @@ def create_communication_router(api: CommunicationApi) -> APIRouter:
     def review(draft_id: str, request: CommunicationReviewRequest):
         try:
             return api.repository.review(draft_id, decision=request.decision, reason=request.reason)
+        except KeyError as error:
+            raise HTTPException(404, str(error)) from error
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from error
+
+    @router.post("/drafts/{draft_id}/transition")
+    def transition(draft_id: str, request: CommunicationTransitionRequest):
+        try:
+            return api.repository.transition(draft_id, status=request.status)
         except KeyError as error:
             raise HTTPException(404, str(error)) from error
         except ValueError as error:

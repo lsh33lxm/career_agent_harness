@@ -43,7 +43,7 @@
 
 - G3 简历导出：**PARTIAL**。ResumeRevision JSON/Markdown 导出、ResumeData 校验、文本/PDF fallback 导入预览、用户确认后的 ResumeBase 保存、基础版本历史查看、旧版本追加式恢复和按需差异查看已实现；图片 OCR、细粒度字段级 undo/redo 仍待补齐。
 - G4 面试成长：**PARTIAL**。文本会话事件、面试复盘 proposal、规则化 STAR 结构信号、独立学习计划 proposal，以及批准后进入有界任务队列已实现；自动 STAR 内容评分和跨会话记忆 consolidation 仍待补齐。
-- G5 知识治理：**PARTIAL**。Memory 来源亲和度与 consolidation proposal、SourceConnector schedule metadata、有界运行、认证 MCP transport boundary、JSON-RPC stdio 适配器和有界 SSE 事件适配器已实现；真实网络监听/生产认证、常驻 dispatcher 和完整 CLI sandbox 仍待补齐。
+- G5 知识治理：**PARTIAL**。Memory 来源亲和度与 consolidation proposal、SourceConnector schedule metadata、有界运行、认证 MCP transport boundary、JSON-RPC stdio 适配器、有界 SSE 事件适配器和 CLI 命令白名单/危险参数拒绝已实现；真实网络监听/生产认证、常驻 dispatcher 和宿主级 sandbox 隔离仍待补齐。
 
 - G2 沟通草稿：**PARTIAL / proposal-only**。机会页支持本地保存、查看、批准或拒绝草稿；每日限额与回复监控读模型仍缺，不会执行真实发送。
 

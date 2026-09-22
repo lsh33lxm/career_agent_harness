@@ -29,6 +29,10 @@ class InterviewFeedbackRequest(FrozenModel):
     question: str = ""
 
 
+class InterviewLearningPlanRequest(FrozenModel):
+    gaps: tuple[str, ...] = ()
+
+
 class InterviewSessionEventRequest(FrozenModel):
     session_id: str
     role: InterviewSessionRole
@@ -164,6 +168,39 @@ class InterviewPrepService:
         return self.knowledge.create_proposal(
             category=KnowledgeCategory.INTERVIEW_STORY,
             title=f"{interview.entity_id} 面试复盘草稿",
+            content=content,
+            authority=KnowledgeAuthority.AI_INFERRED,
+            created_by=KnowledgeCreatedBy.RULE,
+            evidence_refs=interview.evidence_refs,
+        )
+
+    def propose_learning_plan(
+        self, interview_id: str, *, gaps: tuple[str, ...]
+    ) -> KnowledgeProposal:
+        interview = self.interviews.get(interview_id)
+        if interview is None:
+            raise KeyError("interview not found")
+        if interview.status is not InterviewStatus.COMPLETED:
+            raise ValueError("学习计划需要已完成的面试记录")
+        if not interview.evidence_refs:
+            raise ValueError("学习计划需要至少一条已保存的面试证据")
+        normalized = tuple(dict.fromkeys(item.strip() for item in gaps if item.strip()))
+        if len(normalized) > 8:
+            raise ValueError("学习计划最多包含 8 个待提升项")
+        topics = normalized or ("复盘本次回答中的待确认能力缺口",)
+        content = (
+            f"来源面试：{interview.entity_id}\n"
+            "学习计划状态：待用户审核\n"
+            "计划不会自动修改 Capability、Fact 或简历。\n"
+            + "\n".join(
+                f"{index}. {topic}：补充一个可核验练习，并在完成后附 EvidenceRef。"
+                for index, topic in enumerate(topics, start=1)
+            )
+            + "\n完成条件：用户确认目标、范围和来源后，再创建独立学习任务。"
+        )
+        return self.knowledge.create_proposal(
+            category=KnowledgeCategory.INTERVIEW_STORY,
+            title=f"{interview.entity_id} 学习计划草稿",
             content=content,
             authority=KnowledgeAuthority.AI_INFERRED,
             created_by=KnowledgeCreatedBy.RULE,

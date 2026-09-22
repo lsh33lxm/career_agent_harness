@@ -199,6 +199,32 @@ def test_completed_interview_feedback_is_a_review_gated_proposal(tmp_path: Path)
         service.propose_feedback("interview_001", question="问题", answer=" ")
 
 
+def test_learning_plan_is_a_separate_review_gated_proposal(tmp_path: Path) -> None:
+    engine, _, interviews = _services(tmp_path)
+    interviews.schedule_interview(
+        _schedule_command(),
+        application_id="application_001",
+        application_revision=3,
+        round=InterviewRound.LOOP,
+        scheduled_at=SCHEDULED_AT,
+    )
+    interviews.complete_interview(
+        _command("interview_001", EntityKind.INTERVIEW, "command_complete", expected_revision=1),
+        evidence_refs=(EVIDENCE_REF_ID,),
+    )
+    service = InterviewPrepService(
+        interviews.repository,
+        KnowledgeRepository(engine, ArtifactStore(tmp_path / "artifacts")),
+    )
+    proposal = service.propose_learning_plan(
+        "interview_001", gaps=("系统设计", "系统设计", "故障复盘")
+    )
+    assert proposal.status.value == "pending"
+    assert proposal.evidence_refs == (EVIDENCE_REF_ID,)
+    assert proposal.proposed_content.count("系统设计") == 1
+    assert "用户审核" in proposal.proposed_content
+
+
 def test_interview_writes_never_touch_other_domains(tmp_path: Path) -> None:
     engine, applications, interviews = _services(tmp_path)
     before = applications.repository.get("application_001")

@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 
 from career_harness.services.interview_prep_service import (
     InterviewFeedbackRequest,
+    InterviewLearningPlanRequest,
     InterviewPrepRequest,
     InterviewPrepService,
     InterviewSessionEventRequest,
@@ -38,6 +39,17 @@ def create_interview_prep_router(api: InterviewPrepApi) -> APIRouter:
             return api.service.propose_feedback(
                 interview_id, question=request.question, answer=request.answer
             )
+        except KeyError as error:
+            raise HTTPException(404, str(error)) from error
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from error
+
+    @router.post("/{interview_id}/learning-plan-proposals", status_code=201)
+    def learning_plan(
+        interview_id: str, request: InterviewLearningPlanRequest
+    ) -> Any:
+        try:
+            return api.service.propose_learning_plan(interview_id, gaps=request.gaps)
         except KeyError as error:
             raise HTTPException(404, str(error)) from error
         except ValueError as error:

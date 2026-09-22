@@ -7,7 +7,7 @@
 - 产品依据：`docs/prd/ACH_v2.0_PRD_插件化职业智能平台.md`
 - 执行依据：`docs/prd/ACH_v2.0_Codex_长期自主执行提示词.md`
 - 当前分支：`refactor/v1.4-integration`
-- 当前实现提交：`ab5f63c`（离线闭环公司研究、STAR 与 Memory 提案）
+- 当前实现提交：`1e01ce3`（结构化 ResumeData 校验与桌面入口）
 - 起始基线：`084017c`
 - Legacy Agent Radar：只读；本轮不修改原始文件
 
@@ -55,6 +55,8 @@
 - 状态：PARTIAL。
 - 新增 `GET /api/v1/resume/revisions/{revision_id}/export?format=json|markdown`，从不可变 ResumeRevision 生成可重放导出，不改变 Core 事实。
 - 模板、PDF、ATS、patch/review 已有；PDF/图片导入、完整 ResumeData 校验、undo/redo 和版本历史 UI 仍未完成。
+- 新增 `POST /api/v1/resume/validate` 与 `ResumeData` 结构化校验，Resume Studio 可对本地 JSON 草稿执行校验并显示警告；校验不会写入 Career Core。
+- Verification：Resume focused `1 passed`；前端 `23 files / 64 passed`；Vite production build、Ruff 与 diff check 通过。
 
 ## Desktop productization checkpoint (2026-09-22)
 

@@ -1,7 +1,7 @@
 # Agent Career Harness v2.2
 
 日期：2026-09-22  
-基线：integration branch `refactor/v1.4-integration`，当前代码 checkpoint `ab5f63c`
+基线：integration branch `refactor/v1.4-integration`，当前代码 checkpoint `1e01ce3`
 
 ## 1. 当前结论
 
@@ -18,6 +18,7 @@ Agent Career Harness 当前是一个本地优先、证据约束、人工审核�
 - 沟通草稿：`0031_communication_drafts`、`core/communication.py`、`db/communication_repository.py`、`api/communication.py` 与 Opportunities 页面入口。支持待确认/批准/拒绝等状态，但不发送外部消息。
 - 沟通摘要：`GET /api/v1/communications/summary` 与 Opportunities 页面摘要条，展示每日新增、剩余额度、已回复和待跟进数量；每日上限仍是读模型约束，不代表自动限流或自动发送。
 - Resume Studio：自有 HTML/CSS 与受控 Typst renderer contract、patch review、immutable revision、PDF、ATS、render review、JSON/Markdown export。
+- ResumeData 校验：`core/resume/studio_models.py`、`api/resume_studio.py` 与 Resume Studio 页面提供离线结构化校验和警告；内容仍停留在本地草稿，不自动进入 Career Core。
 - Interview read model：`/api/v1/applications/{id}/interviews` 与 `/api/v1/interviews/{id}`。
 - Knowledge/Wiki/Memory：本地检索、来源引用、Wiki revision/proposal、Memory proposal/review/tombstone。
 - Plugins/Tools：manifest、权限、scope、schema、运行审计、quarantine、生命周期与 read-only tool registry。
@@ -47,7 +48,7 @@ Career Core 是已确认职业事实、Opportunity、Application、Interview、O
 | G0 参考审计 | 已完成 | 十个本地目录已检查 README、LICENSE/声明、目录；ApplyPilot AGPL，BossHunter/Seeking Stars/Magic Resume 有非商用或额外限制，CapyMock 根目录无 LICENSE；均未复制源码 |
 | G1 离线闭环 | 部分完成 | 岗位→Artifact→评分→admission→简历 proposal→PDF/ATS→Application PREPARING 已通过；公司研究、STAR、Outcome/Wiki/Memory 编排未串联 |
 | G2 职位与沟通 | 部分完成 | staging/ranking/source policy 与桌面 proposal 草稿入口已实现；每日上限、回复监控未完成 |
-| G3 Resume Studio | 部分完成 | render/ATS/patch/review/export 已实现；PDF/图片导入、完整 ResumeData、undo/redo、版本历史 UI 未完成 |
+| G3 Resume Studio | 部分完成 | render/ATS/patch/review/export 与 JSON ResumeData 校验已实现；PDF/图片导入、undo/redo、版本历史 UI 未完成 |
 | G4 面试与成长 | 部分完成 | Interview Core 和只读读模型已实现；文本面试、STAR、结构化反馈、学习计划、跨会话会话流未完成 |
 | G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、Task Queue、Tool Registry、SourceConnector 已存在；dispatcher、scheduled sync、memory affinity/consolidation、认证 MCP、CLI sandbox 未完成 |
 
@@ -70,7 +71,7 @@ Career Core 是已确认职业事实、Opportunity、Application、Interview、O
 
 ## 6. 真实验证
 
-- 后端全量：`684 passed, 5 skipped`；沟通摘要 focused `2 passed`、离线闭环 focused `1 passed`。跳过项是 Windows symlink 权限限制。
+- 后端全量基线：`684 passed, 5 skipped`；Resume focused `1 passed`、沟通摘要 focused `2 passed`、离线闭环 focused `1 passed`。本次结构化校验没有改变全量计数。跳过项是 Windows symlink 权限限制。
 - Resume/Opportunity/Communication/Interview focused tests：通过；最近沟通 migration 回归 `49 passed`，Interview/Career read `8 passed`，Resume Studio API `1 passed`。
 - Ruff：`backend tests migrations` 通过。
 - `git diff --check`：通过。
@@ -90,7 +91,7 @@ Career Core 是已确认职业事实、Opportunity、Application、Interview、O
 
 1. 将离线闭环继续编排到 Interview prep 的结构化反馈、Outcome 与 proposal-only Memory/Wiki；公司研究和 STAR 提案已完成第一步。
 2. 将 communication draft 摘要接入 Today，并增加回复事件的离线录入与跟进读模型。
-3. 补 ResumeData schema、导入校验、revision history、undo/redo 和 PDF/图片离线导入。
+3. 补 ResumeData 的 PDF/图片/文本离线导入、revision history、undo/redo；当前已完成 JSON 结构化校验。
 4. 增加文本面试会话事件、STAR feedback、学习计划和 GitHub/JD 引用。
 5. 实现本地 dispatcher 与任务恢复；再评估认证 MCP 和 CLI sandbox，所有写工具继续 approval-gated。
 

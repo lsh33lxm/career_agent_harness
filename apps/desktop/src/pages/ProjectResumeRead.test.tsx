@@ -78,6 +78,7 @@ it("默认列出简历并读取基础内容与不可变修订", async () => {
     .mockResolvedValueOnce(response([base]))
     .mockResolvedValueOnce(response(base))
     .mockResolvedValueOnce(response([revision]));
+  fetcher.mockResolvedValueOnce(response([base]));
 
   render(<ResumePage />);
 
@@ -85,10 +86,11 @@ it("默认列出简历并读取基础内容与不可变修订", async () => {
   expect(screen.getByText("目标版本")).toBeTruthy();
   expect(screen.getByText("来源基础版本：第 2 版")).toBeTruthy();
   expect(screen.queryByLabelText(/Resume Base ID|Resume Revision ID/)).toBeNull();
-  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(3));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(4));
   expect(fetcher.mock.calls.map((call) => call[0])).toEqual([
     "http://127.0.0.1:8765/api/v1/resumes",
     "http://127.0.0.1:8765/api/v1/resumes/r1/base",
     "http://127.0.0.1:8765/api/v1/resumes/r1/revisions",
+    "http://127.0.0.1:8765/api/v1/resumes/r1/bases",
   ]);
 });

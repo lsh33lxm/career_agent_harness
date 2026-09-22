@@ -21,6 +21,9 @@ export function getResumeBase(id: string, revision: string, signal?: AbortSignal
 export function getResumeRevision(id: string, signal?: AbortSignal): Promise<ResumeRevisionRead> {
   return apiRequest(`/api/v1/resume-revisions/${encodeURIComponent(id)}`, { signal });
 }
+export function listResumeBaseRevisions(id: string, signal?: AbortSignal): Promise<ResumeBaseRead[]> {
+  return apiRequest(`/api/v1/resumes/${encodeURIComponent(id)}/bases`, { signal });
+}
 export function listResumeRevisions(id: string, signal?: AbortSignal): Promise<ResumeRevisionRead[]> {
   return apiRequest(`/api/v1/resumes/${encodeURIComponent(id)}/revisions`, { signal });
 }

@@ -3,10 +3,42 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from career_harness.core.common import FrozenModel, OpaqueId, utc_now
 from career_harness.core.resume.models import RevisionRef
+
+
+class ResumeData(FrozenModel):
+    """Validated, import-friendly resume shape; it is not a canonical fact write."""
+
+    name: str | None = Field(default=None, max_length=255)
+    contact: str | None = Field(default=None, max_length=2048)
+    summary: str | None = Field(default=None, max_length=10_000)
+    education: tuple[dict[str, object], ...] = ()
+    experience: tuple[dict[str, object], ...] = ()
+    projects: tuple[dict[str, object], ...] = ()
+    skills: tuple[str, ...] = ()
+    certifications: tuple[dict[str, object], ...] = ()
+    custom_sections: tuple[dict[str, object], ...] = ()
+
+    @field_validator(
+        "education", "experience", "projects", "certifications", "custom_sections"
+    )
+    @classmethod
+    def section_items_are_bounded(
+        cls, value: tuple[dict[str, object], ...]
+    ) -> tuple[dict[str, object], ...]:
+        if len(value) > 100:
+            raise ValueError("每个简历区块最多包含 100 条记录")
+        return value
+
+
+class ResumeValidationResult(FrozenModel):
+    valid: bool
+    data: ResumeData | None = None
+    warnings: tuple[str, ...] = ()
+    errors: tuple[str, ...] = ()
 
 
 class TargetProfileStatus(StrEnum):

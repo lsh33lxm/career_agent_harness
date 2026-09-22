@@ -10,6 +10,7 @@ from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef, FrozenModel, OpaqueId
 from career_harness.core.resume import (
     ResumeAtsReport,
+    ResumeData,
     ResumePatch,
     ResumePatchOperation,
     ResumePatchStatus,
@@ -19,6 +20,7 @@ from career_harness.core.resume import (
     ResumeStudioDiff,
     ResumeTargetProfile,
     ResumeTemplateRegistration,
+    ResumeValidationResult,
     RevisionRef,
 )
 from career_harness.services.resume_studio_service import ResumeStudioService
@@ -76,6 +78,10 @@ class RenderReviewRequest(FrozenModel):
     reason: str = Field(min_length=1, max_length=2048)
 
 
+class ResumeValidationRequest(FrozenModel):
+    content: dict[str, object]
+
+
 @dataclass(frozen=True, slots=True)
 class ResumeStudioApi:
     service: ResumeStudioService
@@ -117,6 +123,21 @@ def create_resume_studio_router(api: ResumeStudioApi) -> APIRouter:
     @router.get("/templates", response_model=list[ResumeTemplateRegistration])
     def list_templates() -> tuple[ResumeTemplateRegistration, ...]:
         return api.service.list_templates()
+
+    @router.post("/validate", response_model=ResumeValidationResult)
+    def validate_resume(request: ResumeValidationRequest) -> ResumeValidationResult:
+        try:
+            data = ResumeData.model_validate(request.content)
+        except ValueError as error:
+            return ResumeValidationResult(valid=False, errors=(str(error),))
+        warnings: list[str] = []
+        if not data.name:
+            warnings.append("尚未填写姓名")
+        if not data.experience and not data.projects:
+            warnings.append("尚未填写经历或项目")
+        if not data.skills:
+            warnings.append("尚未填写技能")
+        return ResumeValidationResult(valid=True, data=data, warnings=tuple(warnings))
 
     @router.post(
         "/target-profiles",

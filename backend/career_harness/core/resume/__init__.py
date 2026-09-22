@@ -15,12 +15,14 @@ from career_harness.core.resume.studio_models import (
     AtsReportStatus,
     RenderRunStatus,
     ResumeAtsReport,
+    ResumeData,
     ResumeRenderReview,
     ResumeRenderRun,
     ResumeStudioDiff,
     ResumeTargetPatchRef,
     ResumeTargetProfile,
     ResumeTemplateRegistration,
+    ResumeValidationResult,
     TargetProfileStatus,
     TemplateRenderer,
 )
@@ -48,4 +50,6 @@ __all__ = [
     "ResumeTemplateRegistration",
     "TargetProfileStatus",
     "TemplateRenderer",
+    "ResumeData",
+    "ResumeValidationResult",
 ]

@@ -57,6 +57,22 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         unauthorized = await client.get("/api/v1/resume/templates")
         templates = await client.get("/api/v1/resume/templates", headers=AUTH)
+        valid_resume = await client.post(
+            "/api/v1/resume/validate",
+            headers=AUTH,
+            json={
+                "content": {
+                    "name": "Minnn",
+                    "skills": ["Python"],
+                    "experience": [{"role": "工程师"}],
+                }
+            },
+        )
+        invalid_resume = await client.post(
+            "/api/v1/resume/validate",
+            headers=AUTH,
+            json={"content": {"education": ["invalid-item"]}},
+        )
         target = await client.post(
             "/api/v1/resume/target-profiles",
             headers=AUTH,
@@ -98,6 +114,9 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
 
     assert unauthorized.status_code == 401
     assert templates.status_code == 200
+    assert valid_resume.json()["valid"] is True
+    assert valid_resume.json()["data"]["skills"] == ["Python"]
+    assert invalid_resume.json()["valid"] is False
     assert {item["template_id"] for item in templates.json()} == {
         "resume-render-html",
         "resume-render-typst",

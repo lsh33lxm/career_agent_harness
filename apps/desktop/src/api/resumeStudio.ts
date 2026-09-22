@@ -74,6 +74,19 @@ export interface ResumeAtsReport {
   created_at: string;
 }
 
+export interface ResumeValidationResult {
+  valid: boolean;
+  data: Record<string, unknown> | null;
+  warnings: string[];
+  errors: string[];
+}
+
+export function validateResumeContent(content: Record<string, unknown>): Promise<ResumeValidationResult> {
+  return apiRequest("/api/v1/resume/validate", {
+    method: "POST", body: JSON.stringify({ content }),
+  });
+}
+
 export function createTargetProfile(input: {
   target_profile_id: string;
   resume_id: string;

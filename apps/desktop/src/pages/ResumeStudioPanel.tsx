@@ -11,6 +11,7 @@ import {
   renderResume,
   reviewResumeRender,
   reviewResumePatch,
+  validateResumeContent,
   type ResumeAtsReport,
   type ResumeRenderRun,
   type ResumeRenderReview,
@@ -73,6 +74,7 @@ export function ResumeStudioPanel() {
   const [review, setReview] = useState<ResumeRenderReview | null>(null);
   const [reviewReason, setReviewReason] = useState("");
   const [message, setMessage] = useState("从已审核的简历修订开始渲染。");
+  const [validationMessage, setValidationMessage] = useState("");
 
   useEffect(() => {
     const raw = window.localStorage.getItem(DRAFT_KEY);
@@ -207,6 +209,21 @@ export function ResumeStudioPanel() {
     }
   }
 
+  async function validateDraft() {
+    if (!parsedDraft) {
+      setValidationMessage("请先输入有效的 JSON 简历内容。");
+      return;
+    }
+    try {
+      const result = await validateResumeContent(parsedDraft);
+      setValidationMessage(result.valid
+        ? (result.warnings.length ? `格式有效：${result.warnings.join("；")}` : "简历结构校验通过。")
+        : `校验失败：${result.errors.join("；")}`);
+    } catch (error) {
+      setValidationMessage("简历校验失败：" + (error as Error).message);
+    }
+  }
+
   async function saveProfile() {
     setMessage("正在保存目标岗位…");
     try {
@@ -295,7 +312,7 @@ export function ResumeStudioPanel() {
       </div>
       <p className="resume-studio-message">{message}</p>
       <div className="resume-draft-workspace">
-        <div><label>建议草稿（JSON，本地自动保存）<textarea aria-label="简历建议草稿" value={draftContent} onChange={(event) => setDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></label><label>证据精确引用<input aria-label="草稿证据精确引用" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="输入证据引用" /></label><button className="button button-primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新修订</button></div>
+        <div><label>建议草稿（JSON，本地自动保存）<textarea aria-label="简历建议草稿" value={draftContent} onChange={(event) => setDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></label><div className="button-row"><button className="button button-secondary" type="button" onClick={() => void validateDraft()} disabled={!parsedDraft}>校验简历结构</button><button className="button button-primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新修订</button></div>{validationMessage && <p role="status">{validationMessage}</p>}<label>证据精确引用<input aria-label="草稿证据精确引用" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="输入证据引用" /></label></div>
         <div>
           <label>预览主题<select aria-label="预览主题" value={previewTheme} onChange={(event) => setPreviewTheme(event.target.value)}><option value="warm-paper">暖纸</option><option value="compact-ink">紧凑墨色</option></select></label>
           <article className={`resume-draft-preview ${previewTheme}`} aria-label="草稿实时预览">

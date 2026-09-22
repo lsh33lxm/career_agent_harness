@@ -55,6 +55,15 @@ def create_interview_prep_router(api: InterviewPrepApi) -> APIRouter:
         except ValueError as error:
             raise HTTPException(422, str(error)) from error
 
+    @router.post("/learning-plan-proposals/{proposal_id}/tasks", status_code=201)
+    def enqueue_learning_task(proposal_id: str) -> Any:
+        try:
+            return api.service.enqueue_approved_learning_plan(proposal_id)
+        except KeyError as error:
+            raise HTTPException(404, str(error)) from error
+        except (RuntimeError, ValueError) as error:
+            raise HTTPException(422, str(error)) from error
+
     @router.post("/{interview_id}/sessions/events", status_code=201)
     def append_event(interview_id: str, request: InterviewSessionEventRequest) -> Any:
         try:

@@ -13,10 +13,12 @@ from career_harness.core.knowledge.models import (
     KnowledgeCategory,
     KnowledgeCreatedBy,
     KnowledgeProposal,
+    ProposalStatus,
 )
 from career_harness.db.interview_repository import InterviewRepository
 from career_harness.db.interview_session_repository import InterviewSessionRepository
 from career_harness.db.knowledge_repository import KnowledgeRepository
+from career_harness.services.task_service import TaskService
 
 
 class InterviewPrepRequest(FrozenModel):
@@ -66,6 +68,7 @@ class InterviewPrepService:
     interviews: InterviewRepository
     knowledge: KnowledgeRepository
     sessions: InterviewSessionRepository | None = None
+    tasks: TaskService | None = None
 
     def append_session_event(
         self, interview_id: str, request: InterviewSessionEventRequest
@@ -205,4 +208,21 @@ class InterviewPrepService:
             authority=KnowledgeAuthority.AI_INFERRED,
             created_by=KnowledgeCreatedBy.RULE,
             evidence_refs=interview.evidence_refs,
+        )
+
+    def enqueue_approved_learning_plan(self, proposal_id: str):
+        if self.tasks is None:
+            raise RuntimeError("学习任务队列未配置")
+        proposal = self.knowledge.get_proposal(proposal_id)
+        if proposal.category.value != "interview_story":
+            raise ValueError("只有面试学习计划 proposal 可以入队")
+        if proposal.status is not ProposalStatus.APPROVED:
+            raise ValueError("学习计划必须先由用户批准")
+        return self.tasks.enqueue(
+            "interview.learning_plan",
+            {
+                "proposal_id": proposal.proposal_id,
+                "evidence_refs": list(proposal.evidence_refs),
+                "content_sha256": proposal.content_sha256,
+            },
         )

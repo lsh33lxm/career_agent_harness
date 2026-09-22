@@ -12,6 +12,7 @@ from career_harness.core.application import ApplicationState, SubmissionAuthorit
 from career_harness.core.commands import Command, RevisionConflict
 from career_harness.core.common import EntityKind, EntityRef
 from career_harness.core.interview import Interview, InterviewRound, InterviewStatus
+from career_harness.core.knowledge.models import ProposalStatus
 from career_harness.db.interview_writes import InterviewWrite
 from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.models import (
@@ -23,9 +24,11 @@ from career_harness.db.models import (
     InterviewRevisionRow,
     OutcomeRecordRow,
 )
+from career_harness.db.task_repository import TaskRepository
 from career_harness.services.command_service import CommandService
 from career_harness.services.interview_prep_service import InterviewPrepService
 from career_harness.services.interview_service import InterviewService
+from career_harness.services.task_service import RegisteredTaskHandler, TaskService
 from career_harness.storage import ArtifactStore
 from tests.integration.test_application_service import _command, _seed_dependencies
 from tests.integration.test_fact_service import EVIDENCE_REF_ID
@@ -223,6 +226,40 @@ def test_learning_plan_is_a_separate_review_gated_proposal(tmp_path: Path) -> No
     assert proposal.evidence_refs == (EVIDENCE_REF_ID,)
     assert proposal.proposed_content.count("系统设计") == 1
     assert "用户审核" in proposal.proposed_content
+
+
+def test_approved_learning_plan_enters_bounded_task_queue(tmp_path: Path) -> None:
+    engine, _, interviews = _services(tmp_path)
+    interviews.schedule_interview(
+        _schedule_command(), application_id="application_001", application_revision=3,
+        round=InterviewRound.LOOP, scheduled_at=SCHEDULED_AT,
+    )
+    interviews.complete_interview(
+        _command("interview_001", EntityKind.INTERVIEW, "command_complete", expected_revision=1),
+        evidence_refs=(EVIDENCE_REF_ID,),
+    )
+    knowledge = KnowledgeRepository(engine, ArtifactStore(tmp_path / "artifacts"))
+    tasks = TaskService(
+        TaskRepository(engine),
+        handlers=(
+            RegisteredTaskHandler(
+                "interview.learning_plan", "learning", lambda payload: payload
+            ),
+        ),
+    )
+    service = InterviewPrepService(interviews.repository, knowledge, tasks=tasks)
+    proposal = service.propose_learning_plan("interview_001", gaps=("系统设计",))
+    with pytest.raises(ValueError, match="必须先由用户批准"):
+        service.enqueue_approved_learning_plan(proposal.proposal_id)
+    knowledge.review_proposal(
+        proposal.proposal_id,
+        decision=ProposalStatus.APPROVED,
+        reviewer="user",
+        reason="确认学习目标",
+    )
+    task = service.enqueue_approved_learning_plan(proposal.proposal_id)
+    assert task.task_type == "interview.learning_plan"
+    assert task.payload["proposal_id"] == proposal.proposal_id
 
 
 def test_interview_writes_never_touch_other_domains(tmp_path: Path) -> None:

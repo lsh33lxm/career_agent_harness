@@ -157,8 +157,13 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
                     SyncMode(str(payload.get("mode", "incremental"))),
                 ).model_dump(mode="json"),
             ),
+            RegisteredTaskHandler(
+                task_type="interview.learning_plan",
+                stage="learning",
+                handler=lambda payload: {"queued": True, "proposal_id": payload["proposal_id"]},
+            ),
         ),
-        stage_limits={"evaluation": 2, "source_sync": 1},
+        stage_limits={"evaluation": 2, "source_sync": 1, "learning": 1},
     )
     tool_registry = ToolRegistry(audit_sink=DatabaseToolAuditSink(engine))
     tool_registry.register(
@@ -219,6 +224,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
                 InterviewRepository(engine),
                 knowledge_repository,
                 InterviewSessionRepository(engine),
+                task_service,
             )
         ),
         legacy_import_api=LegacyImportApi(

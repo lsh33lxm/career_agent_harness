@@ -1,6 +1,6 @@
 # Agent Career Harness 当前状态
 
-更新时间：2026-09-22；分支：`refactor/v1.4-integration`；当前集成基线：`7c5183a`（简历与历史用户文案中文化）。
+更新时间：2026-09-23；分支：`refactor/v1.4-integration`；当前集成基线：`7c5183a`（简历与历史用户文案中文化）。
 
 ## 当前结论
 
@@ -21,8 +21,8 @@
 
 ## 最新验证
 
-- Backend：`681 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；GitHub/Project/migration subset：`52 passed`。
-- Frontend：`23 test files, 64 passed`，`npm run build` 通过；旧内部 ID 输入用例已由列表/选择流程用例替代。
+- Backend：`706 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；本次全量回归无失败。
+- Frontend：`23 test files, 66 passed`，`npm run build` 通过；旧内部 ID 输入用例已由列表/选择流程用例替代。
 - Knowledge/Today focused：backend `2 passed`；frontend `7 passed`；真实 overview API 返回岗位 1,028、面试 503、问题 4,816、刷题 324、待复核 709。
 - Legacy preview：读取 7,575、新增 0、更新 0、未变化 7,575、重复 684、失败 0；FK errors 0，源 metadata signature 不变。
 - Clean-install migration：首轮读取 7,575、新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575，导入前后源签名一致；`Python` 查询返回 10 条并抽样核对源文件、SHA-256、行号、批次与 JD。默认 `%LOCALAPPDATA%\AgentCareerHarness` 也已完成一次同样的幂等导入，岗位 staging 1,028、历史投影 6,547、失败 0。

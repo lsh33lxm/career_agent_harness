@@ -12,7 +12,7 @@ Agent Career Harness 是本地优先、证据约束、人工审核的中文求�
 - Legacy Agent Radar：只读 inventory、hash、结构化导入、历史投影和 provenance；最近真实导入读取 7,575 条，岗位 staging 1,028，历史投影 6,547，重复 684，失败 0。
 - 离线求职闭环：岗位原文 Artifact → 评分与 gap → 用户 admission → Resume TargetProfile → EvidenceRef 简历 patch proposal → 观复 PDF/ATS → Application `PREPARING`。
 - Opportunity 与沟通：岗位筛选、去重、评分、沟通草稿 proposal、批准/拒绝和摘要读模型；不会自动发送。
-- Resume Studio：ResumeData 校验、base/revision/patch review、观复 HTML/CSS、受控 Typst contract、PDF、ATS、JSON/Markdown 导出。`/api/v1/resume/import-text` 与 `/api/v1/resume/import-file` 产生待确认草稿；`/api/v1/resume/bases` 保存确认后的 ResumeBase；`/api/v1/resume/restore` 从不可变历史修订创建新的用户恢复点；`/api/v1/resume/base-restore` 将旧基础版本追加恢复为新的用户版本；`/api/v1/resumes/{resume_id}/bases` 读取全部基础版本；`/api/v1/resume/diff/{revision_id}` 按需提供修订差异及来源引用；`ResumeStudioApi.ocr` 提供可注入 OCR adapter，当前运行时未配置。PDF 使用无依赖文本 fallback，图片 OCR 明确降级为待配置。
+- Resume Studio：ResumeData 校验、base/revision/patch review、观复 HTML/CSS、受控 Typst contract、PDF、ATS、JSON/Markdown 导出。`/api/v1/resume/import-text` 与 `/api/v1/resume/import-file` 产生待确认草稿；`/api/v1/resume/bases` 保存确认后的 ResumeBase；`/api/v1/resume/restore` 从不可变历史修订创建新的用户恢复点；`/api/v1/resume/base-restore` 将旧基础版本追加恢复为新的用户版本；`/api/v1/resume/undo` 从当前基础版本追加恢复到上一版；`/api/v1/resumes/{resume_id}/bases` 读取全部基础版本；`/api/v1/resume/diff/{revision_id}` 按需提供修订差异及来源引用；`ResumeStudioApi.ocr` 提供可注入 OCR adapter，当前运行时未配置。PDF 使用无依赖文本 fallback，图片 OCR 明确降级为待配置。
 - Interview：只读面试查询、技术/行为准备 proposal、已完成面试的回答复盘 proposal，以及 `learning-plan-proposals` 独立学习计划 proposal；批准后的学习计划可通过 `/api/v1/interviews/learning-plan-proposals/{proposal_id}/tasks` 进入有界 `interview.learning_plan` 队列；复盘 proposal 增加透明的 0–4 规则结构信号、0–2 内容具体性信号和缺失维度学习建议；`0032_interview_session_events` 持久化用户/助手文本事件并校验 EvidenceRef；回答和学习计划不会直接写入 Career Core。
 - Knowledge/Wiki/Memory：本地检索、引用、Wiki revision/proposal、Memory proposal/review/tombstone。
 - Task Queue：有界 `POST /api/v1/tasks/stages/{stage}/run?max_batches=N` 调度，并提供 `TaskService.enqueue_tick` 单次有界 scheduler tick；不启动常驻后台或 shell。SourceConnector 支持 5 分钟至 7 天的 schedule metadata、到期查询和显式有界运行。
@@ -46,7 +46,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 | --- | --- | --- |
 | G1 离线求职闭环 | 部分完成 | 主链路、公司研究/STAR/结果归档/Wiki/Memory proposal 与确定性重放已通过；用户批准、提交后 Outcome 证据仍需真实用户流程 |
 | G2 职位与沟通 | 部分完成 | 排名、来源 policy、草稿、每日限流、按渠道统计和回复/跟进摘要已实现；平台采集与真实发送仍未完成 |
-| G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点、基础版本历史查看、追加式旧版本恢复、按需差异 UI 和本地草稿撤销/重做已实现；图片 OCR、字段级服务端 undo/redo 未完成 |
+| G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点、基础版本历史查看、追加式旧版本恢复、服务端上一版 undo、按需差异 UI 和本地草稿撤销/重做已实现；图片 OCR、字段级 patch redo 未完成 |
 | G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件、基于规则信号的 STAR 结构与内容具体性评分、独立学习计划 proposal、批准后有界任务入队和 Memory consolidation 任务入队已实现；更丰富的模型化评分和跨会话编排未完成 |
 | G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、memory affinity/consolidation、SourceConnector、Task Queue、bounded multi-stage dispatcher、单次 scheduler enqueue tick、Tool Registry、approval-gated CLI runner、CLI 命令白名单/危险参数拒绝/资源上限、认证 MCP transport boundary、JSON-RPC stdio 适配器（输入消息上限）、有界 SSE 事件适配器、显式 scheduled sync metadata 已实现；真实网络监听/生产认证接入、宿主级 sandbox 隔离和常驻调度仍未完成 |
 
@@ -100,6 +100,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 - 沟通草稿每日上限达到后保留为 `BLOCKED`，并记录 `blocked_reason=daily_communication_limit`；草稿不会被静默丢弃，也不会触发外部发送。
 - 沟通摘要增加 `channel_counts`，机会页显示邮件与平台消息数量，并显示限流阻断原因。
 - 机会页将已记录发送、已回复、待跟进、已结束和已阻断状态统一显示为中文。
+- 简历服务端撤销：`POST /api/v1/resume/undo` 通过追加式恢复创建新基础版本，不改写历史记录。
 - 当前 integration 工作树没有 `reference-repos/`，因此不能声称已经读取十个上游快照、确认其 commit 或许可证；没有复制第三方源码或资产。
 
 ## 10. 下一步与硬边界

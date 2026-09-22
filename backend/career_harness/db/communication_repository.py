@@ -17,12 +17,18 @@ class CommunicationRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
 
-    def create(self, draft: CommunicationDraft) -> CommunicationDraft:
+    def create(self, draft: CommunicationDraft, *, daily_limit: int = 10) -> CommunicationDraft:
+        if daily_limit < 1:
+            raise ValueError("每日沟通上限必须为正数")
         with self.engine.begin() as connection:
-            existing = connection.execute(
-                text("SELECT * FROM communication_draft WHERE draft_id=:id"),
-                {"id": draft.draft_id},
-            ).mappings().first()
+            existing = (
+                connection.execute(
+                    text("SELECT * FROM communication_draft WHERE draft_id=:id"),
+                    {"id": draft.draft_id},
+                )
+                .mappings()
+                .first()
+            )
             if existing is not None:
                 current = self._read(existing)
                 if current.model_dump(exclude={"created_at", "reviewed_at"}) != draft.model_dump(
@@ -30,6 +36,29 @@ class CommunicationRepository:
                 ):
                     raise ValueError("沟通草稿 ID 已存在且内容不同")
                 return current
+            created_today = int(
+                connection.execute(
+                    text(
+                        "SELECT COUNT(*) FROM communication_draft "
+                        "WHERE date(created_at)=date('now')"
+                    )
+                ).scalar_one()
+            )
+            persisted = draft
+            if created_today >= daily_limit and draft.status in {
+                CommunicationStatus.PENDING_REVIEW,
+                CommunicationStatus.APPROVED,
+            }:
+                persisted = draft.model_copy(
+                    update={
+                        "status": CommunicationStatus.BLOCKED,
+                        "provenance": {
+                            **draft.provenance,
+                            "blocked_reason": "daily_communication_limit",
+                            "daily_limit": str(daily_limit),
+                        },
+                    }
+                )
             connection.execute(
                 text(
                     "INSERT INTO communication_draft "
@@ -39,20 +68,31 @@ class CommunicationRepository:
                     "(:id,:opportunity,:staging,:channel,:recipient,:body,:status,:provenance,:created_by,:created_at)"
                 ),
                 {
-                    "id": draft.draft_id, "opportunity": draft.opportunity_id,
-                    "staging": draft.source_staging_id, "channel": draft.channel.value,
-                    "recipient": draft.recipient, "body": draft.body, "status": draft.status.value,
-                    "provenance": json.dumps(draft.provenance, ensure_ascii=False, sort_keys=True),
-                    "created_by": draft.created_by, "created_at": draft.created_at,
+                    "id": persisted.draft_id,
+                    "opportunity": persisted.opportunity_id,
+                    "staging": persisted.source_staging_id,
+                    "channel": persisted.channel.value,
+                    "recipient": persisted.recipient,
+                    "body": persisted.body,
+                    "status": persisted.status.value,
+                    "provenance": json.dumps(
+                        persisted.provenance, ensure_ascii=False, sort_keys=True
+                    ),
+                    "created_by": persisted.created_by,
+                    "created_at": persisted.created_at,
                 },
             )
-        return draft
+        return persisted
 
     def get(self, draft_id: str) -> CommunicationDraft | None:
         with self.engine.connect() as connection:
-            row = connection.execute(
-                text("SELECT * FROM communication_draft WHERE draft_id=:id"), {"id": draft_id}
-            ).mappings().first()
+            row = (
+                connection.execute(
+                    text("SELECT * FROM communication_draft WHERE draft_id=:id"), {"id": draft_id}
+                )
+                .mappings()
+                .first()
+            )
         return self._read(row) if row else None
 
     def list(self, status: CommunicationStatus | None = None) -> tuple[CommunicationDraft, ...]:
@@ -70,9 +110,15 @@ class CommunicationRepository:
         if daily_limit < 1:
             raise ValueError("每日沟通上限必须为正数")
         with self.engine.connect() as connection:
-            rows = connection.execute(
-                text("SELECT status, COUNT(*) AS count FROM communication_draft GROUP BY status")
-            ).mappings().all()
+            rows = (
+                connection.execute(
+                    text(
+                        "SELECT status, COUNT(*) AS count FROM communication_draft GROUP BY status"
+                    )
+                )
+                .mappings()
+                .all()
+            )
             today = connection.execute(
                 text("SELECT COUNT(*) FROM communication_draft WHERE date(created_at)=date('now')")
             ).scalar_one()
@@ -168,11 +214,10 @@ class CommunicationRepository:
             recipient=row["recipient"],
             body=row["body"],
             status=CommunicationStatus(row["status"]),
-            provenance=(
-                json.loads(provenance) if isinstance(provenance, str) else provenance
-            ),
+            provenance=(json.loads(provenance) if isinstance(provenance, str) else provenance),
             created_by=row["created_by"],
             reviewed_by=row["reviewed_by"],
             review_reason=row["review_reason"],
-            created_at=row["created_at"], reviewed_at=row["reviewed_at"],
+            created_at=row["created_at"],
+            reviewed_at=row["reviewed_at"],
         )

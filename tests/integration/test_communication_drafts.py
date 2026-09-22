@@ -33,11 +33,14 @@ def test_communication_draft_is_proposal_only_and_user_reviewed(tmp_path: Path) 
     )
     assert approved.status is CommunicationStatus.APPROVED
     assert approved.reviewed_by == "user"
-    assert repository.review(
-        draft.draft_id,
-        decision=CommunicationStatus.APPROVED,
-        reason="用户确认措辞，但仍需在外部平台手动发送。",
-    ) == approved
+    assert (
+        repository.review(
+            draft.draft_id,
+            decision=CommunicationStatus.APPROVED,
+            reason="用户确认措辞，但仍需在外部平台手动发送。",
+        )
+        == approved
+    )
     with pytest.raises(ValueError, match="不能覆盖"):
         repository.review(draft.draft_id, decision=CommunicationStatus.REJECTED, reason="改写")
 
@@ -85,6 +88,33 @@ def test_communication_summary_tracks_daily_limit_and_statuses(tmp_path: Path) -
     assert summary["reply_count"] == 1
     assert summary["follow_up_count"] == 1
     assert summary["counts"][CommunicationStatus.PENDING_REVIEW.value] == 1
+
+
+def test_communication_daily_limit_blocks_without_dropping_the_proposal(tmp_path: Path) -> None:
+    repository = CommunicationRepository(_engine(tmp_path))
+    repository.create(
+        CommunicationDraft(
+            draft_id="draft_limit_001",
+            opportunity_id="opportunity_limit_001",
+            channel=CommunicationChannel.PLATFORM_MESSAGE,
+            body="第一条草稿",
+            created_by="user",
+        ),
+        daily_limit=1,
+    )
+    blocked = repository.create(
+        CommunicationDraft(
+            draft_id="draft_limit_002",
+            opportunity_id="opportunity_limit_001",
+            channel=CommunicationChannel.PLATFORM_MESSAGE,
+            body="第二条草稿",
+            created_by="user",
+        ),
+        daily_limit=1,
+    )
+    assert blocked.status is CommunicationStatus.BLOCKED
+    assert blocked.provenance["blocked_reason"] == "daily_communication_limit"
+    assert repository.get(blocked.draft_id) == blocked
 
 
 def test_communication_state_transitions_are_explicit_and_local(tmp_path: Path) -> None:

@@ -22,6 +22,7 @@ class CommunicationDraftRequest(FrozenModel):
     recipient: str | None = Field(default=None, max_length=512)
     body: str = Field(min_length=1, max_length=10000)
     provenance: dict[str, str] = Field(default_factory=dict)
+    daily_limit: int = Field(default=10, ge=1, le=1000)
 
 
 class CommunicationReviewRequest(FrozenModel):
@@ -45,7 +46,10 @@ def create_communication_router(api: CommunicationApi) -> APIRouter:
     def create(request: CommunicationDraftRequest):
         try:
             return api.repository.create(
-                CommunicationDraft(**request.model_dump(), created_by="user")
+                CommunicationDraft(
+                    **request.model_dump(exclude={"daily_limit"}), created_by="user"
+                ),
+                daily_limit=request.daily_limit,
             )
         except Exception as error:
             raise HTTPException(422, str(error)) from error

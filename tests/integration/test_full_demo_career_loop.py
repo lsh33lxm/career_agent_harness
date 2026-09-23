@@ -4,6 +4,7 @@ from sqlalchemy import text
 
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef
+from career_harness.core.resume import ResumePatchStatus, RevisionRef
 from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.memory_repository import MemoryRepository
 from career_harness.db.resume_studio_repository import ResumeStudioRepository
@@ -88,6 +89,36 @@ def test_full_demo_career_loop_persists_and_replays(tmp_path: Path) -> None:
     assert [step["label"] for step in story["steps"]][-1] == "完成面试复盘"
     assert any(link["kind"] == "岗位" for link in story["links"])
     assert any(link["kind"] == "知识" for link in story["links"])
+
+    assert result.patch_id is not None
+    pending_patch = studio.repository.resumes.get_patch(result.patch_id, 1)
+    assert pending_patch is not None
+    assert pending_patch.status is ResumePatchStatus.PROPOSED
+    review_command = Command(
+        command_id="demo_patch_review",
+        command_type="resume_patch.review",
+        target=EntityRef(entity_id=result.patch_id, kind=EntityKind.RESUME_PATCH),
+        expected_revision=1,
+        idempotency_key="demo-patch-review",
+        actor="user",
+    )
+    reviewed_patch = studio.resumes.review_patch(
+        review_command,
+        decision=ResumePatchStatus.ACCEPTED,
+        review_reason="用户核对演示证据后接受该修改",
+    )
+    target_revision = studio.resumes.create_revision(
+        _command("resume_demo_target_revision", EntityKind.RESUME_REVISION, "demo_target_revision"),
+        resume_id="resume_demo",
+        base_revision=1,
+        accepted_patch_refs=(
+            RevisionRef(entity_id=result.patch_id, revision=reviewed_patch.revision),
+        ),
+    )
+    assert target_revision.accepted_patch_refs == (
+        RevisionRef(entity_id=result.patch_id, revision=reviewed_patch.revision),
+    )
+    assert studio.repository.resumes.get_revision("resume_demo_target_revision") is not None
 
     with engine.connect() as connection:
         event_types = [

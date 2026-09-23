@@ -37,6 +37,12 @@
 - 新增专项测试通过；前端全量测试在默认文件并行下曾出现共享 `fetch`/模块 mock 污染，单文件和串行全量均通过。`vite.config.ts` 已关闭文件级并行以保持确定性。
 - 最新前端全量结果：25 个测试文件、73 个测试全部通过；生产构建通过。Desktop Verification Gate 仍为 **NO-GO**。
 
+## Resume import and communication mailbox increment (2026-09-24)
+
+- 新增简历导入面板：本地 TXT/Markdown/PDF 经过现有本机解析接口生成提取预览，用户明确确认后才创建新的 ResumeBase；不覆盖已有基础简历。
+- 新增“求职沟通邮箱”页面：读取本地沟通草稿、逐封填写审核理由并批准/拒绝；批准后只打开系统邮件客户端草稿，不调用发送接口，不保存邮箱密码、不后台读取邮箱、不批量发送。
+- 新增专项测试 2 项通过，生产构建通过；前端全量回归与新 NSIS 包仍需在本切片提交后重跑。Desktop Verification Gate 继续 **NO-GO**。
+
 ## 2026-09-23 数据迁移门
 
 - 在 `feature/legacy-job-data-migration` worktree 中完成只读 Agent Radar 岗位审计脚本 `scripts/migrate_legacy_jobs.py`。

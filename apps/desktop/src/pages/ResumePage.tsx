@@ -17,6 +17,7 @@ import { Section, Surface } from "../components/ui/Section";
 import { EmptyState, ErrorState, LoadingState } from "../components/ui/States";
 import { Button } from "../components/ui/Button";
 import { Field } from "../components/ui/Field";
+import { ResumeImportPanel } from "./ResumeImportPanel";
 
 export function ResumePage() {
   const [bases, setBases] = useState<ResumeBaseRead[]>([]);
@@ -163,6 +164,7 @@ export function ResumePage() {
           </Section>
         </Surface>
       )}
+      <ResumeImportPanel onSaved={() => setAttempt((value) => value + 1)} />
       {loading && (
         <Surface>
           <Section title="简历档案" icon={FileText} ariaLabel="简历档案">

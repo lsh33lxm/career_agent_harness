@@ -51,3 +51,9 @@ export function reviewCommunicationDraft(
     method: "POST", body: JSON.stringify({ decision, reason }),
   });
 }
+
+export function transitionCommunicationDraft(draftId: string, status: CommunicationStatus): Promise<CommunicationDraft> {
+  return apiRequest<CommunicationDraft>(`/api/v1/communications/drafts/${encodeURIComponent(draftId)}/transition`, {
+    method: "POST", body: JSON.stringify({ status }),
+  });
+}

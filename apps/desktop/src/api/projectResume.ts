@@ -27,3 +27,12 @@ export function listResumeBaseRevisions(id: string, signal?: AbortSignal): Promi
 export function listResumeRevisions(id: string, signal?: AbortSignal): Promise<ResumeRevisionRead[]> {
   return apiRequest(`/api/v1/resumes/${encodeURIComponent(id)}/revisions`, { signal });
 }
+
+export function saveResumeBase(
+  input: { command_id: string; resume_id: string; candidate_id: string; sections: Record<string, unknown> },
+  idempotencyKey: string,
+): Promise<ResumeBaseRead> {
+  return apiRequest("/api/v1/resumes/bases", {
+    method: "POST", body: JSON.stringify(input),
+  }, idempotencyKey);
+}

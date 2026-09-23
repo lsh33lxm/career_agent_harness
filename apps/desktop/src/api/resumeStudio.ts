@@ -90,6 +90,18 @@ export interface ResumeValidationResult {
   errors: string[];
 }
 
+export function importResumeText(text: string): Promise<ResumeValidationResult> {
+  return apiRequest("/api/v1/resume/import-text", {
+    method: "POST", body: JSON.stringify({ text }),
+  });
+}
+
+export function importResumeFile(mediaType: string, contentBase64: string): Promise<ResumeValidationResult> {
+  return apiRequest("/api/v1/resume/import-file", {
+    method: "POST", body: JSON.stringify({ media_type: mediaType, content_base64: contentBase64 }),
+  });
+}
+
 export function validateResumeContent(content: Record<string, unknown>): Promise<ResumeValidationResult> {
   return apiRequest("/api/v1/resume/validate", {
     method: "POST", body: JSON.stringify({ content }),

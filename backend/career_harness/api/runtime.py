@@ -16,6 +16,7 @@ from career_harness.api.interview_prep import InterviewPrepApi
 from career_harness.api.job_radar import JobRadarApi
 from career_harness.api.knowledge import KnowledgeApi
 from career_harness.api.legacy_import import LegacyImportApi
+from career_harness.api.mailbox import MailboxApi
 from career_harness.api.memory import MemoryApi
 from career_harness.api.model_providers import ModelProviderApi
 from career_harness.api.offline_career_loop import OfflineCareerLoopApi
@@ -44,6 +45,7 @@ from career_harness.db.evidence_repository import EvidenceRepository
 from career_harness.db.interview_repository import InterviewRepository
 from career_harness.db.interview_session_repository import InterviewSessionRepository
 from career_harness.db.knowledge_repository import KnowledgeRepository
+from career_harness.db.mailbox_repository import MailboxRepository
 from career_harness.db.memory_repository import MemoryRepository
 from career_harness.db.migrations import upgrade_to_head
 from career_harness.db.model_provider_repository import ModelProviderRepository
@@ -223,14 +225,13 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         plugin_api=PluginApi(plugin_service),
         knowledge_api=KnowledgeApi(knowledge_repository),
         resume_studio_api=ResumeStudioApi(resume_studio_service),
-        job_radar_api=JobRadarApi(
-            opportunity_radar_service
-        ),
+        job_radar_api=JobRadarApi(opportunity_radar_service),
         offline_career_loop_api=OfflineCareerLoopApi(
             offline_career_loop_service,
             demo_mode=settings.environment == "demo",
         ),
         communication_api=CommunicationApi(CommunicationRepository(engine)),
+        mailbox_api=MailboxApi(MailboxRepository(engine), WindowsCredentialSecretStore()),
         interview_prep_api=InterviewPrepApi(
             InterviewPrepService(
                 InterviewRepository(engine),
@@ -242,18 +243,14 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         outcome_insight_api=OutcomeInsightApi(
             OutcomeInsightService(ApplicationRepository(engine), knowledge_repository)
         ),
-        legacy_import_api=LegacyImportApi(
-            legacy_import_service, legacy_connector_service
-        ),
+        legacy_import_api=LegacyImportApi(legacy_import_service, legacy_connector_service),
         model_provider_api=ModelProviderApi(
             ModelProviderService(
                 ModelProviderRepository(engine),
                 WindowsCredentialSecretStore(),
             )
         ),
-        github_project_api=GitHubProjectApi(
-            github_project_service, github_connector_service
-        ),
+        github_project_api=GitHubProjectApi(github_project_service, github_connector_service),
         memory_api=MemoryApi(MemoryRepository(engine), task_service),
         task_api=TaskApi(task_service, task_repository),
         source_connector_api=SourceConnectorApi(
@@ -266,9 +263,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         tool_api=ToolApi(
             registry=tool_registry,
             principal_id="local-user",
-            allowed_scopes=frozenset(
-                {ToolScope(ToolScopeKind.WORKSPACE, "workspace-local")}
-            ),
+            allowed_scopes=frozenset({ToolScope(ToolScopeKind.WORKSPACE, "workspace-local")}),
             permissions=frozenset({ToolPermission.READ}),
         ),
     )

@@ -9,6 +9,13 @@
 - 日志未出现旧 `agent_rader` 路径；关闭窗口后应用退出码为 `0`，无匹配残留进程。证据写入该验证目录的 `verification.json`、`shutdown.json` 和 `data/logs/desktop-sidecar.log`。
 - 该结果满足 492 条离线种子加载门槛；真实 Resume Review 浏览器逐步点击、完整截图和 Playwright teardown 仍未完成，Desktop Verification Gate 继续为 **NO-GO**。
 
+## 2026-09-24 求职沟通邮箱安全切片
+
+- 新增 IMAP 账户配置、连接测试、指定文件夹手动读取和邮件摘要关联岗位/Application。
+- 密码只通过 SecretStore 保存；数据库和 API 响应只保存 `credential_ref`，不记录密码、邮件原文或附件。
+- 读取使用 IMAP readonly 模式，单次最多 50 封；连接和读取异常转换为中文安全提示。
+- 专项后端测试、前端邮箱页面测试和生产构建通过；仍不自动轮询、自动发信或批量发送。
+
 ## 2026-09-23 legacy job release eligibility update
 
 - 用户确认本批数据为公开、非商业可使用数据，并批准以公开 URL、平台/来源类型和官方来源标记作为再分发依据。

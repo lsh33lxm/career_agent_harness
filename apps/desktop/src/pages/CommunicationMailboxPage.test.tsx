@@ -5,10 +5,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CommunicationMailboxPage } from "./CommunicationMailboxPage";
 
-const mocks = vi.hoisted(() => ({ list: vi.fn(), summary: vi.fn(), review: vi.fn(), transition: vi.fn() }));
+const mocks = vi.hoisted(() => ({ list: vi.fn(), summary: vi.fn(), accounts: vi.fn(), review: vi.fn(), transition: vi.fn() }));
 vi.mock("../api/communications", () => ({
   listCommunicationDrafts: mocks.list,
   getCommunicationSummary: mocks.summary,
+  listMailboxAccounts: mocks.accounts,
   reviewCommunicationDraft: mocks.review,
   transitionCommunicationDraft: mocks.transition,
 }));
@@ -17,6 +18,7 @@ describe("CommunicationMailboxPage", () => {
   beforeEach(() => {
     mocks.list.mockResolvedValue([{ draft_id: "draft_1", opportunity_id: "opp_1", source_staging_id: null, channel: "email", recipient: "recruiter@example.test", body: "您好", status: "pending_review", provenance: {}, reviewed_by: null, review_reason: null }]);
     mocks.summary.mockResolvedValue({ daily_limit: 10, created_today: 1, remaining_today: 9, counts: { pending_review: 1 }, channel_counts: { email: 1 }, reply_count: 0, follow_up_count: 0 });
+    mocks.accounts.mockResolvedValue([]);
     mocks.review.mockResolvedValue({});
     mocks.transition.mockResolvedValue({});
   });

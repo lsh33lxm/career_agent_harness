@@ -18,6 +18,7 @@ from career_harness.api.interview_prep import InterviewPrepApi, create_interview
 from career_harness.api.job_radar import JobRadarApi, create_job_radar_router
 from career_harness.api.knowledge import KnowledgeApi, create_knowledge_router
 from career_harness.api.legacy_import import LegacyImportApi, create_legacy_import_router
+from career_harness.api.mailbox import MailboxApi, create_mailbox_router
 from career_harness.api.memory import MemoryApi, create_memory_router
 from career_harness.api.model_providers import ModelProviderApi, create_model_provider_router
 from career_harness.api.offline_career_loop import (
@@ -71,6 +72,7 @@ def create_app(
     tool_api: ToolApi | None = None,
     offline_career_loop_api: OfflineCareerLoopApi | None = None,
     communication_api: CommunicationApi | None = None,
+    mailbox_api: MailboxApi | None = None,
     interview_prep_api: InterviewPrepApi | None = None,
     outcome_insight_api: OutcomeInsightApi | None = None,
 ) -> FastAPI:
@@ -152,6 +154,8 @@ def create_app(
         app.include_router(create_offline_career_loop_router(offline_career_loop_api))
     if communication_api is not None:
         app.include_router(create_communication_router(communication_api))
+    if mailbox_api is not None:
+        app.include_router(create_mailbox_router(mailbox_api))
     if interview_prep_api is not None:
         app.include_router(create_interview_prep_router(interview_prep_api))
     if outcome_insight_api is not None:

@@ -63,6 +63,10 @@ Mode does not require an API key or external network and does not depend on the
 legacy project path. User admission, resume patches, application state, and any
 communication draft remain separate user-controlled actions.
 
+## 求职沟通邮箱
+
+可在桌面端保存 IMAP 账户的非敏感配置，密码只进入系统凭据管理器。连接测试、指定文件夹读取和邮件关联都必须由用户主动执行；观复只保存邮件摘要，不自动轮询、不自动发信、不批量发送。
+
 ## Backend Development
 
 ```powershell

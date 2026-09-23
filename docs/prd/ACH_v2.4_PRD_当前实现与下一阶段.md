@@ -14,7 +14,7 @@ Agent Career Harness 是本地优先、证据约束、人工审核的中文求�
 - Opportunity 与沟通：岗位筛选、去重、评分、沟通草稿 proposal、批准/拒绝和摘要读模型；不会自动发送。
 - Resume Studio：ResumeData 校验、base/revision/patch review、观复 HTML/CSS、受控 Typst contract、PDF、ATS、JSON/Markdown 导出。`/api/v1/resume/import-text` 与 `/api/v1/resume/import-file` 产生待确认草稿；`/api/v1/resume/bases` 保存确认后的 ResumeBase；`/api/v1/resume/restore` 从不可变历史修订创建新的用户恢复点；`/api/v1/resume/base-restore` 将旧基础版本追加恢复为新的用户版本；`/api/v1/resume/undo` 从当前基础版本追加恢复到上一版；`/api/v1/resume/redo` 从用户选择的历史版本追加恢复；`/api/v1/resumes/{resume_id}/bases` 读取全部基础版本；`/api/v1/resume/diff/{revision_id}` 按需提供修订差异及来源引用；`ResumeStudioApi.ocr` 提供可注入 OCR adapter，当前运行时未配置。PDF 使用无依赖文本 fallback，图片 OCR 明确降级为待配置。
 - Interview：只读面试查询、技术/行为准备 proposal、已完成面试的回答复盘 proposal，以及 `learning-plan-proposals` 独立学习计划 proposal；批准后的学习计划可通过 `/api/v1/interviews/learning-plan-proposals/{proposal_id}/tasks` 进入有界 `interview.learning_plan` 队列；复盘 proposal 增加透明的 0–4 规则结构信号、0–2 内容具体性信号和缺失维度学习建议；`0032_interview_session_events` 持久化用户/助手文本事件并校验 EvidenceRef；回答和学习计划不会直接写入 Career Core。
-- Knowledge/Wiki/Memory：本地检索、引用、Wiki revision/proposal、Memory proposal/review/tombstone。
+- Knowledge/Wiki/Memory：本地检索、引用、Wiki revision/proposal、Wiki health 检查与 review-gated 修复建议 proposal、Memory proposal/review/tombstone。
 - Task Queue：有界 `POST /api/v1/tasks/stages/{stage}/run?max_batches=N` 调度，并提供 `TaskService.enqueue_tick` 单次有界 scheduler tick；不启动常驻后台或 shell。SourceConnector 支持 5 分钟至 7 天的 schedule metadata、到期查询和显式有界运行。
 - Task dispatcher：`POST /api/v1/tasks/dispatch` 可按指定 stage 顺序执行，并有批次和总任务数上限；不启动常驻进程，沿用已有失败重试与版本保护。
 - Communication：草稿批准后可由用户记录已发送、已回复、待跟进、已结束或已阻塞状态；状态更新不触发外部写入。
@@ -102,6 +102,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 - 机会页将已记录发送、已回复、待跟进、已结束和已阻断状态统一显示为中文。
 - 简历服务端撤销：`POST /api/v1/resume/undo` 通过追加式恢复创建新基础版本，不改写历史记录。
 - 简历服务端重做：`POST /api/v1/resume/redo` 通过明确的历史版本引用创建新基础版本，不改写历史记录。
+- Wiki 健康治理：`POST /api/v1/wiki/health/proposals` 将健康检查结果固化为待审核提案；不绑定目标页面，也不自动修复、发布或删除内容。
 - 当前 integration 工作树没有 `reference-repos/`，因此不能声称已经读取十个上游快照、确认其 commit 或许可证；没有复制第三方源码或资产。
 
 ## 10. 下一步与硬边界

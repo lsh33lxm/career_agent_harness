@@ -16,6 +16,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { admitStagedJob } from "../api/jobRadar";
 import { getDemoJob, listDemoJobs } from "../api/demoJobs";
+import { runDemoFullLoop } from "../api/demoLoop";
 import {
   getLegacyImportStatus,
   getLegacyJob,
@@ -116,6 +117,7 @@ export function JobRadarPanel() {
   const [selected, setSelected] = useState<LegacyJobDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [admitting, setAdmitting] = useState<string | null>(null);
+  const [demoLoopMessage, setDemoLoopMessage] = useState("");
   const demoMode = window.__ACH_CONFIG__?.demoMode === true || import.meta.env.VITE_DEMO_MODE === "true";
 
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -246,7 +248,22 @@ export function JobRadarPanel() {
           <strong>{report?.totals.read_count ?? importedJobCount}</strong>
           <span>{report ? "条源记录" : "条可见岗位"}</span>
         </div>
+        {demoMode && (
+          <button
+            className="primary-command"
+            type="button"
+            onClick={() => {
+              setDemoLoopMessage("正在保存演示闭环…");
+              void runDemoFullLoop()
+                .then((result) => setDemoLoopMessage(`已保存：申请 ${result.application_id} · 面试复盘提案待审核`))
+                .catch((caught) => setDemoLoopMessage(message(caught)));
+            }}
+          >
+            运行完整演示闭环
+          </button>
+        )}
       </div>
+      {demoLoopMessage && <p className="inline-status" role="status">{demoLoopMessage}</p>}
 
       <div className="legacy-import-bar">
         <label>

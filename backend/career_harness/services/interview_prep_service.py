@@ -112,7 +112,9 @@ class InterviewPrepService:
             raise ValueError("会话与面试记录不匹配")
         return events
 
-    def propose(self, interview_id: str, *, mode: str, focus: str) -> KnowledgeProposal:
+    def propose(
+        self, interview_id: str, *, mode: str, focus: str, proposal_id: str | None = None
+    ) -> KnowledgeProposal:
         if mode not in {"technical", "behavioral"}:
             raise ValueError("面试准备类型只能是 technical 或 behavioral")
         interview = self.interviews.get(interview_id)
@@ -134,10 +136,11 @@ class InterviewPrepService:
             authority=KnowledgeAuthority.AI_INFERRED,
             created_by=KnowledgeCreatedBy.RULE,
             evidence_refs=interview.evidence_refs,
+            proposal_id=proposal_id,
         )
 
     def propose_feedback(
-        self, interview_id: str, *, question: str, answer: str
+        self, interview_id: str, *, question: str, answer: str, proposal_id: str | None = None
     ) -> KnowledgeProposal:
         interview = self.interviews.get(interview_id)
         if interview is None:
@@ -189,6 +192,7 @@ class InterviewPrepService:
             authority=KnowledgeAuthority.AI_INFERRED,
             created_by=KnowledgeCreatedBy.RULE,
             evidence_refs=interview.evidence_refs,
+            proposal_id=proposal_id,
         )
 
     def propose_learning_plan(

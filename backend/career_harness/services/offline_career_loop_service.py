@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 
 from career_harness.adapters.job_sources import OfflineFixtureJobSource
+from career_harness.core.application import ApplicationState, SubmissionAuthority
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef
+from career_harness.core.interview import InterviewRound
 from career_harness.core.knowledge.models import (
     KnowledgeAuthority,
     KnowledgeCategory,
@@ -17,6 +20,8 @@ from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.memory_repository import MemoryRepository
 from career_harness.db.opportunity_repository import OpportunityRepository
 from career_harness.services.application_service import ApplicationService
+from career_harness.services.interview_prep_service import InterviewPrepService
+from career_harness.services.interview_service import InterviewService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.resume_service import canonical_value_hash
 from career_harness.services.resume_studio_service import ResumeStudioService
@@ -44,6 +49,10 @@ class OfflineCareerLoopResult:
     memory_proposal_id: str | None = None
     application_history_proposal_id: str | None = None
     wiki_proposal_id: str | None = None
+    interview_id: str | None = None
+    interview_revision: int | None = None
+    interview_prep_proposal_id: str | None = None
+    interview_feedback_proposal_id: str | None = None
 
 
 class OfflineCareerLoopService:
@@ -147,9 +156,9 @@ class OfflineCareerLoopService:
             template_id=None,
             actor="user",
         )
-        application_digest = hashlib.sha256(
-            (record.staging_id + resume_id).encode()
-        ).hexdigest()[:24]
+        application_digest = hashlib.sha256((record.staging_id + resume_id).encode()).hexdigest()[
+            :24
+        ]
         application_id = f"application_{application_digest}"
         application_command = Command(
             command_id=f"command_{application_id}",
@@ -230,8 +239,7 @@ class OfflineCareerLoopService:
                 scope_kind=MemoryScope.USER,
                 scope_id=candidate_id,
                 content=(
-                    f"准备岗位 {seed.title}：先审核公司研究与 STAR 面试提案，"
-                    "再决定是否进入下一步。"
+                    f"准备岗位 {seed.title}：先审核公司研究与 STAR 面试提案，再决定是否进入下一步。"
                 ),
                 source_type="offline_job_fixture",
                 source_locator=f"job-staging://{record.staging_id}",
@@ -262,4 +270,166 @@ class OfflineCareerLoopService:
             memory_proposal_id=memory_proposal_id,
             application_history_proposal_id=application_history_proposal_id,
             wiki_proposal_id=wiki_proposal_id,
+        )
+
+    def run_full_demo(
+        self,
+        *,
+        resume_id: str,
+        resume_revision_id: str,
+        candidate_id: str,
+        query: str = "platform",
+        desired_terms: tuple[str, ...] = ("Python", "SQLite"),
+    ) -> OfflineCareerLoopResult:
+        """Run the complete local Demo Story with durable lifecycle events.
+
+        This deliberately records a user-confirmed *demo* submission; it never
+        contacts a portal and never creates a portal receipt.
+        """
+        if self.resume_studio.repository.resumes.get_base(resume_id, 1) is None:
+            self.resume_studio.repository.resumes.save_base_revision(
+                Command(
+                    command_id=f"command_{resume_id}_seed",
+                    command_type="resume.demo_seed",
+                    target=EntityRef(entity_id=resume_id, kind=EntityKind.RESUME),
+                    expected_revision=0,
+                    idempotency_key=f"demo-resume-seed-{resume_id}",
+                    actor="user",
+                ),
+                candidate_id=candidate_id,
+                sections={
+                    "name": "演示候选人",
+                    "contact": "demo@example.invalid",
+                    "summary": "已确认的演示经历摘要",
+                    "skills": ["Python", "SQLite"],
+                },
+            )
+            self.resume_studio.repository.resumes.create_revision(
+                Command(
+                    command_id=f"command_{resume_revision_id}_seed",
+                    command_type="resume.demo_revision_seed",
+                    target=EntityRef(
+                        entity_id=resume_revision_id, kind=EntityKind.RESUME_REVISION
+                    ),
+                    expected_revision=0,
+                    idempotency_key=f"demo-resume-revision-seed-{resume_revision_id}",
+                    actor="user",
+                ),
+                resume_id=resume_id,
+                base_revision=1,
+                accepted_patch_refs=(),
+            )
+        result = self.run(
+            resume_id=resume_id,
+            resume_revision_id=resume_revision_id,
+            candidate_id=candidate_id,
+            query=query,
+            desired_terms=desired_terms,
+        )
+        current = self.applications.repository.get(result.application_id)
+        if current is None:
+            raise RuntimeError("演示闭环申请记录未持久化")
+        if current.state is ApplicationState.PREPARING:
+            current = self.applications.set_preparation_state(
+                Command(
+                    command_id=f"command_demo_ready_{result.application_id}",
+                    command_type="application.ready_for_review",
+                    target=EntityRef(entity_id=result.application_id, kind=EntityKind.APPLICATION),
+                    expected_revision=current.revision,
+                    idempotency_key=f"demo-ready-{result.application_id}",
+                    actor="user",
+                ),
+                state=ApplicationState.READY_FOR_REVIEW,
+            )
+        if current.state is ApplicationState.READY_FOR_REVIEW:
+            current = self.applications.record_submission(
+                Command(
+                    command_id=f"command_demo_submit_{result.application_id}",
+                    command_type="application.demo_submission_recorded",
+                    target=EntityRef(entity_id=result.application_id, kind=EntityKind.APPLICATION),
+                    expected_revision=current.revision,
+                    idempotency_key=f"demo-submit-{result.application_id}",
+                    actor="user",
+                ),
+                resume_revision_id=resume_revision_id,
+                authority=SubmissionAuthority.USER_CONFIRMED,
+            )
+        if current.state is ApplicationState.SUBMITTED_BY_USER:
+            current = self.applications.advance_state(
+                Command(
+                    command_id=f"command_demo_interview_{result.application_id}",
+                    command_type="application.demo_interview_stage",
+                    target=EntityRef(entity_id=result.application_id, kind=EntityKind.APPLICATION),
+                    expected_revision=current.revision,
+                    idempotency_key=f"demo-interview-stage-{result.application_id}",
+                    actor="user",
+                ),
+                state=ApplicationState.INTERVIEW,
+            )
+
+        interview_id = f"interview_demo_{result.application_id.removeprefix('application_')}"
+        interview_service = InterviewService(self.resume_studio.commands)
+        interview = interview_service.repository.get(interview_id)
+        if interview is None:
+            interview = interview_service.schedule_interview(
+                Command(
+                    command_id=f"command_{interview_id}_schedule",
+                    command_type="interview.demo_schedule",
+                    target=EntityRef(entity_id=interview_id, kind=EntityKind.INTERVIEW),
+                    expected_revision=0,
+                    idempotency_key=f"demo-schedule-{interview_id}",
+                    actor="user",
+                ),
+                application_id=result.application_id,
+                application_revision=current.revision,
+                round=InterviewRound.TECHNICAL,
+                scheduled_at=datetime(2026, 9, 24, 10, 0, tzinfo=UTC),
+                evidence_refs=(result.evidence_ref_id,),
+            )
+        if interview.revision == 1:
+            interview = interview_service.complete_interview(
+                Command(
+                    command_id=f"command_{interview_id}_complete",
+                    command_type="interview.demo_complete",
+                    target=EntityRef(entity_id=interview_id, kind=EntityKind.INTERVIEW),
+                    expected_revision=1,
+                    idempotency_key=f"demo-complete-{interview_id}",
+                    actor="user",
+                ),
+                evidence_refs=(result.evidence_ref_id,),
+            )
+
+        prep = (
+            InterviewPrepService(interview_service.repository, self.knowledge)
+            if self.knowledge
+            else None
+        )
+        prep_proposal_id = None
+        feedback_proposal_id = None
+        if prep is not None:
+            prep_proposal = prep.propose(
+                interview_id,
+                mode="technical",
+                focus="岗位要求与项目证据",
+                proposal_id=f"proposal_demo_interview_prep_{interview_id.removeprefix('interview_')}",
+            )
+            feedback = prep.propose_feedback(
+                interview_id,
+                question="请说明你如何验证一个本地优先的职业工作台。",
+                answer=(
+                    "情境：需要在本地保存证据。任务：保证岗位、简历和申请可追溯。"
+                    "行动：我采用 SQLite、不可变证据和人工审核。结果：形成可回放的演示闭环。"
+                ),
+                proposal_id=f"proposal_demo_interview_feedback_{interview_id.removeprefix('interview_')}",
+            )
+            prep_proposal_id = prep_proposal.proposal_id
+            feedback_proposal_id = feedback.proposal_id
+        return replace(
+            result,
+            application_revision=current.revision,
+            application_state=current.state.value,
+            interview_id=interview.entity_id,
+            interview_revision=interview.revision,
+            interview_prep_proposal_id=prep_proposal_id,
+            interview_feedback_proposal_id=feedback_proposal_id,
         )

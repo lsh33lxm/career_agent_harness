@@ -121,12 +121,9 @@ export async function apiRequest<T>(
   idempotencyKey?: string,
 ): Promise<T> {
   const config = runtimeConfig();
-  if (config.demoMode && !config.launchToken) {
-    throw new ApiError("当前是离线演示模式，本地职业核心尚未连接");
-  }
   let response: Response;
   const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${config.launchToken}`);
+  if (config.launchToken) headers.set("Authorization", `Bearer ${config.launchToken}`);
   if (init.body !== undefined) {
     headers.set("Content-Type", "application/json");
   }
@@ -157,11 +154,8 @@ export async function apiRequest<T>(
 
 export async function apiRequestBlob(path: string, init: RequestInit = {}): Promise<Blob> {
   const config = runtimeConfig();
-  if (config.demoMode && !config.launchToken) {
-    throw new ApiError("当前是离线演示模式，本地职业核心尚未连接");
-  }
   const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${config.launchToken}`);
+  if (config.launchToken) headers.set("Authorization", `Bearer ${config.launchToken}`);
   let response: Response;
   try {
     response = await fetch(`${config.apiBaseUrl}${path}`, { ...init, headers });

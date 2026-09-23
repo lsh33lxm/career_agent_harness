@@ -17,6 +17,14 @@ class OfflineCareerLoopRequest(FrozenModel):
     desired_terms: tuple[str, ...] = ()
 
 
+class DemoCareerLoopRequest(FrozenModel):
+    query: str = Field(default="platform", max_length=128)
+    desired_terms: tuple[str, ...] = ()
+    resume_id: str = Field(default="resume_demo", min_length=3, max_length=128)
+    resume_revision_id: str = Field(default="resume_demo_revision", min_length=3, max_length=128)
+    candidate_id: str = Field(default="candidate_demo", min_length=3, max_length=128)
+
+
 @dataclass(frozen=True, slots=True)
 class OfflineCareerLoopApi:
     service: OfflineCareerLoopService
@@ -29,6 +37,20 @@ def create_offline_career_loop_router(api: OfflineCareerLoopApi) -> APIRouter:
     def run(request: OfflineCareerLoopRequest):
         try:
             return api.service.run(
+                resume_id=request.resume_id,
+                resume_revision_id=request.resume_revision_id,
+                candidate_id=request.candidate_id,
+                query=request.query,
+                desired_terms=request.desired_terms or ("Python", "SQLite"),
+            )
+        except (ValueError, KeyError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+    @router.post("/demo-full", status_code=status.HTTP_201_CREATED)
+    def full_demo(request: DemoCareerLoopRequest):
+        """Run the isolated, local Demo Story without external writes."""
+        try:
+            return api.service.run_full_demo(
                 resume_id=request.resume_id,
                 resume_revision_id=request.resume_revision_id,
                 candidate_id=request.candidate_id,

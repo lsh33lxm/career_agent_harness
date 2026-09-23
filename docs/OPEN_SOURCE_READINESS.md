@@ -8,6 +8,7 @@
 - `.gitignore` 覆盖 SQLite 临时文件、岗位库、导出、日志、缓存、备份和个人材料。
 - 前端支持显式 `VITE_DEMO_MODE=true` 或 `window.__ACH_CONFIG__.demoMode=true` 的中文演示标识；无 token 时不再显示英文内部错误。
 - Legacy 核心岗位 CSV 已完成只读审计：492 行，使用固定 seed 生成 24 条脱敏岗位摘要；Demo Mode 机会页支持离线搜索和详情查看。
+- 新增隔离 Demo Career Loop：`ACH_ENV=demo` + 独立 `ACH_DATA_DIR` 时，完整岗位到申请、面试准备和复盘提案由本地 API 持久化；真实模式仍要求 launch token。
 
 ## 验证证据
 
@@ -15,6 +16,8 @@
 npm --prefix apps/desktop test -- --run  -> 23 files, 67 tests passed
 npm --prefix apps/desktop run build     -> Vite production build passed
 python scripts/build_demo_dataset.py ... -> 492 source rows, 24 selected, fixed-seed output
+\.venv\Scripts\python.exe -m pytest -q tests/integration/test_full_demo_career_loop.py -> 1 passed
+\.venv\Scripts\ruff.exe check backend tests migrations scripts -> All checks passed
 git diff --check                         -> passed
 ```
 
@@ -26,4 +29,4 @@ git diff --check                         -> passed
 
 ## 下一步
 
-下一步是把脱敏摘要导入隔离 Demo 数据库，打通申请/简历/面试持久化 E2E，再执行 Tauri 安装、启动、离线查看和截图验收。
+下一步是把完整事件链接入历史/知识页面读模型，再执行 Tauri 安装、启动、离线查看和截图验收。

@@ -12,6 +12,7 @@ from importers.agent_radar.inventory import (
     write_manifest,
 )
 from importers.agent_radar.reconcile import build_reconciliation, render_reconciliation_report
+from importers.agent_radar.structured_import import run_structured_import
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -26,6 +27,14 @@ def _parser() -> argparse.ArgumentParser:
     reconcile = commands.add_parser("reconcile")
     reconcile.add_argument("--manifest", type=Path, required=True)
     reconcile.add_argument("--output", type=Path, required=True)
+
+    structured = commands.add_parser(
+        "structured-import",
+        help="将批准范围内的 Legacy 文件单向导入独立 Career Harness 数据目录",
+    )
+    structured.add_argument("--source", type=Path, required=True)
+    structured.add_argument("--data-root", type=Path, required=True)
+    structured.add_argument("--report", type=Path)
     return parser
 
 
@@ -43,6 +52,11 @@ def main() -> None:
             if failures:
                 raise RuntimeError(f"manifest verification failed: {failures[:3]}")
         print(manifest_summary(manifest))
+        return
+
+    if args.command == "structured-import":
+        report = run_structured_import(args.source, args.data_root, report_path=args.report)
+        print(report.model_dump_json(indent=2))
         return
 
     manifest = load_manifest(args.manifest)

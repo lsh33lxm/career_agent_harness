@@ -34,6 +34,7 @@ npm-debug.log*
 target/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/binaries/*.exe
 
 # Runtime data and generated artifacts
 *.db
@@ -41,6 +42,18 @@ apps/desktop/src-tauri/gen/
 *.db-wal
 *.sqlite
 *.sqlite3
+*.sqlite-journal
+*.db-journal
+*.log
+logs/
+cache/
+backups/
+data/raw/
+data/exports/
+data/demo-generated/
+**/job*.db
+**/jobs*.db
+<JOB_DB_PATH>
 artifacts/
 runtime/
 generated/
@@ -72,3 +85,6 @@ raw-data/
 Thumbs.db
 .idea/
 .vscode/
+
+# Nested workspace lockfile; dependencies are locked at the repository root.
+apps/desktop/package-lock.json

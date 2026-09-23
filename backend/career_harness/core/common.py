@@ -19,10 +19,22 @@ class FrozenModel(BaseModel):
 
 class EntityKind(StrEnum):
     EVIDENCE = "evidence"
+    EXTRACTED_CLAIM = "extracted_claim"
+    FACT = "fact"
     CANDIDATE = "candidate"
+    CAPABILITY_CANDIDATE = "capability_candidate"
     MARKET = "market"
+    PROJECT = "project"
+    PROJECT_EVIDENCE = "project_evidence"
+    PROJECT_SOURCE_MANIFEST = "project_source_manifest"
+    JOB = "job"
+    JOB_REQUIREMENT = "job_requirement"
+    MATCH_ASSESSMENT = "match_assessment"
     OPPORTUNITY = "opportunity"
+    PROJECT_ENHANCEMENT_TASK = "project_enhancement_task"
     RESUME = "resume"
+    RESUME_PATCH = "resume_patch"
+    RESUME_REVISION = "resume_revision"
     APPLICATION = "application"
     INTERVIEW = "interview"
     PREP = "prep"
@@ -30,9 +42,9 @@ class EntityKind(StrEnum):
     APPROVAL = "approval"
     RUN = "run"
     SNAPSHOT = "snapshot"
+    CONTEXT_MANIFEST = "context_manifest"
 
 
 class EntityRef(FrozenModel):
     entity_id: OpaqueId
     kind: EntityKind
-

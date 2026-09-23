@@ -4,7 +4,7 @@ from typing import Any, Protocol
 
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityRef
-from career_harness.core.revisions import CurrentState
+from career_harness.core.revisions import CommandCommitResult, CurrentState
 
 
 class RevisionRepository(Protocol):
@@ -16,6 +16,7 @@ class RevisionRepository(Protocol):
         next_state: dict[str, Any],
         *,
         event_type: str,
+        event_payload: dict[str, Any] | None = None,
         outbox_destination: str | None = None,
-    ) -> CurrentState: ...
+    ) -> CommandCommitResult: ...
 

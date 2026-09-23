@@ -19,7 +19,7 @@ class Settings:
             raise ValueError("The local API may only bind to 127.0.0.1")
         if not 0 <= self.port <= 65535:
             raise ValueError("port must be between 0 and 65535")
-        if self.environment != "test" and not self.launch_token:
+        if self.environment not in {"test", "demo"} and not self.launch_token:
             raise ValueError("A per-launch token is required outside tests")
         if self.launch_token is not None and len(self.launch_token) < 16:
             raise ValueError("launch token must contain at least 16 characters")

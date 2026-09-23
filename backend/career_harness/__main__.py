@@ -5,7 +5,7 @@ import os
 
 import uvicorn
 
-from career_harness.api.app import create_app
+from career_harness.api.runtime import create_runtime_app
 from career_harness.config import LOCALHOST, Settings
 
 
@@ -24,11 +24,11 @@ def main() -> None:
     settings = Settings(
         host=args.host,
         port=args.port,
-        launch_token=args.token,
+        launch_token=args.token or None,
         environment=args.environment,
         allowed_origin=args.allowed_origin,
     )
-    uvicorn.run(create_app(settings), host=settings.host, port=settings.port)
+    uvicorn.run(create_runtime_app(settings), host=settings.host, port=settings.port)
 
 
 if __name__ == "__main__":

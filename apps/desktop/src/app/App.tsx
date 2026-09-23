@@ -1,21 +1,19 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
-import { SectionPage } from "../pages/SectionPage";
+import { ProjectsPage } from "../pages/ProjectsPage";
+import { ResumePage } from "../pages/ResumePage";
+import { SettingsPage } from "../pages/SettingsPage";
+import { OpportunitiesPage } from "../pages/OpportunitiesPage";
 import { TodayPage } from "../pages/TodayPage";
+import { CapabilitiesPage } from "../pages/CapabilitiesPage";
+import { CapabilityInboxPage } from "../pages/CapabilityInboxPage";
+import { EvidencePage } from "../pages/EvidencePage";
+import { HistoryPage } from "../pages/HistoryPage";
 import { AppShell } from "./AppShell";
 import { ErrorBoundary } from "./ErrorBoundary";
-
-const sections = [
-  ["discover", "Discover", "No new market observations"],
-  ["opportunities", "Opportunities", "No qualified opportunities"],
-  ["resume", "Resume", "No resume revisions"],
-  ["applications", "Applications", "No applications in progress"],
-  ["interviews", "Interviews", "No interviews scheduled"],
-  ["prep", "Prep", "No preparation tasks"],
-  ["insights", "Insights", "No outcome data yet"],
-  ["evidence", "Evidence", "No evidence captured"],
-  ["settings", "Settings", "No local preferences configured"],
-] as const;
+import { PluginsPage } from "../pages/PluginsPage";
+import { KnowledgePage } from "../pages/KnowledgePage";
+import { ContextPage } from "../pages/ContextPage";
 
 export function App() {
   return (
@@ -24,13 +22,17 @@ export function App() {
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<TodayPage />} />
-            {sections.map(([path, title, emptyLabel]) => (
-              <Route
-                key={path}
-                path={path}
-                element={<SectionPage title={title} emptyLabel={emptyLabel} />}
-              />
-            ))}
+            <Route path="projects" element={<ProjectsPage />} />
+            <Route path="resume" element={<ResumePage />} />
+            <Route path="opportunities" element={<OpportunitiesPage />} />
+            <Route path="capabilities" element={<CapabilitiesPage />} />
+            <Route path="capabilities/inbox" element={<CapabilityInboxPage />} />
+            <Route path="history" element={<HistoryPage />} />
+            <Route path="history/evidence" element={<EvidencePage />} />
+            <Route path="plugins" element={<PluginsPage />} />
+            <Route path="knowledge" element={<KnowledgePage />} />
+            <Route path="context" element={<ContextPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

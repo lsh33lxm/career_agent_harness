@@ -16,6 +16,15 @@
 - 读取使用 IMAP readonly 模式，单次最多 50 封；连接和读取异常转换为中文安全提示。
 - 专项后端测试、前端邮箱页面测试和生产构建通过；仍不自动轮询、自动发信或批量发送。
 
+## 2026-09-24 Beta.3 发布验证
+
+- 邮箱集成提交：`61c39c2`；runtime 装配修复：`fd2bf44`。
+- 完整后端回归：`728 passed, 5 skipped`；前端：`27` 个测试文件、`75` 项通过；Ruff、生产构建、Cargo check 通过。
+- 修复后的 NSIS 安装包 SHA-256：`1787B9C4FFC6C2FB6F949740D6CE96B834F24EDA13F8BF1C254443B987189229`。
+- 全新安装 Demo 验证：`/health=200`、离线 packaged seed `492` 条、无旧路径、退出码 `0`、无残留进程。
+- 私有 prerelease：`v0.1.0-beta.3`；快照提交：`4a3b24b6bf55efbcf9f244a17b1682b4364d1285`，分支 `beta-snapshot-mailbox-20260924`。
+- Desktop Verification Gate 仍为 **NO-GO**：真实 Resume Review 浏览器点击链路、完整截图和 Playwright teardown 尚未完成。
+
 ## 2026-09-23 legacy job release eligibility update
 
 - 用户确认本批数据为公开、非商业可使用数据，并批准以公开 URL、平台/来源类型和官方来源标记作为再分发依据。

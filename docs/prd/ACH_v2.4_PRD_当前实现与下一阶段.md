@@ -102,7 +102,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 - 机会页将已记录发送、已回复、待跟进、已结束和已阻断状态统一显示为中文。
 - 简历服务端撤销：`POST /api/v1/resume/undo` 通过追加式恢复创建新基础版本，不改写历史记录。
 - 简历服务端重做：`POST /api/v1/resume/redo` 通过明确的历史版本引用创建新基础版本，不改写历史记录。
-- Wiki 健康治理：`POST /api/v1/wiki/health/proposals` 将健康检查结果固化为待审核提案；不绑定目标页面，也不自动修复、发布或删除内容。
+- Wiki 健康治理：知识页可调用 `POST /api/v1/wiki/health/proposals` 将健康检查结果固化为待审核提案；不绑定目标页面，也不自动修复、发布或删除内容。
 - 当前 integration 工作树没有 `reference-repos/`，因此不能声称已经读取十个上游快照、确认其 commit 或许可证；没有复制第三方源码或资产。
 
 ## 10. 下一步与硬边界

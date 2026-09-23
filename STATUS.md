@@ -29,6 +29,14 @@
 - 当前环境公开测试尝试：`uv run --project . --extra dev pytest -c pytest-public.ini` 依赖安装完成，但 Python 启动阶段因仓库包元数据 GBK 解码错误退出；Docker/Postgres、Playwright 浏览器和真实邮箱未运行，因此这些外部依赖功能标为 `unverified`。
 - 许可结论：根代码可按 MIT 借鉴；`packages/desktop_filler/NOTICE` 明确无原始许可证且不授予再分发权，禁止复制其引擎/资源。观复只采用行为边界和现有自有实现，不复制受限资源。
 
+## AI workbench increment (2026-09-24)
+
+- 新增上下文感知的 AI 工作台，绑定岗位、基础简历、Application 和已确认记忆，并在界面显示稳定 ID。
+- 当前生成逻辑为本地规则建议；保存结果只进入 `pending_review` 沟通草稿队列，provenance 保留岗位、简历和 Application 引用。
+- 不覆盖基础简历、不改变 Application 状态、不自动投递、不自动发信；后续模型接入仍必须沿用待确认边界。
+- 新增专项测试通过；前端全量测试在默认文件并行下曾出现共享 `fetch`/模块 mock 污染，单文件和串行全量均通过。`vite.config.ts` 已关闭文件级并行以保持确定性。
+- 最新前端全量结果：25 个测试文件、73 个测试全部通过；生产构建通过。Desktop Verification Gate 仍为 **NO-GO**。
+
 ## 2026-09-23 数据迁移门
 
 - 在 `feature/legacy-job-data-migration` worktree 中完成只读 Agent Radar 岗位审计脚本 `scripts/migrate_legacy_jobs.py`。

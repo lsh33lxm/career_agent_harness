@@ -1,5 +1,6 @@
 import {
   CircleUserRound,
+  Brain,
   FolderKanban,
   FileText,
   Gauge,
@@ -43,6 +44,7 @@ export const navigationGroups: NavigationGroup[] = [
       { path: "/resume", label: "简历", icon: FileText },
       { path: "/history", label: "历史", icon: History },
       { path: "/context", label: "我的", icon: CircleUserRound },
+      { path: "/ai-workbench", label: "AI 工作台", icon: Brain },
     ],
   },
   {

@@ -10,6 +10,9 @@ export default defineConfig({
   },
   test: {
     exclude: ["**/e2e/**", "**/node_modules/**", "**/dist/**"],
+    // Page tests stub the shared browser fetch and API modules; run files
+    // sequentially so one jsdom fixture cannot leak into another file.
+    fileParallelism: false,
   },
   clearScreen: false,
 });

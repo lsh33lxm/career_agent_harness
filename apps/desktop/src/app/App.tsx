@@ -14,6 +14,7 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { PluginsPage } from "../pages/PluginsPage";
 import { KnowledgePage } from "../pages/KnowledgePage";
 import { ContextPage } from "../pages/ContextPage";
+import { AIWorkbenchPage } from "../pages/AIWorkbenchPage";
 
 export function App() {
   return (
@@ -32,6 +33,7 @@ export function App() {
             <Route path="plugins" element={<PluginsPage />} />
             <Route path="knowledge" element={<KnowledgePage />} />
             <Route path="context" element={<ContextPage />} />
+            <Route path="ai-workbench" element={<AIWorkbenchPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

@@ -15,6 +15,7 @@ import {
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { admitStagedJob } from "../api/jobRadar";
+import { getDemoJob, listDemoJobs } from "../api/demoJobs";
 import {
   getLegacyImportStatus,
   getLegacyJob,
@@ -115,6 +116,7 @@ export function JobRadarPanel() {
   const [selected, setSelected] = useState<LegacyJobDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [admitting, setAdmitting] = useState<string | null>(null);
+  const demoMode = window.__ACH_CONFIG__?.demoMode === true || import.meta.env.VITE_DEMO_MODE === "true";
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoadState("loading");
@@ -126,12 +128,18 @@ export function JobRadarPanel() {
       ]);
       setImportStatus(nextStatus);
       setSourceRoot((current) => current || nextStatus.configured_source_root || "");
-      setJobs(nextJobs);
+      setJobs(nextJobs.length > 0 || !demoMode ? nextJobs : listDemoJobs());
       setLoadState("ready");
     } catch (caught) {
       if (!signal?.aborted) {
-        setError(message(caught));
-        setLoadState("error");
+        if (demoMode) {
+          setJobs(listDemoJobs());
+          setError("演示数据已加载；本地职业核心尚未连接，修改不会保存到真实数据。");
+          setLoadState("ready");
+        } else {
+          setError(message(caught));
+          setLoadState("error");
+        }
       }
     }
   }, []);
@@ -147,19 +155,25 @@ export function JobRadarPanel() {
     setLoadState("loading");
     setError("");
     try {
-      setJobs(
-        await listLegacyJobs({
+      const nextJobs = await listLegacyJobs({
           query: query.trim(),
           company: company.trim(),
           location: location.trim(),
           status: statusFilter,
           limit: 100,
-        }),
-      );
+        });
+      setJobs(nextJobs.length > 0 || !demoMode ? nextJobs : listDemoJobs());
       setLoadState("ready");
     } catch (caught) {
-      setError(message(caught));
-      setLoadState("error");
+      if (demoMode) {
+        const queryText = query.trim().toLowerCase();
+        setJobs(listDemoJobs().filter((job) => `${job.title} ${job.company} ${job.tags.join(" ")}`.toLowerCase().includes(queryText)));
+        setError("当前为离线演示搜索，结果来自脱敏历史样本。");
+        setLoadState("ready");
+      } else {
+        setError(message(caught));
+        setLoadState("error");
+      }
     }
   }
 
@@ -185,7 +199,12 @@ export function JobRadarPanel() {
     setDetailLoading(true);
     setError("");
     try {
-      setSelected(await getLegacyJob(job.staging_id));
+      if (demoMode) {
+        const demo = getDemoJob(job.staging_id);
+        setSelected(demo ? { job: demo, jd_text: "演示数据包未公开完整 JD；仅展示结构化岗位摘要与技能标签。", raw_record: {}, transform: {}, batch_id: "demo-v1", related_interviews: [] } : null);
+      } else {
+        setSelected(await getLegacyJob(job.staging_id));
+      }
     } catch (caught) {
       setError(message(caught));
     } finally {

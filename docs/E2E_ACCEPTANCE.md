@@ -2,6 +2,15 @@
 
 ## Desktop Verification Gate v0.1（2026-09-23，部分通过）
 
+### UI / 集成分支复核（2026-09-23）
+
+- integration 分支 `af64c99240b8c3bd5afd20533f369e05223d5f68` 与 UI 分支 `0bf59524cd2872e180622c0b9192a61bf568e6a0` 合并至本地 `main`，最终集成提交 `b74673028e3799a516874331522a70d64c7a6ed8`。代码合并完成不改变 Desktop Gate 结论。
+- 合并验证命令和结果：Python `.venv`（位于 integration worktree）`-m pytest -q`：`720 passed, 5 skipped`；`npm test -- --run`：24 files / 72 passed；项目范围 `ruff check backend tests migrations scripts`、`npm run build`、`cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml`、`git diff --check` 均通过。Cargo check 使用 integration worktree 已有 sidecar，按 SHA-256 原样复制至合并 worktree 被忽略的 sidecar 路径；该二进制没有提交。
+- 浏览器 visual smoke 在 Windows 本地 Chromium 1234 完成，不依赖云端 CUA：本地 mock API、Vite 空闲端口 `62987`、查询 `?demo=visual-review`；30 张实际截图位于忽略目录 `artifacts/verification/ui-smoke-20260923-221418/`，命名 `<宽度>-<页面>.png`，宽度为 1536/1440/1280、页面为 today/opportunities/projects/capabilities/resume/history/context/settings/plugins/knowledge。标题读取成功，未发现 body 横向溢出。该 smoke 只验证页面加载和视觉布局，不执行或证明 Resume Review Gate 用户点击链路。
+- 完整 Resume Review Playwright 测试仍在 Windows runner teardown 阻塞；runner 未完成真实 Patch 审核至 Revision/Application/历史/知识流程，也未生成该流程的稳定 ID 截图。Chromium Playwright 固定版本下载仍受 Google Storage 网络超时影响。Desktop Verification Gate v0.1 **NO-GO**。
+- UI 冲突收口：AppShell 保留 UI 分组导航/折叠/窄屏菜单和 sidecar 中文启动错误；History/Knowledge 保留新 UI 分区并展示 Demo Story 稳定 ID；JobRadarPanel 保留 UI Surface 并保留逐条审核与 Revision 操作。测试修正 `listitem` 查询歧义，mock screenshot 脚本 Ruff 行宽已修复。
+- 可视记录矩阵在 [`visual-review.md`](visual-review.md)，截图与日志证据目录被 `.gitignore` 的 `artifacts/` 规则忽略，不提交构建物或运行数据。
+
 - 最终回归：`.venv/Scripts/python.exe -m pytest -q` = `720 passed, 5 skipped`（Windows symlink 权限）；`.venv/Scripts/ruff.exe check backend tests migrations scripts` 通过；`npm test -- --run` = 24 files / 71 passed；`npm run build`、`cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml`、`git diff --check` 通过。`npm run lint` 未定义。全仓 `ruff check .` 会进入 `reference-repos/` 第三方参考代码并报 2,368 条 lint；不作为项目代码回归。
 - 浏览器执行入口：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify_desktop_gate.ps1`；Playwright 用例位于 `apps/desktop/e2e/resume-review-gate.spec.ts`，截图/日志目标为 Git 忽略的 `artifacts/verification/desktop-gate-<timestamp>/`。脚本执行时 API/Vite 动态端口由临时 loopback listener 分配，Demo SQLite 位于同目录 `runtime-data`；测试结束停止自有进程树并删除该 DB 目录。
 - 本轮浏览器执行未通过：Playwright 1.63 runner 在 Windows 下无浏览器测试输出并最终因 `clear output` / `apply rebaselines` teardown 120 秒超时；测试期间没有 API 业务请求，也没有生成截图。锁定 revision Chromium 1243 下载命令 `node node_modules/playwright/cli.js install chromium` 因 `https://storage.googleapis.com/chrome-for-testing-public/153.0.8010.12/win64/chrome-win64.zip` 连接 30 秒超时中止。本机缓存 Chromium 1234 的直接 Playwright API 冒烟通过，但不代表 E2E 通过。

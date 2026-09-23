@@ -1,6 +1,6 @@
 # Agent Career Harness 当前状态
 
-更新时间：2026-09-23；分支：`refactor/v1.4-integration`；当前集成基线：`7edcbd9`（沟通限流按渠道统计与中文状态投影）。
+更新时间：2026-09-23；集成分支：`integration/ui-desktop-release-v0.1`；代码已本地集成到 `main`（`b746730`）。Desktop Verification Gate v0.1 仍为 **NO-GO**。
 
 ## Desktop Verification Gate v0.1（2026-09-23）
 
@@ -13,6 +13,15 @@
 - 失败侧车诊断曾通过真实安装启动复现：旧构建 sidecar 不支持当前 demo token 规则，日志保留 traceback、退出码和 readiness failure，UI 窗口继续显示；随后已以源码 sidecar 重建并完成成功启动。旧 sidecar 文件没有被最终覆盖。
 - 截图尚未生成；Demo 岗位/Patch/Revision/Application 本轮新 UI 链路 ID 尚未产生。后端此前已验收记录仍是岗位 `opportunity_4a0d1f026edd89e3e11afe3694be250a`、Patch `patch_cbbabb4065401b997538e9ea` / `patch_e75651e1963b3a36df4167c0` / `patch_4493228e40647df83ac75e1a`、Revision `resume_revision_demo_target_83a14d40fb26dd09ecf0c151`、Application `application_fbdd11d28d86432cb74ee48a`，本轮没有将其冒充为桌面验收结果。
 - 当前 Gate：**NO-GO**（缺真实浏览器逐步交互截图、浏览器 runner teardown 阻塞和页面断 API/失败状态截图）。桌面安装启动、无控制台子系统、sidecar ready/退出及端口占用恢复已实测通过。
+
+## 桌面与 UI 集成收口（2026-09-23）
+
+- 本地 Git 集成：`refactor/v1.4-integration` 提交 `af64c99240b8c3bd5afd20533f369e05223d5f68`；UI 分支 `ui/cohesive-desktop-redesign` 提交 `0bf59524cd2872e180622c0b9192a61bf568e6a0`；合并验证提交 `b74673028e3799a516874331522a70d64c7a6ed8`。`main` 已由非快进合并更新。
+- 集成 worktree 全量验证：Python `720 passed, 5 skipped`；前端 24 个测试文件、72 项通过；项目范围 Ruff、`npm run build`、Tauri `cargo check`、`git diff --check` 通过。5 项跳过原因是 Windows symlink 权限。
+- 本地 Chromium 可视 smoke：随机空闲端口 `62987`；Demo visual-review fixture + 本地 mock API；截图 `artifacts/verification/ui-smoke-20260923-221418/`，10 页 × 1536/1440/1280 三种宽度共 30 张，标题均可读且未检测到横向溢出。此 smoke 不是 Resume Review Gate 的真实逐 Patch 点击验收。
+- Playwright 完整 Resume Review 用户链路仍受 Windows runner teardown / 浏览器下载限制阻塞，未产生完整链路截图；无浏览器工作流稳定记录 ID。Desktop Verification Gate v0.1 继续为 **NO-GO**。
+- UI 收口中统一保留 `ProviderMark` 和 `CompanyAvatar` 本地组件、模型厂商预设与逐页视觉布局；参考图不进入运行时资产。冲突解决保留 sidecar 与中文启动错误提示，并把 Demo Story 稳定 ID 链接纳入新布局。
+- 主项目原有 7,490 个未跟踪文件（约 336 MB）与合并路径无重叠；临时 stash 后恢复，未清理这些本地文件。集成未跟踪运行物与截图保持在 Git 忽略目录，原始 `agent_rader` 未写入。
 
 ## 当前结论
 

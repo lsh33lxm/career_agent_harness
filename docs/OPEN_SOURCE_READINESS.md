@@ -2,6 +2,10 @@
 
 ## Desktop Verification Gate v0.1（2026-09-23）
 
+本地集成收口已完成：`refactor/v1.4-integration`（`af64c99240b8c3bd5afd20533f369e05223d5f68`）与 `ui/cohesive-desktop-redesign`（`0bf59524cd2872e180622c0b9192a61bf568e6a0`）合并验证提交为 `b74673028e3799a516874331522a70d64c7a6ed8`。Python、前端、Ruff、Vite build 与 Tauri cargo check 均通过；本地 Chromium visual smoke 生成的 30 张脱敏布局截图位于 Git 忽略的 `artifacts/verification/ui-smoke-20260923-221418/`。
+
+这不等于 Desktop Verification Gate 已通过：Playwright 真实 Resume Review 点击链路仍受 Windows runner teardown 与 Chromium 下载限制阻塞，因此 Gate 继续为 **NO-GO**。未将视觉 fixture、截图、SQLite、安装包或日志加入 Git；原始 `agent_rader` 保持只读。
+
 - Windows Tauri x64 release + NSIS bundle 在独立 ignored Cargo target 中构建通过；安装至独立临时目录后，使用显式 Demo 环境与专属 `ACH_DATA_DIR` 完成首次启动、SQLite migrations 与本地 API health/read 请求。sidecar stdout/stderr 写入专属 `logs/desktop-sidecar.log`。
 - 真实 sidecar 端口冲突注入（loopback listener 持有 46282）验证自动重试至 51643；窗口关闭后应用及 sidecar 均退出。发布 EXE PE subsystem=2（GUI）。旧 sidecar 失败路径日志含 Python traceback、退出码、readiness 超时；UI 启动状态有中文错误提示。
 - Demo sidecar 使用当前 Python 源码重建用于 NSIS 构建；原始 ignored sidecar 输入文件以 SHA-256 `692fd89ab87bd7c1936f3af50febee39d0a9a6c6002ab2c9f16fd05e479fe8091` 校验并恢复，避免改写既有产物。

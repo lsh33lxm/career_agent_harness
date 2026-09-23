@@ -43,6 +43,7 @@ class OutcomeInsightService:
             authority=KnowledgeAuthority.RULE_VERIFIED,
             created_by=KnowledgeCreatedBy.RULE,
             evidence_refs=evidence_refs,
+            proposal_id=f"proposal_outcome_offer_{application_id}",
         )
 
     def propose_rejection_pattern(self) -> KnowledgeProposal:
@@ -72,4 +73,5 @@ class OutcomeInsightService:
             authority=KnowledgeAuthority.RULE_VERIFIED,
             created_by=KnowledgeCreatedBy.RULE,
             evidence_refs=evidence_refs,
+            proposal_id="proposal_outcome_rejection_pattern",
         )

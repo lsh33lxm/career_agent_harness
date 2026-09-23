@@ -48,6 +48,9 @@ def test_offer_preparation_is_evidence_bounded_proposal():
     assert proposal.evidence_refs == ("e1",)
     assert "待用户审核" in proposal.content
     assert "薪资" in proposal.content
+    replay = service.propose_offer_preparation("application_1")
+    assert replay.proposal_id == proposal.proposal_id
+    assert knowledge.calls[0]["proposal_id"] == "proposal_outcome_offer_application_1"
 
 
 def test_rejection_pattern_never_invents_reason():
@@ -68,6 +71,7 @@ def test_rejection_pattern_never_invents_reason():
     proposal = service.propose_rejection_pattern()
     assert "拒信数量：2" in proposal.content
     assert "原因已知" in proposal.content
+    assert knowledge.calls[0]["proposal_id"] == "proposal_outcome_rejection_pattern"
 
 
 def test_offer_preparation_requires_recorded_offer():

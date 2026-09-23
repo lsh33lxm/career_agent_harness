@@ -65,6 +65,7 @@ from career_harness.services.command_service import CommandService
 from career_harness.services.github_project_service import GitHubProjectService
 from career_harness.services.interview_prep_service import InterviewPrepService
 from career_harness.services.legacy_import_service import LegacyImportService
+from career_harness.services.mailbox_service import MailboxService
 from career_harness.services.model_provider_service import ModelProviderService
 from career_harness.services.offline_career_loop_service import OfflineCareerLoopService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
@@ -231,7 +232,9 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
             demo_mode=settings.environment == "demo",
         ),
         communication_api=CommunicationApi(CommunicationRepository(engine)),
-        mailbox_api=MailboxApi(MailboxRepository(engine), WindowsCredentialSecretStore()),
+        mailbox_api=MailboxApi(
+            MailboxService(MailboxRepository(engine), WindowsCredentialSecretStore())
+        ),
         interview_prep_api=InterviewPrepApi(
             InterviewPrepService(
                 InterviewRepository(engine),

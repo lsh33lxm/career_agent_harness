@@ -129,6 +129,27 @@ class OfflineCareerLoopService:
                 .mappings()
                 .all()
             )
+            patch_row = (
+                connection.execute(
+                    text(
+                        "SELECT p.patch_id, p.revision, p.status, "
+                        "i.base_revision, p.review_reason "
+                        "FROM resume_patch_revision p "
+                        "JOIN resume_patch_identity i ON i.patch_id=p.patch_id "
+                        "JOIN resume_target_patch_ref ref ON ref.patch_id=p.patch_id "
+                        "WHERE ref.target_profile_id=:target_profile "
+                        "ORDER BY p.patch_id, p.revision DESC LIMIT 1"
+                    ),
+                    {
+                        "target_profile": "target_profile_"
+                        + hashlib.sha256(
+                            (staging_row["staging_id"] if staging_row else "").encode()
+                        ).hexdigest()[:24]
+                    },
+                )
+                .mappings()
+                .first()
+            )
             rows = (
                 connection.execute(
                     text(
@@ -262,6 +283,7 @@ class OfflineCareerLoopService:
             "resume_revision_id": application.resume_revision_id,
             "evidence_ref_id": evidence_ref_id,
             "requirements": [dict(row) for row in requirement_rows],
+            "resume_patch": dict(patch_row) if patch_row else None,
             "score": staging_row["suggested_score"] if staging_row else None,
             "gaps": (
                 json.loads(staging_row["gaps"])

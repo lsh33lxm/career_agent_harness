@@ -163,6 +163,7 @@ export function HistoryPage() {
         <h2 id="demo-story-title">从岗位到面试复盘</h2>
         <p>以下步骤来自隔离 Demo 数据库的已保存记录，刷新后会重新读取。</p>
         <p>岗位评分 {demoStory.score == null ? "待确认" : `${Math.round(demoStory.score * 100)} 分`} · JD 要求 {demoStory.requirements?.length ?? 0} 条 · 证据 {demoStory.evidence_ref_id ?? "尚未建立关联"} · 能力差距 {demoStory.gaps?.length ? demoStory.gaps.join("、") : "暂无"}</p>
+        <p>目标简历修改：{demoStory.resume_patch ? `${demoStory.resume_patch.patch_id} · ${demoStory.resume_patch.status === "proposed" ? "待人工审核" : demoStory.resume_patch.status === "accepted" ? "已接受" : "已拒绝"}` : "尚未建立关联"}</p>
         <ol className="history-story-steps">
           {demoStory.steps.map((step) => <li key={step.key} data-status={step.status === "尚未建立关联" ? "pending" : "done"}><span>{step.label}</span><small>{step.status}</small></li>)}
         </ol>

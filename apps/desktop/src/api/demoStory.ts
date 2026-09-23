@@ -28,6 +28,14 @@ export interface DemoStoryRequirement {
   status: string;
 }
 
+export interface DemoStoryPatch {
+  patch_id: string;
+  revision: number;
+  status: "proposed" | "accepted" | "rejected";
+  base_revision: number;
+  review_reason: string | null;
+}
+
 export interface DemoStory {
   available: boolean;
   message?: string;
@@ -39,6 +47,7 @@ export interface DemoStory {
   score?: number | null;
   gaps?: string[];
   requirements?: DemoStoryRequirement[];
+  resume_patch?: DemoStoryPatch | null;
   steps: DemoStoryStep[];
   events: DemoStoryEvent[];
   links: DemoStoryLink[];

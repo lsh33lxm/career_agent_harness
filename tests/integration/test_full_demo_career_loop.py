@@ -86,6 +86,8 @@ def test_full_demo_career_loop_persists_and_replays(tmp_path: Path) -> None:
     assert len(result.requirement_ids) == 3
     assert len(story["requirements"]) == 3
     assert all(item["status"] == "proposed" for item in story["requirements"])
+    assert story["resume_patch"]["patch_id"] == result.patch_id
+    assert story["resume_patch"]["status"] == "proposed"
     assert [step["label"] for step in story["steps"]][-1] == "完成面试复盘"
     assert any(link["kind"] == "岗位" for link in story["links"])
     assert any(link["kind"] == "知识" for link in story["links"])

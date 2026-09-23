@@ -6,6 +6,7 @@ import { getLegacyKnowledgeOverview } from "../api/legacy";
 import { apiRequest } from "../api/client";
 import {
   createKnowledgeProposal,
+  createWikiHealthProposal,
   getWikiHealth,
   getWikiRevisions,
   reviewKnowledgeProposal,
@@ -22,6 +23,7 @@ vi.mock("../api/knowledge", async (importOriginal) => {
   return {
     ...original,
     createKnowledgeProposal: vi.fn(),
+    createWikiHealthProposal: vi.fn(),
     getWikiHealth: vi.fn(),
     getWikiRevisions: vi.fn(),
     reviewKnowledgeProposal: vi.fn(),
@@ -109,6 +111,15 @@ beforeEach(() => {
     proposed_content: "修订正文",
     status: "pending",
   });
+  vi.mocked(createWikiHealthProposal).mockResolvedValue({
+    proposal_id: "wiki_health_1",
+    target_knowledge_id: null,
+    base_revision: null,
+    category: "template",
+    title: "Wiki 健康检查修复建议",
+    proposed_content: "orphan_page",
+    status: "pending",
+  });
   vi.mocked(reviewKnowledgeProposal).mockResolvedValue({
     proposal_id: "proposal_1",
     target_knowledge_id: "knowledge_1",
@@ -134,6 +145,9 @@ it("默认展示真实历史统计、技能和可追溯面试题", async () => {
   expect(screen.getByText(/统计不等于个人事实/)).toBeTruthy();
   expect(await screen.findByText("Wiki 健康度 95")).toBeTruthy();
   expect(screen.getByText(/12 个页面 · 18 条链接/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "生成修复建议" }));
+  await waitFor(() => expect(createWikiHealthProposal).toHaveBeenCalled());
+  expect(await screen.findByText(/已生成待审核建议：wiki_health_1/)).toBeTruthy();
 });
 
 it("Wiki 编辑先创建提案，用户再次批准后才发布", async () => {

@@ -47,6 +47,13 @@ export function getWikiHealth(signal?: AbortSignal): Promise<WikiHealthReport> {
   return apiRequest<WikiHealthReport>("/api/v1/wiki/health", { signal });
 }
 
+export function createWikiHealthProposal(proposalId?: string): Promise<KnowledgeProposal> {
+  return apiRequest<KnowledgeProposal>("/api/v1/wiki/health/proposals", {
+    method: "POST",
+    body: JSON.stringify({ requested_by: "用户", proposal_id: proposalId }),
+  });
+}
+
 export interface KnowledgeRevision {
   knowledge_id: string;
   revision: number;

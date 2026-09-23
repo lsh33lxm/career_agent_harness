@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { apiRequest } from "../api/client";
 import {
   createWikiOperation,
+  createWikiHealthProposal,
   createKnowledgeProposal,
   getWikiHealth,
   getWikiRevisions,
@@ -75,6 +76,7 @@ export function KnowledgePage() {
   const [overview, setOverview] = useState<LegacyKnowledgeOverview | null>(null);
   const [overviewMessage, setOverviewMessage] = useState("正在读取历史知识投影…");
   const [wikiHealth, setWikiHealth] = useState<WikiHealthReport | null>(null);
+  const [healthProposal, setHealthProposal] = useState<KnowledgeProposal | null>(null);
   const [wikiDraft, setWikiDraft] = useState<WikiEditDraft | null>(null);
   const [wikiProposal, setWikiProposal] = useState<KnowledgeProposal | null>(null);
   const [wikiBusy, setWikiBusy] = useState(false);
@@ -202,6 +204,19 @@ export function KnowledgePage() {
     }
   }
 
+  async function proposeHealthFixes() {
+    setWikiBusy(true);
+    try {
+      const proposal = await createWikiHealthProposal();
+      setHealthProposal(proposal);
+      setMessage("Wiki 健康修复建议已保存，等待你审核；不会自动改动页面。");
+    } catch (error) {
+      setMessage(`健康修复建议生成失败：${(error as Error).message}`);
+    } finally {
+      setWikiBusy(false);
+    }
+  }
+
   async function reviewPageOperation(decision: "approved" | "rejected") {
     if (!operationProposal) return;
     setWikiBusy(true);
@@ -280,6 +295,7 @@ export function KnowledgePage() {
           <div><p className="eyebrow">知识治理</p><h2>Wiki 健康度 {wikiHealth.score}</h2></div>
           <p>{wikiHealth.page_count} 个页面 · {wikiHealth.link_count} 条链接 · {wikiHealth.issues.length} 个待处理问题</p>
           <small>仅检查孤立页面、重复标题、过期链接、缺少引用和提示注入；不会自动发布或修复。</small>
+          <div className="plugin-actions"><button type="button" disabled={wikiBusy} onClick={() => void proposeHealthFixes()}>生成修复建议</button>{healthProposal && <span role="status">已生成待审核建议：{healthProposal.proposal_id}</span>}</div>
         </section>
       )}
 

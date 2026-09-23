@@ -47,8 +47,8 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 | G1 离线求职闭环 | 部分完成 | 主链路、公司研究/STAR/结果归档/Wiki/Memory proposal 与确定性重放已通过；用户批准、提交后 Outcome 证据仍需真实用户流程 |
 | G2 职位与沟通 | 部分完成 | 排名、来源 policy、草稿、每日限流、按渠道统计和回复/跟进摘要已实现；平台采集与真实发送仍未完成 |
 | G3 Resume Studio | 部分完成 | 校验、导出、渲染、ATS、文本/PDF fallback 导入、用户恢复点、基础版本历史查看、追加式旧版本恢复、服务端 undo/redo、按需差异 UI 和本地草稿撤销/重做已实现；图片 OCR 仍未配置 |
-| G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件、基于规则信号的 STAR 结构与内容具体性评分、独立学习计划 proposal、批准后有界任务入队和 Memory consolidation 任务入队已实现；更丰富的模型化评分和跨会话编排未完成 |
-| G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、memory affinity/consolidation、SourceConnector、Task Queue、bounded multi-stage dispatcher、单次 scheduler enqueue tick、Tool Registry、approval-gated CLI runner、CLI 命令白名单/危险参数拒绝/资源上限、认证 MCP transport boundary、JSON-RPC stdio 适配器（输入消息上限）、有界 SSE 事件适配器、显式 scheduled sync metadata 已实现；真实网络监听/生产认证接入、宿主级 sandbox 隔离和常驻调度仍未完成 |
+| G4 面试与成长 | 部分完成 | Interview Core、准备/复盘 proposal、持久化文本会话事件、基于规则信号的 STAR 结构与内容具体性评分、独立学习计划 proposal、批准后有界任务入队、Memory consolidation 任务入队，以及历史页可触发的 Offer 准备和拒信模式分析 proposal 已实现；更丰富的模型化评分和跨会话编排未完成 |
+| G5 知识与工具治理 | 部分完成 | Knowledge/Wiki/Memory proposal、Wiki health 检查与知识页修复建议 proposal、memory affinity/consolidation、SourceConnector、Task Queue、bounded multi-stage dispatcher、单次 scheduler enqueue tick、Tool Registry、approval-gated CLI runner、CLI 命令白名单/危险参数拒绝/资源上限、认证 MCP transport boundary、JSON-RPC stdio 适配器（输入消息上限）、有界 SSE 事件适配器、显式 scheduled sync metadata 已实现；真实网络监听/生产认证接入、宿主级 sandbox 隔离和常驻调度仍未完成 |
 
 ## 4. 本轮代码切片
 
@@ -84,7 +84,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 ## 7. 下一阶段顺序
 
 1. 将规则化 STAR 缺失维度建议编排为用户可审核的学习任务 proposal，并补充自动评分的更多可解释信号。
-2. 补齐 Resume 图片导入校验、OCR adapter 实际配置与字段级服务端 undo/redo；本地草稿 undo/redo UI 已完成。
+2. 补齐 Resume 图片导入校验与 OCR adapter 实际配置；服务端和本地草稿 undo/redo 已完成。
 3. 将 SourceConnector 的显式 schedule metadata 接入可恢复后台 dispatcher；保持失败不误删本地知识。
 4. 实现认证 MCP/CLI 的只读 sandbox、scope、principal、schema 和审计；真实写工具继续 approval-gated。
 5. 继续补齐 G1–G5 尚未完成的外部边界后，再更新下一版本 PRD；本轮 G6 回归已完成。

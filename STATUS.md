@@ -11,6 +11,7 @@
 - 真实加载验证读取 350 条；后端回归 `725 passed, 5 skipped`，前端 `24 files / 72 tests`，生产构建和项目范围 Ruff 通过。
 - 当前源码 sidecar 重建成功（SHA-256 `70653fc4bbc7c2a7506b1c1a6b8e3389db6771565b65f36ecbafeb873bcb7354`），Tauri NSIS 构建成功；安装包仅保留在本地验证目录，未提交或发布。
 - 本轮尚未完成全新安装后的岗位页面可视检查、Resume Review 浏览器逐步点击截图和 Playwright teardown；因此 Desktop Verification Gate 仍为 **NO-GO**，Beta prerelease 不创建。
+- 修复 PyInstaller 资源路径和 `null` requirements 兼容后，干净 NSIS 安装实测 `/health=200`、离线种子查询返回 350 条，sidecar 正常退出；验证目录为 `artifacts/verification/clean-install-job-seed-20260924-d`。
 
 ## RecruitOps audit (2026-09-24)
 

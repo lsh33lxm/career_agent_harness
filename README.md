@@ -1,5 +1,7 @@
 # Agent Career Harness
 
+![观复今日工作台](assets/readme/guanfu-today.png)
+
 Agent Career Harness is a local-first desktop career workspace. It keeps evidence,
 candidate facts, decisions, approvals, and outcomes auditable while leaving legal,
 identity, work-authorization, and final application submission decisions with the
@@ -45,6 +47,20 @@ Core invariants:
 See [`STATUS.md`](STATUS.md) for verified progress, blockers, and commands. This
 repository is in P0F/P0B foundation work; it is not a canonical cutover of legacy
 Agent Radar data and it performs no production Feishu or ATS writes.
+
+## Offline Demo and Job Seed
+
+The repository contains a normalized offline job seed under `data/jobs/`. The
+current manifest version is `legacy-jobs-v1` with 350 release-eligible records
+from the read-only Agent Radar audit. The remaining 142 source records are kept
+local-only because their source linkage is incomplete. The seed contains job
+metadata and provenance links, not screenshots, raw captures, credentials,
+personal resumes, runtime databases, or logs.
+
+The packaged seed is read through the existing Opportunity Radar pipeline. Demo
+Mode does not require an API key or external network and does not depend on the
+legacy project path. User admission, resume patches, application state, and any
+communication draft remain separate user-controlled actions.
 
 ## Backend Development
 
@@ -129,9 +145,8 @@ Git because their path inventory may contain private historical metadata.
 
 The desktop shell can be opened without credentials in an explicit offline demo
 mode by setting `VITE_DEMO_MODE=true`. It shows a Chinese demo banner and never
-connects to a model provider or external platform. This flag does not fabricate job
-records; a real demo dataset is generated only after the read-only audit described
-in [`docs/data-audit.md`](docs/data-audit.md).
+connects to a model provider or external platform. Search the approved packaged
+seed through `/api/v1/jobs/packaged-seed-search`.
 
 Run the audit after receiving the real local database path:
 
@@ -139,5 +154,12 @@ Run the audit after receiving the real local database path:
 python scripts/audit_job_db.py "D:\真实\岗位库.db" --output docs/data-audit.md
 ```
 
-The repository currently has no usable `<JOB_DB_PATH>` value, so it deliberately
-does not claim a job count or publish historical job text.
+## Windows Private Beta
+
+Build the sidecar and NSIS package with the commands in the Windows packaging
+section. Install into a disposable Windows directory and set an isolated
+`ACH_DATA_DIR` for verification. This project does not automatically submit jobs,
+send email, or perform batch external actions; final decisions remain with the
+user. The Desktop Verification Gate v0.1 is currently **NO-GO** because the real
+Resume Review browser click-through, complete screenshots, and Playwright teardown
+are not yet complete. No stable release is implied by the current build.

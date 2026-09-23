@@ -3,6 +3,7 @@
   "dataset_name": "agent-radar-job-migration-audit",
   "version": "legacy-jobs-v1",
   "generated_at": "2026-09-23T17:05:54Z",
+  "build_date": "2026-09-23",
   "record_count": 350,
   "file_path": "data/jobs/jobs.json",
   "sha256": "d7af624052d6dc5717dfcc1d4c2c0d4ff3fe4123d0fa0b8aa84ee49c537e9133",

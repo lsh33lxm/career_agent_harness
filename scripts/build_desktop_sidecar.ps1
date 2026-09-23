@@ -35,6 +35,7 @@ $entryPoint = Join-Path $repoRoot "backend\career_harness\__main__.py"
 $backendPath = Join-Path $repoRoot "backend"
 $alembicConfig = Join-Path $repoRoot "alembic.ini"
 $migrationsPath = Join-Path $repoRoot "migrations"
+$jobDataPath = Join-Path $repoRoot "data\jobs"
 $dataSeparator = [IO.Path]::PathSeparator
 
 & $Python -m PyInstaller `
@@ -45,6 +46,7 @@ $dataSeparator = [IO.Path]::PathSeparator
     --paths $backendPath `
     --add-data "$alembicConfig${dataSeparator}." `
     --add-data "$migrationsPath${dataSeparator}migrations" `
+    --add-data "$jobDataPath${dataSeparator}data/jobs" `
     --workpath $workPath `
     --distpath $distPath `
     --specpath $specPath `

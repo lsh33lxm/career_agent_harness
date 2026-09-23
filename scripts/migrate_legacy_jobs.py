@@ -174,6 +174,7 @@ def build_manifest(
         "dataset_name": "agent-radar-job-migration-audit",
         "version": MIGRATION_VERSION,
         "generated_at": now,
+        "build_date": now[:10],
         "record_count": counts["release-eligible"],
         "file_path": "data/jobs/jobs.json" if counts["release-eligible"] else None,
         "sha256": None,

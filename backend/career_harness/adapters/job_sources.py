@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -51,7 +52,7 @@ class ManualJobSource:
             salary=data.get("salary"),
             published_at=data.get("published_at"),
             deadline_at=data.get("deadline_at"),
-            requirements=tuple(str(item) for item in data.get("requirements", ())),
+            requirements=tuple(str(item) for item in (data.get("requirements") or ())),
             source_url=data.get("source_url") or (
                 raw.source_ref if raw.source_ref.startswith("http") else None
             ),
@@ -104,10 +105,11 @@ class PackagedJobSeedSource(ManualJobSource):
     source_id = "job-source-packaged-seed"
 
     def __init__(self, seed_path: Path | None = None) -> None:
+        bundled_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
         path = seed_path or Path(
             os.getenv(
                 "ACH_JOB_SEED_PATH",
-                Path(__file__).resolve().parents[3] / "data" / "jobs" / "jobs.json",
+                bundled_root / "data" / "jobs" / "jobs.json",
             )
         )
         if not path.is_file():

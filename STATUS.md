@@ -42,7 +42,7 @@
 ## G1 离线求职闭环
 
 - G3 简历导出：**PARTIAL**。ResumeRevision JSON/Markdown 导出、ResumeData 校验、文本/PDF fallback 导入预览、可注入 OCR adapter 边界、用户确认后的 ResumeBase 保存、基础版本历史查看、旧版本追加式恢复、服务端 undo/redo、按需差异查看和本地草稿 undo/redo 已实现；当前环境没有 OCR 引擎，图片 OCR 实际解析仍待补齐。
-- G4 面试成长：**PARTIAL**。文本会话事件、面试复盘 proposal、规则化 STAR 结构与内容具体性信号、独立学习计划 proposal、批准后进入有界任务队列、批准后的 Memory consolidation 任务入队，以及 Offer 准备/拒信模式分析 proposal 已实现；更丰富的模型化评分和跨会话编排仍待补齐。
+- G4 面试成长：**PARTIAL**。文本会话事件、面试复盘 proposal、规则化 STAR 结构与内容具体性信号、独立学习计划 proposal、批准后进入有界任务队列、批准后的 Memory consolidation 任务入队，以及历史页可触发的 Offer 准备/拒信模式分析 proposal 已实现；更丰富的模型化评分和跨会话编排仍待补齐。
 - G5 知识治理：**PARTIAL**。Memory 来源亲和度与 consolidation proposal、Wiki health 检查与知识页 review-gated 修复建议、SourceConnector schedule metadata、有界运行、单次 scheduler enqueue tick、认证 MCP transport boundary、JSON-RPC stdio 适配器、有界 SSE 事件适配器和 CLI 命令白名单/危险参数拒绝已实现；真实网络监听/生产认证、常驻 dispatcher 和宿主级 sandbox 隔离仍待补齐。
 
 - G2 沟通草稿：**PARTIAL / proposal-only**。机会页支持本地保存、查看、批准或拒绝草稿；每日限额、按渠道统计、回复与待跟进摘要已可读，不会执行真实发送。

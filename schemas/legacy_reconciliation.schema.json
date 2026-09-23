@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-career-harness.local/schemas/legacy_reconciliation.schema.json",
+  "title": "Legacy Reconciliation Record",
+  "type": "object",
+  "required": [
+    "source_path",
+    "source_hash",
+    "legacy_key",
+    "candidate_core_identity",
+    "mismatch",
+    "disposition",
+    "reason"
+  ],
+  "properties": {
+    "source_path": { "type": "string" },
+    "source_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "legacy_key": { "type": "string" },
+    "candidate_core_identity": { "type": ["string", "null"] },
+    "mismatch": { "type": "string" },
+    "disposition": { "enum": ["accepted", "rejected", "deferred"] },
+    "reason": { "type": "string" }
+  },
+  "additionalProperties": false
+}

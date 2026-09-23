@@ -109,4 +109,3 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 ## 10. 下一步与硬边界
 
 可继续的本地工作包括 OCR fixture、Resume 字段级恢复、SourceConnector 失败恢复读模型、Wiki lint-fix proposal 和离线面试编排。真实 Feishu/Gmail/Notion 写入、MCP 网络监听、宿主 sandbox、Legacy canonical cutover 与真实 ATS/平台发送仍需凭据、权限或用户 authority，保持阻断状态。
-

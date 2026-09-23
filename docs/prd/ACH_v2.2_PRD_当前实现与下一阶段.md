@@ -1,6 +1,6 @@
 # Agent Career Harness v2.2
 
-日期：2026-09-22  
+日期：2026-09-22
 基线：integration branch `refactor/v1.4-integration`，当前代码 checkpoint `60d93da`
 
 ## 1. 当前结论

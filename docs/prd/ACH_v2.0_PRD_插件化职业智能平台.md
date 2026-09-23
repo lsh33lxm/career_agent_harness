@@ -1,8 +1,8 @@
 # Agent Career Harness v2.0
 ## 插件化职业智能平台 PRD（供 Codex 开发）
 
-版本：v2.0-draft  
-日期：2026-09-21  
+版本：v2.0-draft
+日期：2026-09-21
 基线：v1.5 状态文档、Career Core、SQLite migrations 0001–0013、现有本地优先与证据约束原则
 
 ---

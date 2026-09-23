@@ -33,4 +33,3 @@ def test_interview_session_events_are_ordered_and_bounded(tmp_path: Path) -> Non
             role=InterviewSessionRole.USER,
             content="   ",
         )
-

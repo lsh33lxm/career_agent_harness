@@ -39,6 +39,7 @@ afterEach(cleanup);
 it("展示已确认与候选记忆且不暴露内部标识", async () => {
   render(<ContextPage />);
   expect(await screen.findByText("偏好本地优先的工具")).toBeTruthy();
+  fireEvent.click(screen.getByRole("tab", { name: /待确认/ }));
   const candidate = screen.getByDisplayValue("关注 Agent 工程岗位");
   fireEvent.change(candidate, { target: { value: "重点关注 Agent 平台工程岗位" } });
   expect(screen.queryByText("memory_1")).toBeNull();

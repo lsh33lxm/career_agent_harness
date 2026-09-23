@@ -25,6 +25,7 @@ export const authorityLabels: Record<string, string> = {
   user_confirmed: "用户确认",
   document_supported: "材料支持",
   rule_verified: "规则验证",
+  code_verified: "代码验证",
   ai_inferred: "模型推断",
   portal_receipt: "门户回执",
 };

@@ -1,8 +1,15 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Inbox } from "lucide-react";
 import { ApiError } from "../api/client";
 import { listCapabilityInbox, reviewCapabilityCandidate, type InboxItem, type InboxReceipt, type InboxReviewRequest } from "../api/capabilityInbox";
 import { actorLabels, capabilityLayerLabels, candidateStatusLabels, displayLabel } from "../app/displayLabels";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Section, Surface } from "../components/ui/Section";
+import { EmptyState, ErrorState, LoadingState } from "../components/ui/States";
+import { Button } from "../components/ui/Button";
+import { Field } from "../components/ui/Field";
+import { InlineNotice } from "../components/ui/Notice";
 import "./CapabilityInboxPage.css";
 
 function requestId(prefix: string): string {
@@ -48,29 +55,74 @@ function ReviewCard({ item, refresh }: { item: InboxItem; refresh: () => Promise
       }
     } finally { setPending(false); }
   }
-  return <article className="inbox-card">
-    <p>{candidate.status === "pending" ? "待审核" : "审核历史"}</p>
-    <h2>{candidate.proposed_canonical_name}</h2>
-    <p>{candidate.proposed_description}</p>
-    <p>候选编号：{candidate.candidate_node_id} · 第 {revision} 版 · {displayLabel(candidate.status, candidateStatusLabels)}</p>
-    <p>发现者：{displayLabel(candidate.discovered_by, actorLabels)} · 层级：{displayLabel(candidate.proposed_layer, capabilityLayerLabels)}</p>
-    <p>来源证据：{candidate.source_evidence_refs.join(" · ")}</p>
-    {candidate.review_reason && <p>历史审核：{candidate.reviewed_by} — {candidate.review_reason}</p>}
-    {forbidden && <p>用户本人提出的候选不能由同一用户审核。</p>}
-    {candidate.status === "pending" && <form onSubmit={submit}>
-      <label>审核决定<select value={decision} disabled={!editable} onChange={(e) => { setDecision(e.target.value as typeof decision); setOperation(null); }}>
-        <option value="">请选择</option><option value="accept">接受：发布新官方图谱</option><option value="reject">忽略：保留审核历史</option>
-      </select></label>
-      <label>审核理由<textarea value={reason} maxLength={2048} disabled={!editable} onChange={(e) => { setReason(e.target.value); setOperation(null); }} /></label>
-      <button disabled={!editable || !decision || !reason.trim()} type="submit">{pending ? "审核中…" : operation ? "重试原审核" : "确认审核"}</button>
-    </form>}
-    {error && <p role="alert">{error}</p>}
-    {conflict && <button disabled={pending} onClick={() => { void refresh().then((ok) => { if (ok) { setConflict(false); setDecision(""); setReason(""); setError(""); } }); }}>刷新审核状态</button>}
-    {receipt && <section role="status"><h3>审核已成功</h3><p>回执：{receipt.commit.event_id} · 第 {receipt.commit.revision} 版</p>
-      {receipt.capability_id && <p>能力 ID：{receipt.capability_id}</p>}
-      {receipt.graph_version && <p>图谱 ID：{receipt.graph_version.graph_version_id}</p>}
-    </section>}
-  </article>;
+  return (
+    <article className="inbox-card">
+      <div className="inbox-card__head">
+        <span className={candidate.status === "pending" ? "badge badge--gold" : "badge"}>{candidate.status === "pending" ? "待审核" : "审核历史"}</span>
+        <h2>{candidate.proposed_canonical_name}</h2>
+      </div>
+      <p className="inbox-card__desc">{candidate.proposed_description}</p>
+      <dl className="dl">
+        <div><dt>候选编号</dt><dd>{candidate.candidate_node_id} · 第 {revision} 版 · {displayLabel(candidate.status, candidateStatusLabels)}</dd></div>
+        <div><dt>发现者</dt><dd>{displayLabel(candidate.discovered_by, actorLabels)} · 层级：{displayLabel(candidate.proposed_layer, capabilityLayerLabels)}</dd></div>
+        <div><dt>来源证据</dt><dd>{candidate.source_evidence_refs.join(" · ")}</dd></div>
+      </dl>
+      {candidate.review_reason && <p className="text-aux">历史审核：{candidate.reviewed_by} — {candidate.review_reason}</p>}
+      {forbidden && <InlineNotice tone="muted">用户本人提出的候选不能由同一用户审核。</InlineNotice>}
+      {candidate.status === "pending" && (
+        <form className="inbox-card__form" onSubmit={(event) => void submit(event)}>
+          <Field label="审核决定">
+            <select
+              className="select"
+              value={decision}
+              disabled={!editable}
+              onChange={(e) => { setDecision(e.target.value as typeof decision); setOperation(null); }}
+            >
+              <option value="">请选择</option>
+              <option value="accept">接受：发布新官方图谱</option>
+              <option value="reject">忽略：保留审核历史</option>
+            </select>
+          </Field>
+          <Field label="审核理由">
+            <textarea
+              className="textarea"
+              value={reason}
+              maxLength={2048}
+              disabled={!editable}
+              onChange={(e) => { setReason(e.target.value); setOperation(null); }}
+            />
+          </Field>
+          <div>
+            <Button variant="primary" type="submit" loading={pending} disabled={!editable || !decision || !reason.trim()}>
+              {pending ? "审核中…" : operation ? "重试原审核" : "确认审核"}
+            </Button>
+          </div>
+        </form>
+      )}
+      {error && <InlineNotice tone="danger" role="alert">{error}</InlineNotice>}
+      {conflict && (
+        <div>
+          <Button
+            variant="secondary"
+            loading={pending}
+            onClick={() => { void refresh().then((ok) => { if (ok) { setConflict(false); setDecision(""); setReason(""); setError(""); } }); }}
+          >
+            刷新审核状态
+          </Button>
+        </div>
+      )}
+      {receipt && (
+        <section className="banner banner--info" role="status">
+          <div className="banner__body">
+            <h3>审核已成功</h3>
+            <p>回执：{receipt.commit.event_id} · 第 {receipt.commit.revision} 版</p>
+            {receipt.capability_id && <p>能力 ID：{receipt.capability_id}</p>}
+            {receipt.graph_version && <p>图谱 ID：{receipt.graph_version.graph_version_id}</p>}
+          </div>
+        </section>
+      )}
+    </article>
+  );
 }
 
 export function CapabilityInboxPage() {
@@ -86,10 +138,35 @@ export function CapabilityInboxPage() {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
-  return <main className="capability-inbox"><header><h1>能力候选收件箱</h1><p>候选属于全局能力本体，不表示个人掌握。接受会发布新官方图谱；忽略保留历史。</p><Link to="/capabilities" state={location.state}>返回能力地图</Link></header>
-    {loading && <p role="status">正在加载收件箱…</p>}
-    {error && <div role="alert">{error}<button disabled={loading} onClick={() => { void refresh(); }}>重试读取</button></div>}
-    {loaded && !loading && !items.length && <p>暂无能力候选</p>}
-    <section aria-label="候选与审核历史">{items.map((item) => <ReviewCard key={item.candidate.candidate_node_id} item={item} refresh={refresh} />)}</section>
-  </main>;
+  return (
+    <main className="page">
+      <PageHeader
+        eyebrow="能力工作台"
+        title="能力候选收件箱"
+        description="候选属于全局能力本体，不表示个人掌握。接受会发布新官方图谱；忽略保留历史。"
+        actions={<Link className="btn btn--secondary" to="/capabilities" state={location.state}>返回能力地图</Link>}
+      />
+      <Surface>
+        <Section title="候选与审核历史" ariaLabel="候选与审核历史" meta={loaded && !loading ? `${items.length} 条` : undefined}>
+          {loading && items.length === 0 && <LoadingState label="正在加载收件箱…" />}
+          {loading && items.length > 0 && <p className="text-aux" role="status">正在加载收件箱…</p>}
+          {error && !loading && (
+            <ErrorState
+              compact
+              title="读取审核列表失败"
+              description="已确认的审核结果仍然有效。"
+              onRetry={() => { void refresh(); }}
+              retryLabel="重试读取"
+            />
+          )}
+          {loaded && !loading && !items.length && <EmptyState compact icon={Inbox} title="暂无能力候选" />}
+          {items.length > 0 && (
+            <div className="inbox-list">
+              {items.map((item) => <ReviewCard key={item.candidate.candidate_node_id} item={item} refresh={refresh} />)}
+            </div>
+          )}
+        </Section>
+      </Surface>
+    </main>
+  );
 }

@@ -1,5 +1,14 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-24 492 条职位种子安装强验证
+
+- 当前 NSIS 安装包 SHA-256：`EC8D4BFCCEFE49344B6062D585E7DB9D8AE8E62D132214451A53B1777BFCA6BC`。
+- 全新安装目录和独立 `ACH_DATA_DIR`：`artifacts/verification/installed-runtime-job-seed-20260924-strong`。
+- Demo sidecar 在动态回环端口 `65528` 启动，`GET /health` 返回 `200`，环境为 `demo`。
+- 安装后离线 `POST /api/v1/jobs/packaged-seed-search` 返回 `492` 条；本地种子文件和 manifest 均为 `492` 条，SHA-256 为 `2f99952eb8103a5b420261d04e1365517581cd928ddaa61b5598818a2402c7a3`。
+- 日志未出现旧 `agent_rader` 路径；关闭窗口后应用退出码为 `0`，无匹配残留进程。证据写入该验证目录的 `verification.json`、`shutdown.json` 和 `data/logs/desktop-sidecar.log`。
+- 该结果满足 492 条离线种子加载门槛；真实 Resume Review 浏览器逐步点击、完整截图和 Playwright teardown 仍未完成，Desktop Verification Gate 继续为 **NO-GO**。
+
 ## 2026-09-23 legacy job release eligibility update
 
 - 用户确认本批数据为公开、非商业可使用数据，并批准以公开 URL、平台/来源类型和官方来源标记作为再分发依据。

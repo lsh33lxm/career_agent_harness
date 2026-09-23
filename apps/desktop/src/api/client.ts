@@ -73,6 +73,7 @@ export interface OpportunityAdmissionCommit {
 interface RuntimeConfig {
   apiBaseUrl: string;
   launchToken: string;
+  demoMode: boolean;
 }
 
 export class ApiError extends Error {
@@ -90,9 +91,10 @@ function runtimeConfig(): RuntimeConfig {
   const configuredBaseUrl =
     injected?.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8765";
   const launchToken = injected?.launchToken ?? import.meta.env.VITE_LAUNCH_TOKEN;
+  const demoMode = injected?.demoMode === true || import.meta.env.VITE_DEMO_MODE === "true";
 
-  if (!launchToken) {
-    throw new ApiError("Local API launch token is unavailable");
+  if (!launchToken && !demoMode) {
+    throw new ApiError("本地服务尚未启动，请先启动职业核心；演示模式可离线查看界面");
   }
   let parsedBaseUrl: URL;
   try {
@@ -110,7 +112,7 @@ function runtimeConfig(): RuntimeConfig {
   ) {
     throw new ApiError("Local API must use an explicit 127.0.0.1 address");
   }
-  return { apiBaseUrl: parsedBaseUrl.origin, launchToken };
+  return { apiBaseUrl: parsedBaseUrl.origin, launchToken: launchToken ?? "", demoMode };
 }
 
 export async function apiRequest<T>(
@@ -119,6 +121,9 @@ export async function apiRequest<T>(
   idempotencyKey?: string,
 ): Promise<T> {
   const config = runtimeConfig();
+  if (config.demoMode && !config.launchToken) {
+    throw new ApiError("当前是离线演示模式，本地职业核心尚未连接");
+  }
   let response: Response;
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${config.launchToken}`);
@@ -152,6 +157,9 @@ export async function apiRequest<T>(
 
 export async function apiRequestBlob(path: string, init: RequestInit = {}): Promise<Blob> {
   const config = runtimeConfig();
+  if (config.demoMode && !config.launchToken) {
+    throw new ApiError("当前是离线演示模式，本地职业核心尚未连接");
+  }
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${config.launchToken}`);
   let response: Response;

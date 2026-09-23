@@ -3,6 +3,7 @@
 interface Window {
   __ACH_CONFIG__?: {
     apiBaseUrl: string;
-    launchToken: string;
+    launchToken?: string;
+    demoMode?: boolean;
   };
 }

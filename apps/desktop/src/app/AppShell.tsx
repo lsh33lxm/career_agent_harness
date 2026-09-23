@@ -4,6 +4,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { navigation } from "./navigation";
 
 export function AppShell() {
+  const demoMode = window.__ACH_CONFIG__?.demoMode === true || import.meta.env.VITE_DEMO_MODE === "true";
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -30,6 +31,7 @@ export function AppShell() {
       </aside>
 
       <div className="workspace">
+        {demoMode && <div className="demo-banner" role="status">演示模式 · 仅展示脱敏样例，不连接真实模型或外部平台</div>}
         <header className="topbar">
           <label className="search-field">
             <Search size={17} aria-hidden="true" />

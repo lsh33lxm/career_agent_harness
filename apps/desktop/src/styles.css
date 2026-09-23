@@ -249,6 +249,15 @@ textarea:focus-visible {
   overflow: auto;
 }
 
+.demo-banner {
+  padding: 8px 24px;
+  color: #5b3b16;
+  background: #f3e5c8;
+  border-bottom: 1px solid #d8bd8a;
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+
 .plugin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

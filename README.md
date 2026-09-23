@@ -124,3 +124,20 @@ is excluded from Git.
 The importer refuses outputs inside the source workspace, does not follow links, and
 never approves a candidate identity. Generated manifest/report files are ignored by
 Git because their path inventory may contain private historical metadata.
+
+## Demo mode and job data audit
+
+The desktop shell can be opened without credentials in an explicit offline demo
+mode by setting `VITE_DEMO_MODE=true`. It shows a Chinese demo banner and never
+connects to a model provider or external platform. This flag does not fabricate job
+records; a real demo dataset is generated only after the read-only audit described
+in [`docs/data-audit.md`](docs/data-audit.md).
+
+Run the audit after receiving the real local database path:
+
+```powershell
+python scripts/audit_job_db.py "D:\真实\岗位库.db" --output docs/data-audit.md
+```
+
+The repository currently has no usable `<JOB_DB_PATH>` value, so it deliberately
+does not claim a job count or publish historical job text.

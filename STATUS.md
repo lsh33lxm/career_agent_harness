@@ -1,5 +1,21 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-23 legacy job release eligibility update
+
+- 用户确认本批数据为公开、非商业可使用数据，并批准以公开 URL、平台/来源类型和官方来源标记作为再分发依据。
+- 迁移脚本新增显式 `--allow-public-source-noncommercial` 政策开关；未显式启用时仍保持保守的 `local-only` 分类。
+- 真实重跑读取 492 条岗位和 886 条来源台账：`release-eligible=350`、`local-only=142`、`excluded=0`。
+- 生成 `data/jobs/jobs.json`（350 条，SHA-256 `d7af624052d6dc5717dfcc1d4c2c0d4ff3fe4123d0fa0b8aa84ee49c537e9133`）和更新后的 `data/jobs/manifest.json`；原始 `agent_rader` 保持只读。
+- 该结果允许进入种子数据/安装验证，但仍需完成全量测试、干净安装和安全快照检查后，才能评估私有 Beta。
+
+## 2026-09-23 数据迁移门
+
+- 在 `feature/legacy-job-data-migration` worktree 中完成只读 Agent Radar 岗位审计脚本 `scripts/migrate_legacy_jobs.py`。
+- 实际读取 492 条岗位记录和 886 条来源台账记录；输入 SHA-256 已写入 `data/jobs/manifest.json`，审计摘要写入 `data/jobs/migration-report.json`。
+- 用户批准公开来源非商业政策后，分类为 `release-eligible=350`、`local-only=142`、`excluded=0`；350 条规范化种子已生成，142 条来源关联不足的数据继续保留 local-only。
+- 脚本支持 `ACH_LEGACY_AGENT_RADAR_DIR`、`--expected-jobs-sha256`、`--allow-public-source-noncommercial`、幂等重跑和源哈希变化失败；迁移单测通过 4 项。
+- Beta 安装、GitHub prerelease、RecruitOps 审计与功能增量仍需通过后续构建、安全和许可检查；Desktop Verification Gate v0.1 仍为 **NO-GO**。
+
 更新时间：2026-09-23；集成分支：`integration/ui-desktop-release-v0.1`；代码已本地集成到 `main`（`b746730`）。Desktop Verification Gate v0.1 仍为 **NO-GO**。
 
 ## Desktop Verification Gate v0.1（2026-09-23）

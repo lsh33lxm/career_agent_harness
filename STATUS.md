@@ -14,6 +14,14 @@
 - 修复 PyInstaller 资源路径和 `null` requirements 兼容后，干净 NSIS 安装实测 `/health=200`、离线种子查询返回 350 条，sidecar 正常退出；验证目录为 `artifacts/verification/clean-install-job-seed-20260924-d`。
 - `v0.1.0-beta.1` 快照在最后两项安装修复提交前已生成，不能作为最终一致性发布；将以包含 `_MEIPASS` 资源路径和 `null` requirements 修复的下一 beta 重新发布。
 
+## Private beta publication (2026-09-24)
+
+- Repository visibility was corrected from public to private through the authorized GitHub API operation.
+- Clean snapshot source: `c91557b`; snapshot commit: `6dcf2a571f26bbd240545740e18c8892fee76f4c` on branch `beta-snapshot-20260924`.
+- `v0.1.0-beta.1` prerelease created with NSIS installer, `SHA256SUMS.txt`, and `manifest.json` assets. Installer SHA-256: `9c9cf1867960e2991399b36cdbf6b7a8cfe35a69e7450f27b8a7c9a31018710b`.
+- Release snapshot verifier passed: 515 files, only `README.md` Markdown, no docs, generated caches, secrets, or raw legacy data; manifest count/SHA matched 350 records.
+- Existing remote `main` history was preserved; the clean snapshot was pushed as `beta-snapshot-20260924` because replacing remote `main` would require a prohibited force/history rewrite.
+
 ## RecruitOps audit (2026-09-24)
 
 - 固定参考 commit：`5715c59cf976c995a79ca23bf37cea1f1ef3a0a9`；根许可证 MIT。

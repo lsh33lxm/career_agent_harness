@@ -1,0 +1,10 @@
+.record-page { display: grid; gap: var(--space-3); }
+.record-lookup { padding: var(--space-4); min-width: 0; overflow-wrap: anywhere; }
+.record-lookup form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-2); }
+.record-lookup label { display: grid; gap: 6px; min-width: 0; flex: 1 1 220px; }
+.record-lookup input { width: 100%; min-width: 0; padding: 9px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface); color: var(--ink); }
+.record-lookup button { padding: 10px 16px; background: var(--green); color: var(--on-green); border: 0; border-radius: var(--radius-control); cursor: pointer; }
+.record-lookup pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; padding: var(--space-2); background: var(--surface-soft); }
+.record-lookup article { margin-top: var(--space-3); border-top: 1px solid var(--border); padding-top: var(--space-2); }
+.record-lookup li { margin-bottom: var(--space-2); }
+@media (max-width: 768px) { .record-lookup { padding: var(--space-2); } }

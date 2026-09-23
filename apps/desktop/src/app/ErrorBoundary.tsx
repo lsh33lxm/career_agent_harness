@@ -23,10 +23,10 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.failed) {
       return (
         <main className="fatal-state">
-          <h1>Workspace unavailable</h1>
-          <p>The current view could not be rendered.</p>
+          <h1>工作台暂时无法显示</h1>
+          <p>当前页面渲染失败。你的本地数据不会因此被修改。</p>
           <button type="button" onClick={() => window.location.reload()}>
-            Reload workspace
+            重新加载工作台
           </button>
         </main>
       );

@@ -86,6 +86,29 @@ cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
 npm --prefix apps/desktop exec -- tauri build --debug --no-bundle
 ```
 
+## Windows Desktop Packaging
+
+The Tauri application owns the packaged Python sidecar lifecycle. Each launch selects a
+free loopback port, creates an in-memory token, injects the connection configuration into
+the webview, and terminates the complete PyInstaller process tree when the desktop window
+closes. Runtime data persists under `%LOCALAPPDATA%\AgentCareerHarness` unless
+`ACH_DATA_DIR` is set. Sidecar diagnostics are written to
+`<data-root>\logs\desktop-sidecar.log`; the launch token is never written to that log or
+the process command line.
+
+Build the sidecar and NSIS installer with:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-desktop-build.lock
+.\scripts\build_desktop_sidecar.ps1 -Python .\.venv\Scripts\python.exe
+npm --prefix apps/desktop exec -- tauri build
+```
+
+The installer is generated at
+`apps\desktop\src-tauri\target\release\bundle\nsis\Agent Career Harness_0.1.0_x64-setup.exe`.
+The sidecar executable is generated locally under `apps\desktop\src-tauri\binaries` and
+is excluded from Git.
+
 ## Legacy Read-only Inventory
 
 ```powershell
@@ -101,3 +124,20 @@ npm --prefix apps/desktop exec -- tauri build --debug --no-bundle
 The importer refuses outputs inside the source workspace, does not follow links, and
 never approves a candidate identity. Generated manifest/report files are ignored by
 Git because their path inventory may contain private historical metadata.
+
+## Demo mode and job data audit
+
+The desktop shell can be opened without credentials in an explicit offline demo
+mode by setting `VITE_DEMO_MODE=true`. It shows a Chinese demo banner and never
+connects to a model provider or external platform. This flag does not fabricate job
+records; a real demo dataset is generated only after the read-only audit described
+in [`docs/data-audit.md`](docs/data-audit.md).
+
+Run the audit after receiving the real local database path:
+
+```powershell
+python scripts/audit_job_db.py "D:\真实\岗位库.db" --output docs/data-audit.md
+```
+
+The repository currently has no usable `<JOB_DB_PATH>` value, so it deliberately
+does not claim a job count or publish historical job text.

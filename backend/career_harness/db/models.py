@@ -1,8 +1,22 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -84,3 +98,1760 @@ class MigrationMismatchRow(Base):
     disposition: Mapped[str] = mapped_column(String(32), nullable=False)
     reason: Mapped[str | None] = mapped_column(Text)
 
+
+class EvidenceArtifactRow(Base):
+    __tablename__ = "evidence_artifact"
+    __table_args__ = (
+        CheckConstraint(
+            "length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_evidence_artifact_sha256",
+        ),
+        CheckConstraint("length(trim(media_type)) > 0", name="ck_evidence_artifact_media_type"),
+        CheckConstraint(
+            "artifact_class IN ('public_source', 'personal', 'sensitive')",
+            name="ck_evidence_artifact_class",
+        ),
+        CheckConstraint("byte_length >= 0", name="ck_evidence_artifact_byte_length"),
+    )
+
+    artifact_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    media_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    artifact_class: Mapped[str] = mapped_column(String(32), nullable=False)
+    byte_length: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class EvidenceSourceRow(Base):
+    __tablename__ = "evidence_source"
+    __table_args__ = (
+        CheckConstraint(
+            "length(trim(source_type)) > 0 AND length(source_type) <= 128",
+            name="ck_evidence_source_type",
+        ),
+        CheckConstraint(
+            "length(trim(locator)) > 0 AND length(locator) <= 2048",
+            name="ck_evidence_source_locator",
+        ),
+    )
+
+    source_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    source_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    locator: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class SourceSnapshotRow(Base):
+    __tablename__ = "source_snapshot"
+    __table_args__ = (UniqueConstraint("snapshot_id", "artifact_id"),)
+
+    snapshot_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_source.source_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    artifact_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_artifact.artifact_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+
+class EvidenceRefRow(Base):
+    __tablename__ = "evidence_ref"
+    __table_args__ = (
+        CheckConstraint(
+            "selector IS NULL OR length(selector) <= 2048",
+            name="ck_evidence_ref_selector",
+        ),
+        ForeignKeyConstraint(
+            ["snapshot_id", "artifact_id"],
+            ["source_snapshot.snapshot_id", "source_snapshot.artifact_id"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    evidence_ref_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    snapshot_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    artifact_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    selector: Mapped[str | None] = mapped_column(Text)
+
+
+class JobIdentityRow(Base):
+    __tablename__ = "job_identity"
+
+    job_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+
+
+class JobRevisionRow(Base):
+    __tablename__ = "job_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_job_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_job_schema_version"),
+        CheckConstraint(
+            "length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_job_content_sha256",
+        ),
+        CheckConstraint("source_evidence_count >= 1", name="ck_job_evidence_count"),
+    )
+
+    job_id: Mapped[str] = mapped_column(
+        ForeignKey("job_identity.job_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    source_evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class JobRevisionEvidenceRefRow(Base):
+    __tablename__ = "job_revision_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint("job_id", "job_revision", "evidence_ref_id"),
+        CheckConstraint("job_revision >= 1", name="ck_job_evidence_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_job_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["job_id", "job_revision"],
+            ["job_revision.job_id", "job_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    job_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    job_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+
+class JobRequirementIdentityRow(Base):
+    __tablename__ = "job_requirement_identity"
+    __table_args__ = (UniqueConstraint("requirement_id", "job_id"),)
+
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    job_id: Mapped[str] = mapped_column(
+        ForeignKey("job_identity.job_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+
+
+class JobRequirementRevisionRow(Base):
+    __tablename__ = "job_requirement_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_job_requirement_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_job_requirement_schema_version"),
+        CheckConstraint("job_revision >= 1", name="ck_job_requirement_job_revision"),
+        CheckConstraint(
+            "length(trim(requirement_text)) > 0 AND length(requirement_text) <= 4096",
+            name="ck_job_requirement_text",
+        ),
+        CheckConstraint(
+            "importance IN ('required', 'preferred')",
+            name="ck_job_requirement_importance",
+        ),
+        CheckConstraint(
+            "status IN ('proposed', 'accepted', 'rejected', 'superseded')",
+            name="ck_job_requirement_status",
+        ),
+        CheckConstraint(
+            "(capability_id IS NULL AND graph_version_id IS NULL) OR "
+            "(capability_id IS NOT NULL AND graph_version_id IS NOT NULL)",
+            name="ck_job_requirement_mapping_pair",
+        ),
+        CheckConstraint(
+            "required_scope_count >= 1 AND source_evidence_count >= 1",
+            name="ck_job_requirement_counts",
+        ),
+        CheckConstraint(
+            "length(trim(proposed_by)) > 0 AND proposed_by_kind IN ('user', 'agent', 'rule')",
+            name="ck_job_requirement_proposer",
+        ),
+        CheckConstraint(
+            "(status = 'proposed' AND reviewed_by IS NULL AND reviewed_by_kind IS NULL "
+            "AND review_reason IS NULL AND reviewed_at IS NULL) OR "
+            "(status != 'proposed' AND length(trim(reviewed_by)) > 0 "
+            "AND reviewed_by_kind IN ('user', 'rule') "
+            "AND length(trim(review_reason)) > 0 AND reviewed_at IS NOT NULL)",
+            name="ck_job_requirement_review",
+        ),
+        CheckConstraint(
+            "status != 'accepted' OR capability_id IS NOT NULL",
+            name="ck_job_requirement_accepted_mapping",
+        ),
+        ForeignKeyConstraint(
+            ["requirement_id", "job_id"],
+            ["job_requirement_identity.requirement_id", "job_requirement_identity.job_id"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["job_id", "job_revision"],
+            ["job_revision.job_id", "job_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["capability_id", "graph_version_id"],
+            ["capability_node.capability_id", "capability_node.graph_version_id"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    job_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    job_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    requirement_text: Mapped[str] = mapped_column(Text, nullable=False)
+    importance: Mapped[str] = mapped_column(String(32), nullable=False)
+    capability_id: Mapped[str | None] = mapped_column(String(128))
+    graph_version_id: Mapped[str | None] = mapped_column(String(128))
+    required_scope_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    proposed_by_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by_kind: Mapped[str | None] = mapped_column(String(32))
+    review_reason: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class JobRequirementScopeRow(Base):
+    __tablename__ = "job_requirement_scope"
+    __table_args__ = (
+        UniqueConstraint("requirement_id", "requirement_revision", "scope"),
+        CheckConstraint("requirement_revision >= 1", name="ck_job_requirement_scope_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_job_requirement_scope_ordinal"),
+        CheckConstraint(
+            "scope IN ('understand', 'explain', 'apply', 'evidence', 'interview_ready')",
+            name="ck_job_requirement_scope_value",
+        ),
+        ForeignKeyConstraint(
+            ["requirement_id", "requirement_revision"],
+            ["job_requirement_revision.requirement_id", "job_requirement_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    requirement_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scope: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class JobRequirementEvidenceRefRow(Base):
+    __tablename__ = "job_requirement_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint("requirement_id", "requirement_revision", "evidence_ref_id"),
+        CheckConstraint("requirement_revision >= 1", name="ck_job_requirement_evidence_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_job_requirement_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["requirement_id", "requirement_revision"],
+            ["job_requirement_revision.requirement_id", "job_requirement_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    requirement_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+
+class WatchlistItemRow(Base):
+    __tablename__ = "watchlist_item"
+    __table_args__ = (UniqueConstraint("job_id", "job_revision"),)
+
+    watchlist_item_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    job_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    job_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    added_by: Mapped[str] = mapped_column(String(32), nullable=False)
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class OpportunityAdmissionProposalRow(Base):
+    __tablename__ = "opportunity_admission_proposal"
+
+    proposal_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    job_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    job_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    proposed_by: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    proposed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class OpportunityRecordRow(Base):
+    __tablename__ = "opportunity_record"
+    __table_args__ = (UniqueConstraint("job_id", "job_revision"),)
+
+    opportunity_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    job_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    job_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    admitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    admitted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class OpportunityAdmissionDecisionRow(Base):
+    __tablename__ = "opportunity_admission_decision"
+    __table_args__ = (
+        CheckConstraint("decided_by = 'user'", name="ck_opportunity_decision_user"),
+        CheckConstraint(
+            "(path = 'proposal' AND proposal_id IS NOT NULL) "
+            "OR (path = 'manual' AND proposal_id IS NULL)",
+            name="ck_opportunity_decision_path",
+        ),
+        CheckConstraint(
+            "(decision = 'admitted' AND opportunity_id IS NOT NULL) "
+            "OR (decision = 'rejected' AND opportunity_id IS NULL)",
+            name="ck_opportunity_decision_result",
+        ),
+        CheckConstraint(
+            "path != 'manual' OR decision = 'admitted'",
+            name="ck_opportunity_manual_admission",
+        ),
+    )
+
+    decision_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    job_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    job_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    decision: Mapped[str] = mapped_column(String(32), nullable=False)
+    path: Mapped[str] = mapped_column(String(32), nullable=False)
+    decided_by: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposal_id: Mapped[str | None] = mapped_column(
+        ForeignKey("opportunity_admission_proposal.proposal_id", ondelete="RESTRICT")
+    )
+    opportunity_id: Mapped[str | None] = mapped_column(
+        ForeignKey("opportunity_record.opportunity_id", ondelete="RESTRICT")
+    )
+    reason: Mapped[str | None] = mapped_column(Text)
+    decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SuggestedPriorityRow(Base):
+    __tablename__ = "suggested_priority"
+    __table_args__ = (
+        CheckConstraint(
+            "level IN ('low', 'medium', 'high', 'urgent')",
+            name="ck_suggested_priority_level",
+        ),
+        CheckConstraint("score IS NULL OR (score >= 0 AND score <= 1)", name="ck_priority_score"),
+        CheckConstraint("rank IS NULL OR rank >= 1", name="ck_priority_rank"),
+    )
+
+    opportunity_id: Mapped[str] = mapped_column(
+        ForeignKey("opportunity_record.opportunity_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    level: Mapped[str] = mapped_column(String(32), nullable=False)
+    score: Mapped[float | None] = mapped_column(Float)
+    rank: Mapped[int | None] = mapped_column(Integer)
+    reasons: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    input_revisions: Mapped[list[dict]] = mapped_column(JSON, nullable=False)
+    calculated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class UserPriorityRow(Base):
+    __tablename__ = "user_priority"
+    __table_args__ = (
+        CheckConstraint(
+            "level IN ('low', 'medium', 'high', 'urgent')",
+            name="ck_user_priority_level",
+        ),
+        CheckConstraint("actor = 'user'", name="ck_user_priority_actor"),
+    )
+
+    opportunity_id: Mapped[str] = mapped_column(
+        ForeignKey("opportunity_record.opportunity_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    level: Mapped[str] = mapped_column(String(32), nullable=False)
+    actor: Mapped[str] = mapped_column(String(32), nullable=False)
+    set_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+
+
+class CapabilityIdentityRow(Base):
+    __tablename__ = "capability_identity"
+
+    capability_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+
+
+class CapabilityGraphVersionRow(Base):
+    __tablename__ = "capability_graph_version"
+    __table_args__ = (
+        CheckConstraint(
+            "parent_graph_version_id IS NULL OR parent_graph_version_id != graph_version_id",
+            name="ck_capability_graph_parent_not_self",
+        ),
+        CheckConstraint(
+            "released_by_kind IN ('user', 'rule')",
+            name="ck_capability_graph_release_authority",
+        ),
+    )
+
+    graph_version_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    version_label: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    parent_graph_version_id: Mapped[str | None] = mapped_column(
+        ForeignKey("capability_graph_version.graph_version_id", ondelete="RESTRICT")
+    )
+    change_note: Mapped[str] = mapped_column(Text, nullable=False)
+    released_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    released_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    released_by_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class CapabilityNodeRow(Base):
+    __tablename__ = "capability_node"
+    __table_args__ = (
+        CheckConstraint(
+            "layer IN ('common_core', 'track', 'opportunity_specific')",
+            name="ck_capability_node_layer",
+        ),
+        CheckConstraint(
+            "lifecycle_status IN ('active', 'deprecated', 'retired')",
+            name="ck_capability_node_lifecycle",
+        ),
+    )
+
+    capability_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT"), primary_key=True
+    )
+    graph_version_id: Mapped[str] = mapped_column(
+        ForeignKey(
+            "capability_graph_version.graph_version_id",
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        primary_key=True,
+    )
+    canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    layer: Mapped[str] = mapped_column(String(32), nullable=False)
+    lifecycle_status: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class CapabilityRelationRow(Base):
+    __tablename__ = "capability_relation"
+    __table_args__ = (
+        CheckConstraint(
+            "source_capability_id != target_capability_id",
+            name="ck_capability_relation_distinct_nodes",
+        ),
+        CheckConstraint(
+            "relation_type IN ('prerequisite', 'part_of', 'related_to')",
+            name="ck_capability_relation_type",
+        ),
+        ForeignKeyConstraint(
+            ["source_capability_id", "graph_version_id"],
+            ["capability_node.capability_id", "capability_node.graph_version_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        ForeignKeyConstraint(
+            ["target_capability_id", "graph_version_id"],
+            ["capability_node.capability_id", "capability_node.graph_version_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    relation_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    source_capability_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    target_capability_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    relation_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    graph_version_id: Mapped[str] = mapped_column(String(128), nullable=False)
+
+
+class CandidateCapabilityNodeRow(Base):
+    __tablename__ = "candidate_capability_node"
+    __table_args__ = (
+        CheckConstraint(
+            "proposed_layer IN ('common_core', 'track', 'opportunity_specific')",
+            name="ck_candidate_capability_layer",
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'accepted', 'merged', 'ignored', 'deferred')",
+            name="ck_candidate_capability_status",
+        ),
+        CheckConstraint(
+            "json_type(source_evidence_refs) = 'array' "
+            "AND json_array_length(source_evidence_refs) > 0",
+            name="ck_candidate_capability_evidence_refs",
+        ),
+        CheckConstraint(
+            "(status = 'pending' AND reviewed_by IS NULL AND reviewed_by_kind IS NULL "
+            "AND review_reason IS NULL) OR (status != 'pending' AND reviewed_by IS NOT NULL "
+            "AND reviewed_by_kind IN ('user', 'rule') "
+            "AND review_reason IS NOT NULL)",
+            name="ck_candidate_capability_review",
+        ),
+        CheckConstraint(
+            "(status = 'merged' AND merge_target_capability_id IS NOT NULL) "
+            "OR (status != 'merged' AND merge_target_capability_id IS NULL)",
+            name="ck_candidate_capability_merge_target",
+        ),
+    )
+
+    candidate_node_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    proposed_canonical_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    proposed_description: Mapped[str] = mapped_column(Text, nullable=False)
+    proposed_layer: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_evidence_refs: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    discovered_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by_kind: Mapped[str | None] = mapped_column(String(32))
+    review_reason: Mapped[str | None] = mapped_column(Text)
+    merge_target_capability_id: Mapped[str | None] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT")
+    )
+
+
+class PersonalCapabilityStateRow(Base):
+    __tablename__ = "personal_capability_state"
+    __table_args__ = (
+        UniqueConstraint("personal_state_id", "revision", "capability_id"),
+        UniqueConstraint("personal_state_id", "revision", "candidate_id", "capability_id"),
+        CheckConstraint("revision >= 1", name="ck_personal_capability_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_personal_capability_schema_version"),
+        CheckConstraint(
+            "updated_by_kind IN ('user', 'rule')",
+            name="ck_personal_capability_update_authority",
+        ),
+    )
+
+    personal_state_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    capability_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT"), nullable=False
+    )
+    understand: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    explain: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    apply: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    evidence: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    interview_ready: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    updated_by_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class CapabilityEvidenceBindingRow(Base):
+    __tablename__ = "capability_evidence_binding"
+    __table_args__ = (
+        CheckConstraint(
+            "(evidence_ref_id IS NOT NULL AND project_evidence_id IS NULL) "
+            "OR (evidence_ref_id IS NULL AND project_evidence_id IS NOT NULL)",
+            name="ck_capability_evidence_exactly_one_source",
+        ),
+        CheckConstraint(
+            "authority IN ('code_verified', 'document_supported', 'user_confirmed', 'ai_inferred')",
+            name="ck_capability_evidence_authority",
+        ),
+        CheckConstraint(
+            "json_type(scopes) = 'array' AND json_array_length(scopes) > 0",
+            name="ck_capability_evidence_scopes",
+        ),
+        ForeignKeyConstraint(
+            ["personal_state_id", "personal_state_revision", "capability_id"],
+            [
+                "personal_capability_state.personal_state_id",
+                "personal_capability_state.revision",
+                "personal_capability_state.capability_id",
+            ],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    binding_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    personal_state_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    personal_state_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    capability_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT"), nullable=False
+    )
+    evidence_ref_id: Mapped[str | None] = mapped_column(String(128))
+    project_evidence_id: Mapped[str | None] = mapped_column(String(128))
+    project_evidence_revision: Mapped[int | None] = mapped_column(Integer)
+    authority: Mapped[str] = mapped_column(String(32), nullable=False)
+    scopes: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    bound_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    bound_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class CapabilityMarketBindingRow(Base):
+    __tablename__ = "capability_market_binding"
+    __table_args__ = (
+        CheckConstraint(
+            "market_scope IN ('target', 'broad')",
+            name="ck_capability_market_scope",
+        ),
+        CheckConstraint(
+            "json_type(source_evidence_refs) = 'array' "
+            "AND json_array_length(source_evidence_refs) > 0",
+            name="ck_capability_market_evidence_refs",
+        ),
+        CheckConstraint(
+            "(market_scope = 'target' AND "
+            "(opportunity_id IS NOT NULL OR job_requirement_id IS NOT NULL)) "
+            "OR (market_scope = 'broad' AND opportunity_id IS NULL "
+            "AND job_requirement_id IS NULL)",
+            name="ck_capability_market_target_refs",
+        ),
+    )
+
+    binding_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    capability_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT"), nullable=False
+    )
+    market_scope: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_evidence_refs: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    opportunity_id: Mapped[str | None] = mapped_column(
+        ForeignKey("opportunity_record.opportunity_id", ondelete="RESTRICT")
+    )
+    job_requirement_id: Mapped[str | None] = mapped_column(String(128))
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CapabilityInvestmentStateRow(Base):
+    __tablename__ = "capability_investment_state"
+    __table_args__ = (
+        CheckConstraint(
+            "target_market_demand BETWEEN 0 AND 1 "
+            "AND opportunity_importance BETWEEN 0 AND 1 "
+            "AND cross_opportunity_reuse BETWEEN 0 AND 1 "
+            "AND project_proximity BETWEEN 0 AND 1 "
+            "AND evidence_feasibility BETWEEN 0 AND 1 "
+            "AND personal_interest BETWEEN 0 AND 1 "
+            "AND learning_cost BETWEEN 0 AND 1 "
+            "AND score BETWEEN 0 AND 1",
+            name="ck_capability_investment_unit_interval",
+        ),
+        CheckConstraint(
+            "recommendation IN ('low', 'medium', 'high')",
+            name="ck_capability_investment_recommendation",
+        ),
+        CheckConstraint(
+            "(score >= 0.6 AND recommendation = 'high') "
+            "OR (score >= 0.35 AND score < 0.6 AND recommendation = 'medium') "
+            "OR (score < 0.35 AND recommendation = 'low')",
+            name="ck_capability_investment_score_recommendation",
+        ),
+        CheckConstraint(
+            "score = round(max(0.0, min(1.0, "
+            "target_market_demand * 0.25 + opportunity_importance * 0.20 "
+            "+ cross_opportunity_reuse * 0.20 + project_proximity * 0.10 "
+            "+ evidence_feasibility * 0.15 + personal_interest * 0.10 "
+            "- learning_cost * 0.25)), 3)",
+            name="ck_capability_investment_score_factors",
+        ),
+        CheckConstraint(
+            "rule_version = 'capability-investment-v1'",
+            name="ck_capability_investment_rule_version",
+        ),
+        CheckConstraint(
+            "json_type(reasons) = 'array' AND json_array_length(reasons) > 0",
+            name="ck_capability_investment_reasons",
+        ),
+        CheckConstraint(
+            "json_type(market_binding_ids) = 'array' AND json_array_length(market_binding_ids) > 0",
+            name="ck_capability_investment_market_bindings",
+        ),
+        CheckConstraint(
+            "personal_state_revision >= 1",
+            name="ck_capability_investment_personal_revision",
+        ),
+        ForeignKeyConstraint(
+            [
+                "personal_state_id",
+                "personal_state_revision",
+                "candidate_id",
+                "capability_id",
+            ],
+            [
+                "personal_capability_state.personal_state_id",
+                "personal_capability_state.revision",
+                "personal_capability_state.candidate_id",
+                "personal_capability_state.capability_id",
+            ],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    investment_state_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    capability_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT"), nullable=False
+    )
+    target_market_demand: Mapped[float] = mapped_column(Float, nullable=False)
+    opportunity_importance: Mapped[float] = mapped_column(Float, nullable=False)
+    cross_opportunity_reuse: Mapped[float] = mapped_column(Float, nullable=False)
+    project_proximity: Mapped[float] = mapped_column(Float, nullable=False)
+    evidence_feasibility: Mapped[float] = mapped_column(Float, nullable=False)
+    personal_interest: Mapped[float] = mapped_column(Float, nullable=False)
+    learning_cost: Mapped[float] = mapped_column(Float, nullable=False)
+    recommendation: Mapped[str] = mapped_column(String(32), nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    reasons: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    graph_version_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_graph_version.graph_version_id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    personal_state_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    personal_state_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    market_binding_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    opportunity_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    rule_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    calculated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ProjectIdentityRow(Base):
+    __tablename__ = "project_identity"
+
+    project_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+
+
+class ProjectRecordRow(Base):
+    __tablename__ = "project_record"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_project_record_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_record_schema_version"),
+    )
+
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("project_identity.project_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    root_locator: Mapped[str] = mapped_column(Text, nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ProjectScanScopeRow(Base):
+    __tablename__ = "project_scan_scope"
+    __table_args__ = (
+        UniqueConstraint("scope_id", "revision", "project_id"),
+        CheckConstraint("revision >= 1", name="ck_project_scope_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_scope_schema_version"),
+        CheckConstraint(
+            "json_type(allowed_paths) = 'array' AND json_array_length(allowed_paths) > 0",
+            name="ck_project_scope_allowed_paths",
+        ),
+        CheckConstraint(
+            "json_type(denied_paths) = 'array'",
+            name="ck_project_scope_denied_paths",
+        ),
+        CheckConstraint("follow_symlinks = 0", name="ck_project_scope_no_symlinks"),
+    )
+
+    scope_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("project_identity.project_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    allowed_paths: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    denied_paths: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    follow_symlinks: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ProjectSourceManifestRow(Base):
+    __tablename__ = "project_source_manifest"
+    __table_args__ = (
+        UniqueConstraint("manifest_id", "project_id"),
+        CheckConstraint("scan_scope_revision >= 1", name="ck_project_manifest_scope_revision"),
+        ForeignKeyConstraint(
+            ["scan_scope_id", "scan_scope_revision", "project_id"],
+            [
+                "project_scan_scope.scope_id",
+                "project_scan_scope.revision",
+                "project_scan_scope.project_id",
+            ],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    scan_scope_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    scan_scope_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ProjectSourceEntryRow(Base):
+    __tablename__ = "project_source_entry"
+    __table_args__ = (
+        CheckConstraint("length(relative_path) > 0", name="ck_project_source_relative_path"),
+        CheckConstraint(
+            "length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_project_source_sha256",
+        ),
+        CheckConstraint("byte_length >= 0", name="ck_project_source_byte_length"),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(
+        ForeignKey("project_source_manifest.manifest_id", ondelete="RESTRICT"), primary_key=True
+    )
+    relative_path: Mapped[str] = mapped_column(Text, primary_key=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    byte_length: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ProjectEvidenceRow(Base):
+    __tablename__ = "project_evidence"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_project_evidence_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_evidence_schema_version"),
+        CheckConstraint(
+            "claim_kind IN ('technical_observation', 'change', 'validation', 'performance', "
+            "'business_outcome', 'personal_contribution', 'ownership', 'usage')",
+            name="ck_project_evidence_claim_kind",
+        ),
+        CheckConstraint(
+            "authority IN ('code_verified', 'document_supported', 'user_confirmed', 'ai_inferred')",
+            name="ck_project_evidence_authority",
+        ),
+        CheckConstraint(
+            "freshness IN ('current', 'stale', 'unknown')",
+            name="ck_project_evidence_freshness",
+        ),
+        CheckConstraint(
+            "review_status IN ('proposed', 'accepted', 'rejected', 'superseded')",
+            name="ck_project_evidence_review_status",
+        ),
+        CheckConstraint(
+            "(review_status = 'proposed' AND reviewed_by IS NULL "
+            "AND reviewed_by_kind IS NULL AND review_reason IS NULL) OR "
+            "(review_status != 'proposed' AND reviewed_by IS NOT NULL "
+            "AND trim(reviewed_by) != '' AND reviewed_by_kind IN ('user', 'rule') "
+            "AND review_reason IS NOT NULL AND trim(review_reason) != '')",
+            name="ck_project_evidence_review_authority",
+        ),
+        CheckConstraint(
+            "NOT (authority = 'ai_inferred' AND review_status = 'accepted')",
+            name="ck_project_evidence_ai_requires_promotion",
+        ),
+        CheckConstraint(
+            "NOT (authority = 'code_verified' AND claim_kind IN "
+            "('performance', 'business_outcome', 'personal_contribution', "
+            "'ownership', 'usage'))",
+            name="ck_project_evidence_code_authority_limit",
+        ),
+        ForeignKeyConstraint(
+            ["manifest_id", "project_id"],
+            ["project_source_manifest.manifest_id", "project_source_manifest.project_id"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    evidence_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    claim_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    manifest_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    scanner: Mapped[str] = mapped_column(String(255), nullable=False)
+    scanner_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    authority: Mapped[str] = mapped_column(String(32), nullable=False)
+    freshness: Mapped[str] = mapped_column(String(32), nullable=False)
+    review_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by_kind: Mapped[str | None] = mapped_column(String(32))
+    review_reason: Mapped[str | None] = mapped_column(Text)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ProjectCapabilityStateRow(Base):
+    __tablename__ = "project_capability_state"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_project_capability_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_capability_schema_version"),
+        CheckConstraint(
+            "state IN ('existing', 'understood', 'modified', 'extended', "
+            "'validated', 'resume_ready')",
+            name="ck_project_capability_lifecycle",
+        ),
+    )
+
+    capability_state_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("project_identity.project_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    capability_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT"), nullable=False
+    )
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    finalized_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ProjectCapabilityBasisRow(Base):
+    __tablename__ = "project_capability_basis"
+    __table_args__ = (
+        CheckConstraint("state_revision >= 1", name="ck_project_basis_state_revision"),
+        CheckConstraint(
+            "basis_kind IN ('code_evidence', 'document_evidence', 'user_confirmation', "
+            "'change_evidence', 'validation_evidence', 'resume_approval')",
+            name="ck_project_basis_kind",
+        ),
+        CheckConstraint(
+            "(basis_kind = 'resume_approval' AND project_evidence_id IS NULL "
+            "AND project_evidence_revision IS NULL AND approval_id IS NOT NULL "
+            "AND approval_revision >= 1) OR (basis_kind != 'resume_approval' "
+            "AND project_evidence_id IS NOT NULL AND project_evidence_revision >= 1 "
+            "AND approval_id IS NULL AND approval_revision IS NULL)",
+            name="ck_project_basis_typed_reference",
+        ),
+        ForeignKeyConstraint(
+            ["capability_state_id", "state_revision"],
+            [
+                "project_capability_state.capability_state_id",
+                "project_capability_state.revision",
+            ],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        ForeignKeyConstraint(
+            ["project_evidence_id", "project_evidence_revision"],
+            ["project_evidence.evidence_id", "project_evidence.revision"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["approval_id", "approval_revision"],
+            ["entity_revision.entity_id", "entity_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    basis_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    capability_state_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    state_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    basis_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    project_evidence_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    project_evidence_revision: Mapped[int | None] = mapped_column(Integer)
+    approval_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    approval_revision: Mapped[int | None] = mapped_column(Integer)
+
+
+class ProjectEnhancementTaskRow(Base):
+    __tablename__ = "project_enhancement_task"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_project_enhancement_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_project_enhancement_schema_version"),
+        CheckConstraint(
+            "status IN ('proposed', 'ready', 'in_progress', 'awaiting_validation', "
+            "'completed', 'cancelled')",
+            name="ck_project_enhancement_status",
+        ),
+        CheckConstraint(
+            "json_type(learning_plan) = 'array' AND json_array_length(learning_plan) > 0 "
+            "AND json_type(files_to_review) = 'array' "
+            "AND json_array_length(files_to_review) > 0 "
+            "AND json_type(change_plan) = 'array' AND json_array_length(change_plan) > 0 "
+            "AND json_type(experiment_plan) = 'array' "
+            "AND json_array_length(experiment_plan) > 0 "
+            "AND json_type(validation_plan) = 'array' "
+            "AND json_array_length(validation_plan) > 0 "
+            "AND json_type(expected_evidence) = 'array' "
+            "AND json_array_length(expected_evidence) > 0",
+            name="ck_project_enhancement_plans",
+        ),
+    )
+
+    task_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("project_identity.project_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    target_gap_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    target_capability_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_identity.capability_id", ondelete="RESTRICT"), nullable=False
+    )
+    learning_plan: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    files_to_review: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    change_plan: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    experiment_plan: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    validation_plan: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    expected_evidence: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ContextManifestRow(Base):
+    __tablename__ = "context_manifest"
+    __table_args__ = (
+        CheckConstraint(
+            "selection_policy_version = 'context-relevance-v1'",
+            name="ck_context_manifest_selection_policy",
+        ),
+        CheckConstraint(
+            "compression_policy_version = 'context-no-compression-v1'",
+            name="ck_context_manifest_compression_policy",
+        ),
+        CheckConstraint(
+            "length(trim(contract_version)) > 0 AND length(trim(task_type)) > 0 "
+            "AND length(trim(provider)) > 0 AND length(trim(model_id)) > 0 "
+            "AND length(trim(actor)) > 0",
+            name="ck_context_manifest_required_text",
+        ),
+        CheckConstraint(
+            "length(input_hash) = 64 AND input_hash NOT GLOB '*[^0-9a-f]*'",
+            name="ck_context_manifest_input_hash",
+        ),
+        CheckConstraint(
+            "json_type(capabilities) = 'array' AND json_array_length(capabilities) <= 64",
+            name="ck_context_capabilities",
+        ),
+        CheckConstraint(
+            "json_type(skills) = 'array' AND json_array_length(skills) <= 64",
+            name="ck_context_skills",
+        ),
+        CheckConstraint(
+            "included_count >= 0 AND excluded_count >= 0 AND knowledge_ref_count >= 0",
+            name="ck_context_manifest_counts",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    contract_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    task_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    selection_policy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    compression_policy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    capabilities: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    skills: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    actor: Mapped[str] = mapped_column(String(255), nullable=False)
+    run_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    included_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    excluded_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    knowledge_ref_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ContextManifestAssetRefRow(Base):
+    __tablename__ = "context_manifest_asset_ref"
+    __table_args__ = (
+        UniqueConstraint("manifest_id", "disposition", "ordinal"),
+        CheckConstraint(
+            "asset_class IN ('personal_context', 'career_state', 'project_evidence', "
+            "'market_evidence', 'career_history_outcome')",
+            name="ck_context_asset_class",
+        ),
+        CheckConstraint("asset_revision >= 1", name="ck_context_asset_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_context_asset_ordinal"),
+        CheckConstraint(
+            "disposition IN ('included', 'excluded')",
+            name="ck_context_asset_disposition",
+        ),
+        CheckConstraint(
+            "(disposition = 'included' AND reason IN "
+            "('explicit_reference', 'relevance_term_match')) OR "
+            "(disposition = 'excluded' AND reason IN "
+            "('asset_class_not_allowed', 'no_relevance_match', 'selection_limit'))",
+            name="ck_context_asset_reason",
+        ),
+        CheckConstraint(
+            "json_type(matched_terms) = 'array' "
+            "AND json_array_length(matched_terms) <= 64 AND "
+            "((reason = 'relevance_term_match' AND json_array_length(matched_terms) > 0) "
+            "OR (reason != 'relevance_term_match' AND json_array_length(matched_terms) = 0))",
+            name="ck_context_asset_matched_terms",
+        ),
+        ForeignKeyConstraint(
+            ["manifest_id"],
+            ["context_manifest.manifest_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    asset_id: Mapped[str] = mapped_column(String(128), primary_key=True, index=True)
+    disposition: Mapped[str] = mapped_column(String(32), nullable=False)
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    asset_class: Mapped[str] = mapped_column(String(32), nullable=False)
+    asset_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str] = mapped_column(String(32), nullable=False)
+    matched_terms: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+
+
+class ContextManifestKnowledgeRefRow(Base):
+    __tablename__ = "context_manifest_knowledge_ref"
+    __table_args__ = (
+        UniqueConstraint("manifest_id", "knowledge_id", "knowledge_revision"),
+        CheckConstraint("knowledge_revision >= 1", name="ck_context_knowledge_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_context_knowledge_ordinal"),
+        ForeignKeyConstraint(
+            ["manifest_id"],
+            ["context_manifest.manifest_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    knowledge_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    knowledge_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class MatchAssessmentRow(Base):
+    __tablename__ = "match_assessment"
+    __table_args__ = (
+        CheckConstraint(
+            "opportunity_revision >= 1", name="ck_match_assessment_opportunity_revision"
+        ),
+        CheckConstraint("job_revision >= 1", name="ck_match_assessment_job_revision"),
+        CheckConstraint(
+            "policy_version = 'match-policy-v1'", name="ck_match_assessment_policy_version"
+        ),
+        CheckConstraint(
+            "json_type(manifest) = 'object' AND length(manifest) <= 65536 AND "
+            "json_array_length(manifest, '$.requirements') BETWEEN 1 AND 256",
+            name="ck_match_assessment_manifest",
+        ),
+        ForeignKeyConstraint(
+            ["opportunity_id"], ["opportunity_record.opportunity_id"], ondelete="RESTRICT"
+        ),
+        ForeignKeyConstraint(
+            ["opportunity_id", "opportunity_revision"],
+            ["entity_revision.entity_id", "entity_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["job_id", "job_revision"],
+            ["job_revision.job_id", "job_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        Index(
+            "ix_match_assessment_opportunity",
+            "opportunity_id",
+            "created_at",
+            "assessment_id",
+        ),
+    )
+
+    assessment_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    opportunity_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    opportunity_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    job_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    job_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    candidate_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    policy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    manifest: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class MatchRequirementResultRow(Base):
+    __tablename__ = "match_requirement_result"
+    __table_args__ = (
+        CheckConstraint("requirement_revision >= 1", name="ck_match_requirement_result_revision"),
+        CheckConstraint(
+            "classification IN ('covered', 'quick_to_strengthen', 'clear_gap')",
+            name="ck_match_requirement_result_classification",
+        ),
+        CheckConstraint(
+            "json_type(covered_scopes) = 'array' AND json_array_length(covered_scopes) <= 5 AND "
+            "json_type(missing_scopes) = 'array' AND json_array_length(missing_scopes) <= 5",
+            name="ck_match_requirement_result_scopes",
+        ),
+        CheckConstraint(
+            "json_type(reasons) = 'array' AND json_array_length(reasons) BETWEEN 1 AND 64 AND "
+            "length(reasons) <= 16384",
+            name="ck_match_requirement_result_reasons",
+        ),
+        ForeignKeyConstraint(
+            ["assessment_id"], ["match_assessment.assessment_id"], ondelete="RESTRICT"
+        ),
+        ForeignKeyConstraint(
+            ["requirement_id", "requirement_revision"],
+            ["job_requirement_revision.requirement_id", "job_requirement_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["capability_id"], ["capability_identity.capability_id"], ondelete="RESTRICT"
+        ),
+        Index(
+            "ix_match_requirement_result_requirement",
+            "requirement_id",
+            "requirement_revision",
+        ),
+    )
+
+    assessment_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    requirement_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    requirement_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    capability_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    classification: Mapped[str] = mapped_column(String(32), nullable=False)
+    covered_scopes: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    missing_scopes: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    reasons: Mapped[list[dict]] = mapped_column(JSON, nullable=False)
+
+
+class MatchGapRow(Base):
+    __tablename__ = "match_gap"
+    __table_args__ = (
+        UniqueConstraint("assessment_id", "requirement_id", "requirement_revision"),
+        CheckConstraint("requirement_revision >= 1", name="ck_match_gap_revision"),
+        CheckConstraint(
+            "classification IN ('quick_to_strengthen', 'clear_gap')",
+            name="ck_match_gap_classification",
+        ),
+        ForeignKeyConstraint(
+            ["assessment_id", "requirement_id", "requirement_revision"],
+            [
+                "match_requirement_result.assessment_id",
+                "match_requirement_result.requirement_id",
+                "match_requirement_result.requirement_revision",
+            ],
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["capability_id"], ["capability_identity.capability_id"], ondelete="RESTRICT"
+        ),
+        Index("ix_match_gap_assessment", "assessment_id"),
+    )
+
+    gap_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    assessment_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    requirement_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    requirement_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    capability_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    classification: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class ExtractedClaimIdentityRow(Base):
+    __tablename__ = "extracted_claim_identity"
+
+    claim_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+
+
+class ExtractedClaimRevisionRow(Base):
+    __tablename__ = "extracted_claim_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_extracted_claim_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_extracted_claim_schema_version"),
+        CheckConstraint("length(trim(claim_type)) > 0", name="ck_extracted_claim_claim_type"),
+        CheckConstraint(
+            "json_type(proposed_value) IS NOT NULL AND length(proposed_value) <= 65536",
+            name="ck_extracted_claim_proposed_value",
+        ),
+        CheckConstraint(
+            "length(trim(extractor)) > 0 AND length(trim(extractor_version)) > 0",
+            name="ck_extracted_claim_extractor",
+        ),
+        CheckConstraint(
+            "confidence >= 0 AND confidence <= 1", name="ck_extracted_claim_confidence"
+        ),
+        CheckConstraint(
+            "status IN ('proposed', 'accepted', 'rejected', 'superseded')",
+            name="ck_extracted_claim_status",
+        ),
+        CheckConstraint("evidence_count >= 1", name="ck_extracted_claim_evidence_count"),
+        CheckConstraint(
+            "length(trim(proposed_by)) > 0 AND proposed_by_kind IN ('user', 'agent', 'rule')",
+            name="ck_extracted_claim_proposer",
+        ),
+        CheckConstraint(
+            "(status = 'proposed' AND reviewed_by IS NULL AND reviewed_by_kind IS NULL "
+            "AND review_reason IS NULL AND reviewed_at IS NULL) OR "
+            "(status != 'proposed' AND length(trim(reviewed_by)) > 0 "
+            "AND reviewed_by_kind IN ('user', 'rule') "
+            "AND length(trim(review_reason)) > 0 AND reviewed_at IS NOT NULL)",
+            name="ck_extracted_claim_review",
+        ),
+        ForeignKeyConstraint(
+            ["claim_id"], ["extracted_claim_identity.claim_id"], ondelete="RESTRICT"
+        ),
+        Index(
+            "ix_extracted_claim_revision_subject",
+            "subject_entity_id",
+            "subject_entity_kind",
+        ),
+    )
+
+    claim_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    claim_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    subject_entity_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    subject_entity_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    proposed_value: Mapped[Any] = mapped_column(JSON, nullable=False)
+    extractor: Mapped[str] = mapped_column(String(255), nullable=False)
+    extractor_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    proposed_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    proposed_by_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by_kind: Mapped[str | None] = mapped_column(String(32))
+    review_reason: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ExtractedClaimEvidenceRefRow(Base):
+    __tablename__ = "extracted_claim_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint("claim_id", "claim_revision", "evidence_ref_id"),
+        CheckConstraint("claim_revision >= 1", name="ck_extracted_claim_evidence_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_extracted_claim_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["claim_id", "claim_revision"],
+            ["extracted_claim_revision.claim_id", "extracted_claim_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    claim_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    claim_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+
+class FactIdentityRow(Base):
+    __tablename__ = "fact_identity"
+
+    fact_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    candidate_id: Mapped[str | None] = mapped_column(String(128))
+
+
+class FactRevisionRow(Base):
+    __tablename__ = "fact_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_fact_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_fact_schema_version"),
+        CheckConstraint("length(trim(fact_type)) > 0", name="ck_fact_fact_type"),
+        CheckConstraint(
+            "json_type(value) IS NOT NULL AND length(value) <= 65536",
+            name="ck_fact_value",
+        ),
+        CheckConstraint(
+            "authority IN ('user_asserted', 'document_supported', 'rule_verified')",
+            name="ck_fact_authority",
+        ),
+        CheckConstraint("source_claim_revision >= 1", name="ck_fact_source_claim_revision"),
+        CheckConstraint("evidence_count >= 0", name="ck_fact_evidence_count"),
+        CheckConstraint("length(trim(verified_by)) > 0", name="ck_fact_verified_by"),
+        ForeignKeyConstraint(["fact_id"], ["fact_identity.fact_id"], ondelete="RESTRICT"),
+        ForeignKeyConstraint(
+            ["source_claim_id", "source_claim_revision"],
+            ["extracted_claim_revision.claim_id", "extracted_claim_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+        Index(
+            "ix_fact_revision_subject",
+            "subject_entity_id",
+            "subject_entity_kind",
+        ),
+        Index(
+            "ix_fact_revision_source_claim",
+            "source_claim_id",
+            "source_claim_revision",
+        ),
+    )
+
+    fact_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    subject_entity_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    subject_entity_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    fact_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    value: Mapped[Any] = mapped_column(JSON, nullable=False)
+    authority: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_claim_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_claim_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    verified_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class FactEvidenceRefRow(Base):
+    __tablename__ = "fact_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint("fact_id", "fact_revision", "evidence_ref_id"),
+        CheckConstraint("fact_revision >= 1", name="ck_fact_evidence_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_fact_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["fact_id", "fact_revision"],
+            ["fact_revision.fact_id", "fact_revision.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    fact_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    fact_revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+
+class ResumeIdentityRow(Base):
+    __tablename__ = "resume_identity"
+
+    resume_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+
+
+class ResumeBaseRevisionRow(Base):
+    __tablename__ = "resume_base_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_resume_base_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_resume_base_schema_version"),
+        CheckConstraint(
+            "json_type(sections) = 'object' AND length(sections) <= 65536",
+            name="ck_resume_base_sections",
+        ),
+        ForeignKeyConstraint(["resume_id"], ["resume_identity.resume_id"], ondelete="RESTRICT"),
+    )
+
+    resume_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    sections: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ResumePatchIdentityRow(Base):
+    __tablename__ = "resume_patch_identity"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["resume_id", "base_revision"],
+            ["resume_base_revision.resume_id", "resume_base_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    patch_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    resume_id: Mapped[str] = mapped_column(
+        ForeignKey("resume_identity.resume_id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    base_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ResumePatchRevisionRow(Base):
+    __tablename__ = "resume_patch_revision"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_resume_patch_revision"),
+        CheckConstraint(
+            "status IN ('proposed', 'accepted', 'rejected')", name="ck_resume_patch_status"
+        ),
+        CheckConstraint(
+            "json_type(operations) = 'array' AND json_array_length(operations) BETWEEN 1 AND 128 "
+            "AND length(operations) <= 65536",
+            name="ck_resume_patch_operations",
+        ),
+        CheckConstraint(
+            "(status = 'proposed' AND reviewed_by IS NULL AND reviewed_by_kind IS NULL "
+            "AND review_reason IS NULL AND reviewed_at IS NULL) OR "
+            "(status != 'proposed' AND length(trim(reviewed_by)) > 0 "
+            "AND reviewed_by_kind = 'user' AND length(trim(review_reason)) > 0 "
+            "AND reviewed_at IS NOT NULL)",
+            name="ck_resume_patch_review",
+        ),
+        ForeignKeyConstraint(["patch_id"], ["resume_patch_identity.patch_id"], ondelete="RESTRICT"),
+    )
+
+    patch_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    operations: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    generator_run_id: Mapped[str | None] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    proposed_by_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    proposed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by_kind: Mapped[str | None] = mapped_column(String(32))
+    review_reason: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ResumeRevisionRow(Base):
+    __tablename__ = "resume_revision_record"
+    __table_args__ = (
+        CheckConstraint("base_revision >= 1", name="ck_resume_revision_base"),
+        CheckConstraint("patch_count >= 0", name="ck_resume_revision_patch_count"),
+        CheckConstraint(
+            "json_type(content) = 'object' AND length(content) <= 65536",
+            name="ck_resume_revision_content",
+        ),
+        CheckConstraint(
+            "length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_resume_revision_hash",
+        ),
+        ForeignKeyConstraint(
+            ["resume_id", "base_revision"],
+            ["resume_base_revision.resume_id", "resume_base_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    revision_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    resume_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    base_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    content: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    patch_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class ResumeRevisionPatchRefRow(Base):
+    __tablename__ = "resume_revision_patch_ref"
+    __table_args__ = (
+        CheckConstraint("ordinal >= 0", name="ck_resume_revision_patch_ordinal"),
+        ForeignKeyConstraint(
+            ["revision_id"],
+            ["resume_revision_record.revision_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        ForeignKeyConstraint(
+            ["patch_id", "patch_revision"],
+            ["resume_patch_revision.patch_id", "resume_patch_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    revision_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    patch_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    patch_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ApplicationIdentityRow(Base):
+    __tablename__ = "application_identity"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["opportunity_id", "opportunity_revision"],
+            ["entity_revision.entity_id", "entity_revision.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    application_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    opportunity_id: Mapped[str] = mapped_column(
+        ForeignKey("opportunity_record.opportunity_id", ondelete="RESTRICT"), nullable=False
+    )
+    opportunity_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ApplicationRevisionRow(Base):
+    __tablename__ = "application_revision_record"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_application_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_application_schema_version"),
+        CheckConstraint(
+            "state IN ('preparing', 'ready_for_review', 'submitted_by_user', 'screen', 'oa', "
+            "'interview', 'offer', 'rejected', 'withdrawn', 'closed')",
+            name="ck_application_state",
+        ),
+        CheckConstraint(
+            "(state IN ('preparing', 'ready_for_review') "
+            "AND submission_authority IS NULL AND submission_evidence_ref_id IS NULL "
+            "AND submitted_at IS NULL) OR (state NOT IN ('preparing', 'ready_for_review') "
+            "AND resume_revision_id IS NOT NULL "
+            "AND submission_authority IN ('user_confirmed', 'portal_receipt') "
+            "AND submitted_at IS NOT NULL)",
+            name="ck_application_submission",
+        ),
+        CheckConstraint(
+            "submission_authority != 'portal_receipt' OR submission_evidence_ref_id IS NOT NULL",
+            name="ck_application_portal_receipt",
+        ),
+    )
+
+    application_id: Mapped[str] = mapped_column(
+        ForeignKey("application_identity.application_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    resume_revision_id: Mapped[str | None] = mapped_column(
+        ForeignKey("resume_revision_record.revision_id", ondelete="RESTRICT")
+    )
+    submission_authority: Mapped[str | None] = mapped_column(String(32))
+    submission_evidence_ref_id: Mapped[str | None] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT")
+    )
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class OutcomeRecordRow(Base):
+    __tablename__ = "outcome_record"
+    __table_args__ = (
+        CheckConstraint("application_revision >= 1", name="ck_outcome_application_revision"),
+        CheckConstraint(
+            "result IN ('offer', 'rejection', 'withdrawal', 'closed')", name="ck_outcome_result"
+        ),
+        CheckConstraint(
+            "authority IN ('user_confirmed', 'portal_receipt')", name="ck_outcome_authority"
+        ),
+        CheckConstraint("evidence_count >= 0", name="ck_outcome_evidence_count"),
+        CheckConstraint(
+            "authority != 'portal_receipt' OR evidence_count > 0",
+            name="ck_outcome_portal_receipt",
+        ),
+        ForeignKeyConstraint(
+            ["application_id", "application_revision"],
+            ["application_revision_record.application_id", "application_revision_record.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    outcome_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    application_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    application_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    result: Mapped[str] = mapped_column(String(32), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    authority: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    recorded_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class OutcomeEvidenceRefRow(Base):
+    __tablename__ = "outcome_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint(
+            "outcome_id", "evidence_ref_id", name="uq_outcome_evidence_ref"
+        ),
+        CheckConstraint("ordinal >= 0", name="ck_outcome_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["outcome_id"],
+            ["outcome_record.outcome_id"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    outcome_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"), nullable=False
+    )
+
+
+class InterviewIdentityRow(Base):
+    __tablename__ = "interview_identity"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["application_id", "application_revision"],
+            ["application_revision_record.application_id", "application_revision_record.revision"],
+            ondelete="RESTRICT",
+        ),
+    )
+
+    interview_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    application_id: Mapped[str] = mapped_column(
+        ForeignKey("application_identity.application_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    application_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class InterviewRevisionRow(Base):
+    __tablename__ = "interview_revision_record"
+    __table_args__ = (
+        CheckConstraint("revision >= 1", name="ck_interview_revision"),
+        CheckConstraint("schema_version >= 1", name="ck_interview_schema_version"),
+        CheckConstraint(
+            "round IN ('screen', 'technical', 'loop', 'offer_talk')", name="ck_interview_round"
+        ),
+        CheckConstraint(
+            "status IN ('scheduled', 'completed', 'cancelled')", name="ck_interview_status"
+        ),
+        CheckConstraint("evidence_count >= 0", name="ck_interview_evidence_count"),
+        CheckConstraint(
+            "revision > 1 OR status = 'scheduled'", name="ck_interview_first_revision_scheduled"
+        ),
+    )
+
+    interview_id: Mapped[str] = mapped_column(
+        ForeignKey("interview_identity.interview_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    round: Mapped[str] = mapped_column(String(32), nullable=False)
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class InterviewEvidenceRefRow(Base):
+    __tablename__ = "interview_evidence_ref"
+    __table_args__ = (
+        UniqueConstraint(
+            "interview_id", "revision", "evidence_ref_id", name="uq_interview_evidence_ref"
+        ),
+        CheckConstraint("revision >= 1", name="ck_interview_evidence_revision"),
+        CheckConstraint("ordinal >= 0", name="ck_interview_evidence_ordinal"),
+        ForeignKeyConstraint(
+            ["interview_id", "revision"],
+            ["interview_revision_record.interview_id", "interview_revision_record.revision"],
+            ondelete="RESTRICT",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+    )
+
+    interview_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    evidence_ref_id: Mapped[str] = mapped_column(
+        ForeignKey("evidence_ref.evidence_ref_id", ondelete="RESTRICT"), nullable=False
+    )

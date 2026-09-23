@@ -21,7 +21,7 @@
 
 ## 最新验证
 
-- Backend：`711 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；HEAD `5aebdb3` 后全量回归无失败。
+- Backend：`715 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；HEAD `8e54f9f` 后全量回归无失败。
 - Frontend：`23 test files, 67 passed`，`npm run build` 通过；包含本地草稿撤销/重做覆盖，旧内部 ID 输入用例已由列表/选择流程用例替代。
 - Knowledge/Today focused：backend `2 passed`；frontend `7 passed`；真实 overview API 返回岗位 1,028、面试 503、问题 4,816、刷题 324、待复核 709。
 - Legacy preview：读取 7,575、新增 0、更新 0、未变化 7,575、重复 684、失败 0；FK errors 0，源 metadata signature 不变。

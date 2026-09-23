@@ -1,6 +1,6 @@
 # Agent Career Harness v2.4
 
-日期：2026-09-23；基线：`refactor/v1.4-integration`，HEAD：`7edcbd9`。
+日期：2026-09-23；基线：`refactor/v1.4-integration`，HEAD：`8e54f9f`。
 
 ## 0. 当前定位
 
@@ -75,7 +75,7 @@ Career Core 是 canonical truth；Artifact Store 保存不可变原始证据；W
 
 ## 6. 质量与安全
 
-- 后端全量：`711 passed, 5 skipped`；跳过项是 Windows symlink 权限限制；验证基于 HEAD `7edcbd9` 之前的功能代码，前端中文状态修复另有聚焦构建验证。
+- 后端全量：`715 passed, 5 skipped`；跳过项是 Windows symlink 权限限制；验证基于 HEAD `8e54f9f`。
 - 前端：23 个测试文件、67 项测试通过；`npm run build` 通过，包含本地草稿撤销/重做用例。
 - Ruff：`ruff check backend tests migrations` 通过；`git diff --check` 通过。
 - 未执行真实 ATS 提交、消息发送、Feishu/Gmail/Notion 写入或 canonical cutover。

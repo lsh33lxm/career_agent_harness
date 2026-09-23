@@ -7,6 +7,15 @@
 - 真实重跑读取 492 条岗位和 886 条来源台账：`release-eligible=350`、`local-only=142`、`excluded=0`。
 - 生成 `data/jobs/jobs.json`（350 条，SHA-256 `d7af624052d6dc5717dfcc1d4c2c0d4ff3fe4123d0fa0b8aa84ee49c537e9133`）和更新后的 `data/jobs/manifest.json`；原始 `agent_rader` 保持只读。
 - 该结果允许进入种子数据/安装验证，但仍需完成全量测试、干净安装和安全快照检查后，才能评估私有 Beta。
+- 已接入现有 Opportunity Radar：`PackagedJobSeedSource` 通过 `/api/v1/jobs/packaged-seed-search` 读取安装资源，复用 staging、评分、用户 admission、Evidence 与 Resume Review 链路，不依赖 `agent_rader`。
+- 真实加载验证读取 350 条；后端回归 `725 passed, 5 skipped`，前端 `24 files / 72 tests`，生产构建和项目范围 Ruff 通过。
+
+## RecruitOps audit (2026-09-24)
+
+- 固定参考 commit：`5715c59cf976c995a79ca23bf37cea1f1ef3a0a9`；根许可证 MIT。
+- 已证实的代码能力（静态路径与测试文件可定位）：FastAPI API、岗位发现/规范化、简历解析与匹配、Application 记录、招聘邮件读取/草稿预览、AI 助理和 Playwright 浏览器适配器。
+- 当前环境公开测试尝试：`uv run --project . --extra dev pytest -c pytest-public.ini` 依赖安装完成，但 Python 启动阶段因仓库包元数据 GBK 解码错误退出；Docker/Postgres、Playwright 浏览器和真实邮箱未运行，因此这些外部依赖功能标为 `unverified`。
+- 许可结论：根代码可按 MIT 借鉴；`packages/desktop_filler/NOTICE` 明确无原始许可证且不授予再分发权，禁止复制其引擎/资源。观复只采用行为边界和现有自有实现，不复制受限资源。
 
 ## 2026-09-23 数据迁移门
 

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import UTC, datetime
+from pathlib import Path
 
 from career_harness.core.job_source import (
     JobSourceHealth,
@@ -93,4 +95,44 @@ class OfflineFixtureJobSource(ManualJobSource):
             source_id=self.source_id,
             status=JobSourceTermsStatus.VERIFIED,
             note="Repository-owned synthetic fixture; no external terms apply.",
+        )
+
+
+class PackagedJobSeedSource(ManualJobSource):
+    """Load the approved, repository-owned normalized seed without legacy paths."""
+
+    source_id = "job-source-packaged-seed"
+
+    def __init__(self, seed_path: Path | None = None) -> None:
+        path = seed_path or Path(
+            os.getenv(
+                "ACH_JOB_SEED_PATH",
+                Path(__file__).resolve().parents[3] / "data" / "jobs" / "jobs.json",
+            )
+        )
+        if not path.is_file():
+            raise FileNotFoundError("离线岗位种子数据不可用，请检查安装资源")
+        rows = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(rows, list):
+            raise ValueError("离线岗位种子格式无效")
+        records = []
+        for row in rows:
+            if not isinstance(row, dict) or not row.get("job_id") or not row.get("title"):
+                continue
+            payload = dict(row)
+            payload["source_url"] = payload.get("job_url")
+            records.append(
+                RawJobRecord(
+                    source_ref=str(row["job_id"]),
+                    raw_text=json.dumps(payload, ensure_ascii=False),
+                    captured_at=datetime.now(UTC),
+                )
+            )
+        super().__init__(tuple(records))
+
+    def terms(self) -> JobSourceTerms:
+        return JobSourceTerms(
+            source_id=self.source_id,
+            status=JobSourceTermsStatus.VERIFIED,
+            note="安装包内置的用户批准公开来源种子；仅离线读取，不访问旧项目或外网。",
         )

@@ -6,7 +6,11 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from pydantic import Field
 
-from career_harness.adapters.job_sources import ManualJobSource, OfflineFixtureJobSource
+from career_harness.adapters.job_sources import (
+    ManualJobSource,
+    OfflineFixtureJobSource,
+    PackagedJobSeedSource,
+)
 from career_harness.core.common import FrozenModel
 from career_harness.core.job_source import (
     JobResumeProposalSeed,
@@ -95,6 +99,27 @@ def create_job_radar_router(api: JobRadarApi) -> APIRouter:
         try:
             return api.service.collect(
                 OfflineFixtureJobSource(),
+                query=request.query,
+                desired_terms=request.desired_terms,
+                excluded_terms=request.excluded_terms,
+                preferred_locations=request.preferred_locations,
+                minimum_salary=request.minimum_salary,
+            )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post(
+        "/packaged-seed-search",
+        response_model=list[JobStagingRecord],
+        status_code=status.HTTP_201_CREATED,
+    )
+    def packaged_seed_search(
+        request: FixtureSearchRequest,
+    ) -> tuple[JobStagingRecord, ...]:
+        """Search approved installer data through the normal staging pipeline."""
+        try:
+            return api.service.collect(
+                PackagedJobSeedSource(),
                 query=request.query,
                 desired_terms=request.desired_terms,
                 excluded_terms=request.excluded_terms,

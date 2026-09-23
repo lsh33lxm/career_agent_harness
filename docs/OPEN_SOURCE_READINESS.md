@@ -9,6 +9,7 @@
 - 前端支持显式 `VITE_DEMO_MODE=true` 或 `window.__ACH_CONFIG__.demoMode=true` 的中文演示标识；无 token 时不再显示英文内部错误。
 - Legacy 核心岗位 CSV 已完成只读审计：492 行，使用固定 seed 生成 24 条脱敏岗位摘要；Demo Mode 机会页支持离线搜索和详情查看。
 - 新增隔离 Demo Career Loop：`ACH_ENV=demo` + 独立 `ACH_DATA_DIR` 时，完整岗位到申请、面试准备和复盘提案由本地 API 持久化；真实模式仍要求 launch token。
+- 新增只读 Demo Story 聚合：历史页与知识页从现有 Core SQLite 反向展示岗位、简历、申请、面试、知识提案和事件链；不创建第二套数据库，也不将 Demo 提案提升为 Career Core 事实。
 
 ## 验证证据
 
@@ -21,6 +22,17 @@ python scripts/build_demo_dataset.py ... -> 492 source rows, 24 selected, fixed-
 git diff --check                         -> passed
 ```
 
+本轮实际验证：
+
+```text
+npm --prefix apps/desktop test -- --run  -> 24 files, 68 tests passed
+npm --prefix apps/desktop run build     -> Vite production build passed
+.venv/Scripts/python.exe -m pytest -q tests/integration/test_full_demo_career_loop.py -> 2 passed
+.venv/Scripts/ruff.exe check backend tests migrations scripts -> All checks passed
+```
+
+使用临时目录 `ACH_DATA_DIR=%TEMP%/ach-demo-e2e-integration` 启动 Demo API 后，实际 POST 完整闭环并重新 GET `/api/v1/career-loop/demo-story`；返回 8 个链路步骤和岗位、申请、面试、知识关联。CUA 浏览器截图未完成，原因是当前 Codex 浏览器通道拒绝 `apikey` 认证配置。
+
 ## 发布阻塞
 
 1. Legacy 可访问，但完整岗位库的再分发权仍未确认；当前只发布有限摘要，不发布完整 JD 或 URL。
@@ -29,4 +41,4 @@ git diff --check                         -> passed
 
 ## 下一步
 
-下一步是把完整事件链接入历史/知识页面读模型，再执行 Tauri 安装、启动、离线查看和截图验收。
+下一步是执行 Tauri 安装、启动、离线查看和截图验收，并补充 Windows 端 sidecar/端口冲突/退出清理证据。

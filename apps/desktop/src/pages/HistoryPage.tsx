@@ -5,6 +5,8 @@ import { ApiError } from "../api/client";
 import { createInterviewFeedbackProposal, createInterviewPrepProposal, createOfferPreparationProposal, createRejectionPatternProposal, listApplications, listInterviews, listOutcomes } from "../api/history";
 import type { ApplicationRead, ApplicationState, InterviewRead, OutcomeRead } from "../api/history";
 import { actorLabels, displayLabel } from "../app/displayLabels";
+import { getDemoStory } from "../api/demoStory";
+import type { DemoStory } from "../api/demoStory";
 import "./HistoryPage.css";
 
 const states: Record<ApplicationState, string> = {
@@ -127,6 +129,7 @@ export function HistoryPage() {
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<Load<ApplicationRead[]>>({ status: "loading" });
   const [selected, setSelected] = useState("");
+  const [demoStory, setDemoStory] = useState<DemoStory | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     setState({ status: "loading" });
@@ -139,6 +142,15 @@ export function HistoryPage() {
     });
     return () => controller.abort();
   }, [attempt]);
+  useEffect(() => {
+    const controller = new AbortController();
+    getDemoStory(controller.signal).then((value) => {
+      if (!controller.signal.aborted) setDemoStory(value);
+    }).catch(() => {
+      if (!controller.signal.aborted) setDemoStory(null);
+    });
+    return () => controller.abort();
+  }, [attempt]);
   const application = state.status === "ready" ? state.data.find((item) => item.entity_id === selected) : undefined;
   return (
     <main className="page history-page">
@@ -146,6 +158,15 @@ export function HistoryPage() {
       {state.status === "loading" && <p role="status">正在读取申请记录…</p>}
       {state.status === "error" && <div className="today-panel" role="alert"><p>{state.message}</p><button type="button" onClick={() => setAttempt((n) => n + 1)}>重试申请</button></div>}
       {state.status === "ready" && state.data.length === 0 && <section className="today-panel empty-state"><h2>还没有申请记录</h2><p>在 Core 中记录申请后，这里会显示真实进展。</p></section>}
+      {demoStory?.available && <section className="today-panel history-story" aria-labelledby="demo-story-title">
+        <p className="eyebrow">演示闭环</p>
+        <h2 id="demo-story-title">从岗位到面试复盘</h2>
+        <p>以下步骤来自隔离 Demo 数据库的已保存记录，刷新后会重新读取。</p>
+        <ol className="history-story-steps">
+          {demoStory.steps.map((step) => <li key={step.key} data-status={step.status === "尚未建立关联" ? "pending" : "done"}><span>{step.label}</span><small>{step.status}</small></li>)}
+        </ol>
+        <div className="history-story-links"><strong>可追溯关联</strong>{demoStory.links.map((link) => <span key={`${link.kind}-${link.id}`}>{link.kind} · {link.label}</span>)}</div>
+      </section>}
       {application && <>
         <section className="today-panel history-application">
           <label htmlFor="history-application">选择申请</label>

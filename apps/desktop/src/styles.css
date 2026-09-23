@@ -1716,3 +1716,8 @@ mark { padding: 2px 5px; color: var(--green); background: var(--surface-green); 
   .source-connector-form > button, .source-connector-actions button { width: 100%; }
   .source-connector-actions { display: grid; }
 }
+.knowledge-demo-story { display: grid; gap: 16px; margin: 20px 0; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.knowledge-story-links { display: flex; flex-wrap: wrap; gap: 10px; }
+.knowledge-story-links span { display: grid; gap: 3px; min-width: 150px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.knowledge-story-links strong { color: var(--accent); font-size: 12px; }
+.knowledge-story-links small { color: var(--muted); overflow-wrap: anywhere; }

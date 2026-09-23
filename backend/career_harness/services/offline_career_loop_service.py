@@ -4,6 +4,8 @@ import hashlib
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
+from sqlalchemy import text
+
 from career_harness.adapters.job_sources import OfflineFixtureJobSource
 from career_harness.core.application import ApplicationState, SubmissionAuthority
 from career_harness.core.commands import Command
@@ -71,6 +73,152 @@ class OfflineCareerLoopService:
         self.memory = memory
         self.applications = ApplicationService(resume_studio.commands)
         self.opportunity_repository = OpportunityRepository(radar.engine)
+
+    def demo_story(self) -> dict[str, object]:
+        """Return the durable Demo Story read model without creating data."""
+        applications = tuple(
+            item
+            for item in self.applications.repository.list()
+            if item.entity_id.startswith("application_")
+        )
+        if not applications:
+            return {"available": False, "message": "尚未运行演示闭环", "events": [], "links": []}
+        application = applications[0]
+        opportunity = self.opportunity_repository.get(application.opportunity_id)
+        interviews = self.applications.repository.engine
+        interview_rows = tuple(
+            InterviewService(self.resume_studio.commands).repository.list_for_application(
+                application.entity_id
+            )
+        )
+        with interviews.connect() as connection:
+            rows = (
+                connection.execute(
+                    text(
+                        "SELECT event_id, event_type, entity_id, entity_revision, occurred_at "
+                        "FROM domain_event ORDER BY occurred_at, event_id"
+                    )
+                )
+                .mappings()
+                .all()
+            )
+            knowledge_rows = (
+                connection.execute(
+                    text(
+                        "SELECT proposal_id AS knowledge_id, 1 AS current_revision, "
+                        "title, status "
+                        "FROM knowledge_proposal "
+                        "WHERE status='pending' AND category IN "
+                        "('company', 'star_story', 'application_history', 'market_signal') "
+                        "ORDER BY proposal_id LIMIT 20"
+                    ),
+                )
+                .mappings()
+                .all()
+            )
+        labels = {
+            "opportunity.admitted": "岗位被发现",
+            "application.create": "创建申请",
+            "application.ready_for_review": "进入人工审核",
+            "application.demo_submission_recorded": "记录用户已投递（演示）",
+            "application.demo_interview_stage": "进入面试阶段",
+            "interview.demo_schedule": "创建面试准备",
+            "interview.demo_complete": "完成面试复盘",
+        }
+        relevant_ids = {
+            application.entity_id,
+            application.opportunity_id,
+            application.resume_revision_id,
+            *(item.entity_id for item in interview_rows),
+        }
+        events = [
+            {
+                "event_id": row["event_id"],
+                "event_type": row["event_type"],
+                "label": labels.get(row["event_type"], "已记录操作"),
+                "entity_id": row["entity_id"],
+                "revision": row["entity_revision"],
+                "occurred_at": row["occurred_at"],
+            }
+            for row in rows
+            if row["entity_id"] in relevant_ids or "demo" in row["event_type"]
+        ]
+        steps = [
+            {
+                "key": "job_found",
+                "label": "岗位被发现",
+                "status": "已记录",
+                "entity_id": opportunity.opportunity.entity_id if opportunity else None,
+            },
+            {
+                "key": "jd_reviewed",
+                "label": "确认 JD 要求",
+                "status": "已记录",
+                "entity_id": opportunity.opportunity.entity_id if opportunity else None,
+            },
+            {
+                "key": "evidence_matched",
+                "label": "匹配证据与能力差距",
+                "status": "已记录",
+                "entity_id": application.opportunity_id,
+            },
+            {
+                "key": "resume_created",
+                "label": "创建目标简历",
+                "status": "已记录",
+                "entity_id": application.resume_revision_id,
+            },
+            {
+                "key": "application_created",
+                "label": "创建申请",
+                "status": "已记录",
+                "entity_id": application.entity_id,
+            },
+            {
+                "key": "application_progressed",
+                "label": "更新申请状态",
+                "status": application.state.value,
+                "entity_id": application.entity_id,
+            },
+            {
+                "key": "interview_prepared",
+                "label": "创建面试准备",
+                "status": "已记录" if interview_rows else "尚未建立关联",
+                "entity_id": interview_rows[0].entity_id if interview_rows else None,
+            },
+            {
+                "key": "interview_reviewed",
+                "label": "完成面试复盘",
+                "status": "已记录"
+                if interview_rows and interview_rows[0].status.value == "completed"
+                else "尚未建立关联",
+                "entity_id": interview_rows[0].entity_id if interview_rows else None,
+            },
+        ]
+        links = [
+            {"kind": "岗位", "id": opportunity.opportunity.entity_id, "label": "演示岗位"}
+            if opportunity is not None
+            else None,
+            {"kind": "申请", "id": application.entity_id, "label": "演示申请"},
+            *[
+                {"kind": "面试", "id": item.entity_id, "label": "演示技术面试"}
+                for item in interview_rows
+            ],
+            *[
+                {"kind": "知识", "id": row["knowledge_id"], "label": row["title"]}
+                for row in knowledge_rows
+            ],
+        ]
+        return {
+            "available": True,
+            "application_id": application.entity_id,
+            "opportunity_id": opportunity.opportunity.entity_id if opportunity else None,
+            "resume_revision_id": application.resume_revision_id,
+            "interviews": [item.model_dump(mode="json") for item in interview_rows],
+            "steps": steps,
+            "events": events,
+            "links": [item for item in links if item is not None],
+        }
 
     def run(
         self,
@@ -309,9 +457,7 @@ class OfflineCareerLoopService:
                 Command(
                     command_id=f"command_{resume_revision_id}_seed",
                     command_type="resume.demo_revision_seed",
-                    target=EntityRef(
-                        entity_id=resume_revision_id, kind=EntityKind.RESUME_REVISION
-                    ),
+                    target=EntityRef(entity_id=resume_revision_id, kind=EntityKind.RESUME_REVISION),
                     expected_revision=0,
                     idempotency_key=f"demo-resume-revision-seed-{resume_revision_id}",
                     actor="user",

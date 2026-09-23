@@ -27,7 +27,7 @@ it("navigates History and Evidence without losing injected runtime authenticatio
   expect(await screen.findByRole("heading", { name: "职业历程" })).toBeTruthy();
   expect(await screen.findByText("还没有申请记录")).toBeTruthy();
   expect(window.__ACH_CONFIG__).toBe(config);
-  expect(fetcher).toHaveBeenCalledTimes(3);
+  expect(fetcher).toHaveBeenCalledTimes(5);
   for (const call of vi.mocked(fetch).mock.calls) {
     expect(new Headers(call[1]?.headers).get("Authorization")).toBe("Bearer navigation-test-token");
   }

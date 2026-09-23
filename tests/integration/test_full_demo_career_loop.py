@@ -75,6 +75,12 @@ def test_full_demo_career_loop_persists_and_replays(tmp_path: Path) -> None:
     assert result.interview_prep_proposal_id is not None
     assert result.interview_feedback_proposal_id is not None
     assert replay == result
+    story = loop.demo_story()
+    assert story["available"] is True
+    assert story["application_id"] == result.application_id
+    assert [step["label"] for step in story["steps"]][-1] == "完成面试复盘"
+    assert any(link["kind"] == "岗位" for link in story["links"])
+    assert any(link["kind"] == "知识" for link in story["links"])
 
     with engine.connect() as connection:
         event_types = [
@@ -119,3 +125,4 @@ def test_full_demo_loop_seeds_resume_in_an_empty_database(tmp_path: Path) -> Non
     assert result.application_state == "interview"
     assert studio.repository.resumes.get_base("resume_demo") is not None
     assert studio.repository.resumes.get_revision("resume_demo_revision") is not None
+    assert loop.demo_story()["available"] is True

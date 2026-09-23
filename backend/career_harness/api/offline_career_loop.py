@@ -60,4 +60,8 @@ def create_offline_career_loop_router(api: OfflineCareerLoopApi) -> APIRouter:
         except (ValueError, KeyError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
 
+    @router.get("/demo-story")
+    def demo_story():
+        return api.service.demo_story()
+
     return router

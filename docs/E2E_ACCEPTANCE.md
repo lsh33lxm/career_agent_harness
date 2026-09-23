@@ -9,10 +9,13 @@
 - 完整 Demo Career Loop：通过 `/api/v1/career-loop/demo-full` 在隔离 SQLite 中真实持久化岗位 admission、Evidence、Target Profile、Resume Patch/Render、申请状态推进、Interview schedule/complete、面试准备提案和复盘提案；重复调用不会创建第二份核心实体。
 - Demo API 可在 `ACH_ENV=demo` 下不使用 launch token，仅绑定 `127.0.0.1`；数据目录由 `ACH_DATA_DIR` 指向独立目录，与真实用户库分离。
 - 前端回归：23 个测试文件、67 个测试通过；生产构建通过。
+- Demo Story 读模型：`GET /api/v1/career-loop/demo-story` 从现有 SQLite 只读组合岗位、申请、面试、知识提案和领域事件；历史页展示岗位到面试复盘步骤，知识页展示可反向追溯关联。
+- 真实本地 API 验收（2026-09-23）：使用临时独立 `ACH_DATA_DIR`、`ACH_ENV=demo` 启动 `127.0.0.1:8765`；POST `/api/v1/career-loop/demo-full` 返回 `application_fbdd11d28d86432cb74ee48a`、`interview_demo_fbdd11d28d86432cb74ee48a`，随后重新 GET Demo Story 仍返回 8 个步骤、4 类知识提案和完整关联，证明重读持久化成功。
+- 本轮前端回归：24 个测试文件、68 个测试通过；`npm run build` 通过；后端 focused E2E 2 passed；Ruff `backend tests migrations scripts` 通过。
 
 ## 尚未完成
 
-- 浏览器端完整链路需要以 `ACH_ENV=demo` 启动本地 API 后点击“运行完整演示闭环”；纯静态 Vite 页面在 API 不可用时只提供脱敏岗位浏览，不会伪造保存成功。
+- 浏览器端完整链路需要以 `ACH_ENV=demo` 启动本地 API 后点击“运行完整演示闭环”；纯静态 Vite 页面在 API 不可用时只提供脱敏岗位浏览，不会伪造保存成功。当前环境的 CUA 浏览器通道因 Codex `apikey` 认证配置不支持而无法完成截图验证。
 - Tauri sidecar、Windows 安装包、端口冲突和退出清理尚未在本阶段重新验收。
 - 后端 pytest/ruff 当前环境不可执行，integration 工作树没有 `.venv`，系统 Python 未安装工具。
 

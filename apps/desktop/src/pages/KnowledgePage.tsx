@@ -24,6 +24,8 @@ import {
   type LegacyKnowledgeOverview,
 } from "../api/legacy";
 import { SourceConnectorsPanel } from "./SourceConnectorsPanel";
+import { getDemoStory } from "../api/demoStory";
+import type { DemoStory } from "../api/demoStory";
 
 const categoryLabels: Record<string, string> = {
   personal_fact: "个人事实", project_evidence: "项目证据", skill: "技能",
@@ -87,6 +89,7 @@ export function KnowledgePage() {
     operation_id: string;
     operation: "rename" | "archive" | "move";
   } | null>(null);
+  const [demoStory, setDemoStory] = useState<DemoStory | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -98,6 +101,16 @@ export function KnowledgePage() {
       .catch((error: Error) => {
         if (!controller.signal.aborted) setOverviewMessage(`历史知识暂不可用：${error.message}`);
       });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getDemoStory(controller.signal).then((value) => {
+      if (!controller.signal.aborted) setDemoStory(value);
+    }).catch(() => {
+      if (!controller.signal.aborted) setDemoStory(null);
+    });
     return () => controller.abort();
   }, []);
 
@@ -244,6 +257,10 @@ export function KnowledgePage() {
       </div>
 
       {overviewMessage && <p className="knowledge-message">{overviewMessage}</p>}
+      {demoStory?.available && <section className="knowledge-demo-story" aria-label="演示闭环关联">
+        <div><p className="eyebrow">演示闭环</p><h2>岗位、简历、申请与面试已关联</h2><p>这些关联来自本地 Demo 数据库，可从历史事件回溯，不代表真实投递或真实面试。</p></div>
+        <div className="knowledge-story-links">{demoStory.links.map((link) => <span key={`${link.kind}-${link.id}`}><strong>{link.kind}</strong>{link.label}<small>{link.id}</small></span>)}</div>
+      </section>}
       {overview && overview.job_count === 0 && (
         <section className="knowledge-empty">
           <BookOpenText size={24} />

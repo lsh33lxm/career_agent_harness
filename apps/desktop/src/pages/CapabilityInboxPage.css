@@ -1,0 +1,53 @@
+/* 能力候选收件箱 */
+.inbox-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.inbox-card {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow-wrap: anywhere;
+}
+
+.inbox-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.inbox-card__head h2 {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.inbox-card__desc {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.inbox-card__form {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--hairline);
+}
+
+.inbox-card__form .btn {
+  justify-self: start;
+}
+
+.inbox-card .banner h3 {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.inbox-card .banner p {
+  font-size: 12.5px;
+}

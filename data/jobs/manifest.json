@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "dataset_name": "agent-radar-job-migration-audit",
-  "version": "legacy-jobs-v1",
-  "generated_at": "2026-09-23T17:05:54Z",
+  "version": "legacy-jobs-v2",
+  "generated_at": "2026-09-23T19:29:05Z",
   "build_date": "2026-09-23",
-  "record_count": 350,
+  "record_count": 492,
   "file_path": "data/jobs/jobs.json",
-  "sha256": "d7af624052d6dc5717dfcc1d4c2c0d4ff3fe4123d0fa0b8aa84ee49c537e9133",
+  "sha256": "2f99952eb8103a5b420261d04e1365517581cd928ddaa61b5598818a2402c7a3",
   "field_version": "job-v1",
   "source": "read-only agent_rader normalized job CSV",
   "source_files": {
@@ -100,15 +100,15 @@
     "migration_version"
   ],
   "classification_summary": {
-    "release-eligible": 350,
-    "local-only": 142,
+    "release-eligible": 492,
+    "local-only": 0,
     "excluded": 0
   },
-  "redistribution_license": "user-approved-public-source-noncommercial",
+  "redistribution_license": "user-attested-source-ledger-authorization",
   "redistribution_authorized": true,
-  "license_evidence": "用户明确批准：公开 URL、平台/来源类型和官方标记可作为非商业再分发依据；仅发布规范化职位元数据，不发布截图、原始抓取快照、个人数据或运行库",
-  "migration_version": "legacy-jobs-v1",
+  "license_evidence": "用户明确确认：来源台账记录均有再分发许可、授权或所有权依据；仅发布规范化职位元数据，不发布截图、原始抓取快照、个人数据或运行库",
+  "migration_version": "legacy-jobs-v2",
   "privacy_screening": "未复制岗位原文、原始 URL、截图、个人信息或运行数据库",
   "status": "candidate",
-  "file_size_bytes": 379939
+  "file_size_bytes": 509338
 }

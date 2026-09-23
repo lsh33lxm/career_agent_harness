@@ -51,9 +51,10 @@ Agent Radar data and it performs no production Feishu or ATS writes.
 ## Offline Demo and Job Seed
 
 The repository contains a normalized offline job seed under `data/jobs/`. The
-current manifest version is `legacy-jobs-v1` with 350 release-eligible records
-from the read-only Agent Radar audit. The remaining 142 source records are kept
-local-only because their source linkage is incomplete. The seed contains job
+current manifest version is `legacy-jobs-v2` with 492 release-eligible records
+from the read-only Agent Radar audit. The source ledger authorization attestation
+covers the full source batch; no records are kept local-only in this release seed.
+The seed contains job
 metadata and provenance links, not screenshots, raw captures, credentials,
 personal resumes, runtime databases, or logs.
 

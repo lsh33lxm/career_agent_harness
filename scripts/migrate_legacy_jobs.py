@@ -19,7 +19,7 @@ from typing import Any
 
 JOB_FILE = Path("data") / "统一数据" / "岗位与JD数据.csv"
 LEDGER_FILE = Path("data") / "统一数据" / "来源总台账.csv"
-MIGRATION_VERSION = "legacy-jobs-v1"
+MIGRATION_VERSION = "legacy-jobs-v2"
 PUBLICATION_FIELDS = (
     "job_id",
     "title",
@@ -93,9 +93,12 @@ def release_authorized(
     ledger: dict[str, dict[str, str]],
     *,
     allow_noncommercial: bool,
+    attest_source_ledger_authorization: bool = False,
 ) -> bool:
     source_id = (row.get("source_id") or "").strip()
     source = ledger.get(source_id, {})
+    if attest_source_ledger_authorization:
+        return True
     return public_source_authorized(row, ledger, allow_noncommercial=allow_noncommercial) or any(
         truthy(source.get(field))
         for field in ("redistribution_authorized", "redistribution_rights", "user_owned")
@@ -118,6 +121,7 @@ def classify(
     ledger_rows: list[dict[str, str]],
     *,
     allow_noncommercial: bool = False,
+    attest_source_ledger_authorization: bool = False,
 ) -> tuple[dict[str, int], list[dict[str, Any]]]:
     ledger = {
         (row.get("source_id_raw") or row.get("unified_source_id") or "").strip(): row
@@ -128,7 +132,12 @@ def classify(
     skipped: list[dict[str, Any]] = []
     for row in rows:
         job_id = stable_job_id(row)
-        if release_authorized(row, ledger, allow_noncommercial=allow_noncommercial):
+        if release_authorized(
+            row,
+            ledger,
+            allow_noncommercial=allow_noncommercial,
+            attest_source_ledger_authorization=attest_source_ledger_authorization,
+        ):
             counts["release-eligible"] += 1
             continue
         counts["local-only"] += 1
@@ -148,6 +157,7 @@ def build_manifest(
     *,
     expected_jobs_sha256: str | None = None,
     allow_noncommercial: bool = False,
+    attest_source_ledger_authorization: bool = False,
 ) -> dict[str, Any]:
     job_path = legacy_dir / JOB_FILE
     ledger_path = legacy_dir / LEDGER_FILE
@@ -162,7 +172,10 @@ def build_manifest(
     job_fields, job_rows = read_csv(job_path)
     ledger_fields, ledger_rows = read_csv(ledger_path)
     counts, skipped = classify(
-        job_rows, ledger_rows, allow_noncommercial=allow_noncommercial
+        job_rows,
+        ledger_rows,
+        allow_noncommercial=allow_noncommercial,
+        attest_source_ledger_authorization=attest_source_ledger_authorization,
     )
     now = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     source_hashes = {
@@ -192,13 +205,20 @@ def build_manifest(
         "publication_fields": list(PUBLICATION_FIELDS),
         "classification_summary": counts,
         "redistribution_license": (
-            "user-approved-public-source-noncommercial"
+            "user-attested-source-ledger-authorization"
+            if attest_source_ledger_authorization and counts["release-eligible"]
+            else "user-approved-public-source-noncommercial"
             if allow_noncommercial and counts["release-eligible"]
             else "unverified"
         ),
         "redistribution_authorized": counts["release-eligible"] > 0,
         "license_evidence": (
-            "用户明确批准：公开 URL、平台/来源类型和官方标记可作为非商业再分发依据；"
+            (
+                "用户明确确认：来源台账记录均有再分发许可、授权或所有权依据；"
+                "仅发布规范化职位元数据，不发布截图、原始抓取快照、个人数据或运行库"
+            )
+            if attest_source_ledger_authorization and counts["release-eligible"]
+            else "用户明确批准：公开 URL、平台/来源类型和官方标记可作为非商业再分发依据；"
             "仅发布规范化职位元数据，不发布截图、原始抓取快照、个人数据或运行库"
             if allow_noncommercial and counts["release-eligible"]
             else "未启用公开来源非商业政策；无明确再分发证据的记录保留 local-only"
@@ -220,7 +240,12 @@ def build_manifest(
         jobs = []
         for row in job_rows:
             source = ledger.get((row.get("source_id") or "").strip(), {})
-            if not release_authorized(row, ledger, allow_noncommercial=allow_noncommercial):
+            if not release_authorized(
+                row,
+                ledger,
+                allow_noncommercial=allow_noncommercial,
+                attest_source_ledger_authorization=attest_source_ledger_authorization,
+            ):
                 continue
             skills = row.get("skills") or ""
             jobs.append(
@@ -248,7 +273,11 @@ def build_manifest(
                     "provenance": {
                         "source_id": row.get("source_id") or None,
                         "platform": source.get("platform") or None,
-                        "policy": "public-source-noncommercial",
+                        "policy": (
+                            "source-ledger-authorization"
+                            if attest_source_ledger_authorization
+                            else "public-source-noncommercial"
+                        ),
                     },
                     "content_sha256": source.get("content_hash") or None,
                     "migration_version": MIGRATION_VERSION,
@@ -269,6 +298,13 @@ def build_manifest(
     report = {
         "migration_version": MIGRATION_VERSION,
         "generated_at": now,
+        "authorization_policy": (
+            "user-attested-source-ledger-authorization"
+            if attest_source_ledger_authorization
+            else "public-source-noncommercial"
+            if allow_noncommercial
+            else "explicit-ledger-fields-only"
+        ),
         "source_file_sha256": source_hashes,
         "record_count": len(job_rows),
         "classification_summary": counts,
@@ -303,12 +339,18 @@ def main() -> None:
         action="store_true",
         help="按用户批准的公开来源非商业政策，把可核验公开岗位元数据列为可发布",
     )
+    parser.add_argument(
+        "--attest-source-ledger-authorization",
+        action="store_true",
+        help="用户明确确认来源台账具有再分发许可、授权或所有权依据",
+    )
     args = parser.parse_args()
     manifest = build_manifest(
         args.legacy_dir,
         args.output,
         expected_jobs_sha256=args.expected_jobs_sha256,
         allow_noncommercial=args.allow_public_source_noncommercial,
+        attest_source_ledger_authorization=args.attest_source_ledger_authorization,
     )
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
 

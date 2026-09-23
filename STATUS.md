@@ -3,15 +3,15 @@
 ## 2026-09-23 legacy job release eligibility update
 
 - 用户确认本批数据为公开、非商业可使用数据，并批准以公开 URL、平台/来源类型和官方来源标记作为再分发依据。
-- 迁移脚本新增显式 `--allow-public-source-noncommercial` 政策开关；未显式启用时仍保持保守的 `local-only` 分类。
-- 真实重跑读取 492 条岗位和 886 条来源台账：`release-eligible=350`、`local-only=142`、`excluded=0`。
-- 生成 `data/jobs/jobs.json`（350 条，SHA-256 `d7af624052d6dc5717dfcc1d4c2c0d4ff3fe4123d0fa0b8aa84ee49c537e9133`）和更新后的 `data/jobs/manifest.json`；原始 `agent_rader` 保持只读。
+- 迁移脚本新增显式 `--attest-source-ledger-authorization` 政策开关；未显式启用时仍保持保守的 `local-only` 分类。
+- 用户确认来源台账整体具有再分发许可、授权或所有权依据；真实重跑读取 492 条岗位和 886 条来源台账：`release-eligible=492`、`local-only=0`、`excluded=0`。
+- 生成 `data/jobs/jobs.json`（492 条，SHA-256 `2f99952eb8103a5b420261d04e1365517581cd928ddaa61b5598818a2402c7a3`）和更新后的 `data/jobs/manifest.json`；原始 `agent_rader` 保持只读。
 - 该结果允许进入种子数据/安装验证，但仍需完成全量测试、干净安装和安全快照检查后，才能评估私有 Beta。
 - 已接入现有 Opportunity Radar：`PackagedJobSeedSource` 通过 `/api/v1/jobs/packaged-seed-search` 读取安装资源，复用 staging、评分、用户 admission、Evidence 与 Resume Review 链路，不依赖 `agent_rader`。
-- 真实加载验证读取 350 条；后端回归 `725 passed, 5 skipped`，前端 `24 files / 72 tests`，生产构建和项目范围 Ruff 通过。
+- 真实加载验证需按新 manifest 重跑；此前后端回归 `725 passed, 5 skipped`，前端 `25 files / 73 tests`，生产构建和项目范围 Ruff 通过。
 - 当前源码 sidecar 重建成功（SHA-256 `70653fc4bbc7c2a7506b1c1a6b8e3389db6771565b65f36ecbafeb873bcb7354`），Tauri NSIS 构建成功；安装包仅保留在本地验证目录，未提交或发布。
 - 本轮尚未完成全新安装后的岗位页面可视检查、Resume Review 浏览器逐步点击截图和 Playwright teardown；因此 Desktop Verification Gate 仍为 **NO-GO**，Beta prerelease 不创建。
-- 修复 PyInstaller 资源路径和 `null` requirements 兼容后，干净 NSIS 安装实测 `/health=200`、离线种子查询返回 350 条，sidecar 正常退出；验证目录为 `artifacts/verification/clean-install-job-seed-20260924-d`。
+- 修复 PyInstaller 资源路径和 `null` requirements 兼容后，旧种子干净 NSIS 安装实测 `/health=200`、离线种子查询返回 350 条，sidecar 正常退出；492 条新种子需要重新构建安装包验证。
 - `v0.1.0-beta.1` 快照在最后两项安装修复提交前已生成，不能作为最终一致性发布；将以包含 `_MEIPASS` 资源路径和 `null` requirements 修复的下一 beta 重新发布。
 
 ## Private beta publication (2026-09-24)
@@ -41,7 +41,7 @@
 
 - 在 `feature/legacy-job-data-migration` worktree 中完成只读 Agent Radar 岗位审计脚本 `scripts/migrate_legacy_jobs.py`。
 - 实际读取 492 条岗位记录和 886 条来源台账记录；输入 SHA-256 已写入 `data/jobs/manifest.json`，审计摘要写入 `data/jobs/migration-report.json`。
-- 用户批准公开来源非商业政策后，分类为 `release-eligible=350`、`local-only=142`、`excluded=0`；350 条规范化种子已生成，142 条来源关联不足的数据继续保留 local-only。
+- 用户确认来源台账授权后，分类为 `release-eligible=492`、`local-only=0`、`excluded=0`；492 条规范化种子已生成。
 - 脚本支持 `ACH_LEGACY_AGENT_RADAR_DIR`、`--expected-jobs-sha256`、`--allow-public-source-noncommercial`、幂等重跑和源哈希变化失败；迁移单测通过 4 项。
 - Beta 安装、GitHub prerelease、RecruitOps 审计与功能增量仍需通过后续构建、安全和许可检查；Desktop Verification Gate v0.1 仍为 **NO-GO**。
 

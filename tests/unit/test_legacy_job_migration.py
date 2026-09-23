@@ -43,6 +43,21 @@ def test_user_approved_public_source_policy_requires_public_official_metadata() 
     assert skipped == []
 
 
+def test_user_attested_source_ledger_authorization_admits_linked_record() -> None:
+    rows = [{"unified_job_id": "job-attested", "source_id": "source-attested"}]
+    ledger = [{"source_id_raw": "source-attested", "notes": "授权已留存于来源台账"}]
+    counts, skipped = classify(rows, ledger, attest_source_ledger_authorization=True)
+    assert counts == {"release-eligible": 1, "local-only": 0, "excluded": 0}
+    assert skipped == []
+
+
+def test_user_attested_source_ledger_authorization_covers_unlinked_job_row() -> None:
+    rows = [{"unified_job_id": "job-without-key", "source_id": "missing-source"}]
+    counts, skipped = classify(rows, [], attest_source_ledger_authorization=True)
+    assert counts == {"release-eligible": 1, "local-only": 0, "excluded": 0}
+    assert skipped == []
+
+
 def test_manifest_is_repeatable_and_does_not_copy_rows(tmp_path: Path) -> None:
     legacy = tmp_path / "legacy"
     jobs = legacy / "data" / "统一数据"

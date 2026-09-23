@@ -88,6 +88,11 @@ class WikiOperationRequest(FrozenModel):
     parent_knowledge_id: str | None = Field(default=None, max_length=128)
 
 
+class WikiHealthProposalRequest(FrozenModel):
+    requested_by: str = Field(min_length=1, max_length=255)
+    proposal_id: str | None = Field(default=None, min_length=3, max_length=128)
+
+
 class WikiOperationReviewRequest(FrozenModel):
     decision: str = Field(pattern=r"^(approved|rejected)$")
     reviewer: str = Field(min_length=1, max_length=255)
@@ -190,6 +195,32 @@ def create_knowledge_router(api: KnowledgeApi) -> APIRouter:
     @router.get("/wiki/health")
     def wiki_health() -> Any:
         return api.repository.wiki_health()
+
+    @router.post("/wiki/health/proposals", status_code=201)
+    def wiki_health_proposal(request: WikiHealthProposalRequest) -> Any:
+        try:
+            report = api.repository.wiki_health()
+            issue_lines = [
+                f"- [{issue.severity}] {issue.code}：{issue.knowledge_id}：{issue.detail}"
+                for issue in report.issues
+            ]
+            content = (
+                f"Wiki 健康评分：{report.score}/100\n"
+                f"页面数：{report.page_count}；链接数：{report.link_count}\n"
+                "以下是规则检查结果，需用户逐项确认后再创建具体修复 proposal：\n"
+                + ("\n".join(issue_lines) if issue_lines else "- 当前未发现需要修复的问题")
+                + "\n本提案不会自动修改、移动、归档、发布或删除任何 Wiki 页面。"
+            )
+            return api.repository.create_proposal(
+                category=KnowledgeCategory.TEMPLATE,
+                title="Wiki 健康检查修复建议",
+                content=content,
+                authority=KnowledgeAuthority.RULE_VERIFIED,
+                created_by=KnowledgeCreatedBy.RULE,
+                proposal_id=request.proposal_id,
+            )
+        except Exception as error:
+            raise _error(error) from error
 
     @router.get("/wiki/pages/{knowledge_id}/diff")
     def diff(

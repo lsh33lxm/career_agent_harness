@@ -95,3 +95,12 @@ async def test_knowledge_api_import_search_and_review(tmp_path: Path) -> None:
         assert health.status_code == 200
         assert health.json()["page_count"] == 2
         assert any(issue["code"] == "orphan_page" for issue in health.json()["issues"])
+        health_proposal = await client.post(
+            "/api/v1/wiki/health/proposals",
+            headers=headers,
+            json={"requested_by": "用户", "proposal_id": "wiki_health_proposal_api"},
+        )
+        assert health_proposal.status_code == 201
+        assert health_proposal.json()["status"] == "pending"
+        assert "orphan_page" in health_proposal.json()["proposed_content"]
+        assert health_proposal.json()["target_knowledge_id"] is None

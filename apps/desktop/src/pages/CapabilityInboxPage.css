@@ -1,18 +1,53 @@
-.capability-inbox { width: min(1440px, 100%); min-width: 0; padding: 30px 28px 48px; margin: auto; color: var(--text); overflow-wrap: anywhere; }
-.capability-inbox header { padding-bottom: 22px; margin-bottom: var(--space-4); border-bottom: 1px solid var(--border); }
-.capability-inbox h1 { font-family: var(--font-heading); font-size: 38px; }
-.capability-inbox header p, .capability-inbox .inbox-card > p { color: var(--muted); line-height: 1.6; font-size: 13px; }
-.capability-inbox a { color: var(--green); }
-.capability-inbox .inbox-card { border: 1px solid var(--border); border-radius: var(--radius-panel); padding: 20px; margin: 16px 0; background: var(--surface-panel); box-shadow: var(--shadow-panel); }
-.capability-inbox h2 { font-family: var(--font-heading); font-size: 24px; }
-.capability-inbox form { display: grid; gap: var(--space-2); }
-.capability-inbox label { display: grid; min-width: 0; gap: var(--space-1); font-size: 13px; }
-.capability-inbox select, .capability-inbox textarea { width: 100%; min-width: 0; padding: 10px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-control); font: inherit; }
-.capability-inbox textarea { min-height: 80px; resize: vertical; }
-.capability-inbox button { min-height: 38px; padding: 8px 13px; color: var(--on-green); background: var(--green); border: 1px solid var(--green); border-radius: var(--radius-control); font-weight: 650; cursor: pointer; }
-.capability-inbox form button { justify-self: start; }
-.capability-inbox button:disabled { opacity: .6; cursor: not-allowed; }
-.capability-inbox [role=alert] { color: var(--danger); line-height: 1.6; }
-.capability-inbox [role=alert] button { display: block; margin-top: var(--space-2); }
-.capability-inbox [role=status] { padding: var(--space-2); color: var(--green-deep); background: var(--surface-green); border-radius: var(--radius-control); }
-@media(max-width: 640px) { .capability-inbox { padding: 22px 12px 36px; } .capability-inbox h1 { font-size: 32px; } .capability-inbox .inbox-card { padding: 12px; } }
+/* 能力候选收件箱 */
+.inbox-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.inbox-card {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow-wrap: anywhere;
+}
+
+.inbox-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.inbox-card__head h2 {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.inbox-card__desc {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.inbox-card__form {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--hairline);
+}
+
+.inbox-card__form .btn {
+  justify-self: start;
+}
+
+.inbox-card .banner h3 {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.inbox-card .banner p {
+  font-size: 12.5px;
+}

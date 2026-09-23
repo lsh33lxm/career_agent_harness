@@ -1,4 +1,4 @@
-import { AlertCircle, BriefcaseBusiness, Check, Inbox, RefreshCw } from "lucide-react";
+import { BriefcaseBusiness, Check, MessagesSquare } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import {
@@ -11,6 +11,12 @@ import {
 import { localizedApiError } from "../api/client";
 import { JobRadarPanel } from "./JobRadarPanel";
 import { createCommunicationDraft, getCommunicationSummary, listCommunicationDrafts, reviewCommunicationDraft, type CommunicationDraft, type CommunicationSummary } from "../api/communications";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Section, Surface } from "../components/ui/Section";
+import { EmptyState, ErrorState, LoadingState } from "../components/ui/States";
+import { Button } from "../components/ui/Button";
+import { Field } from "../components/ui/Field";
+import { ErrorNotice, InlineNotice } from "../components/ui/Notice";
 
 const priorityLevels: PriorityLevel[] = ["low", "medium", "high", "urgent"];
 const priorityLabels: Record<PriorityLevel, string> = {
@@ -53,6 +59,7 @@ export function OpportunitiesPage() {
   const [communicationSummary, setCommunicationSummary] = useState<CommunicationSummary | null>(null);
   const [draftBody, setDraftBody] = useState("");
   const [draftMessage, setDraftMessage] = useState("");
+  const [draftDetail, setDraftDetail] = useState("");
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoadState("loading");
@@ -91,14 +98,22 @@ export function OpportunitiesPage() {
       });
       setDrafts((current) => [created, ...current]);
       setDraftBody(""); setDraftMessage("草稿已保存，等待你审核；不会自动发送。");
-    } catch (error) { setDraftMessage(errorMessage(error)); }
+      setDraftDetail("");
+    } catch (error) {
+      setDraftMessage("草稿保存失败，请重试。");
+      setDraftDetail(errorMessage(error));
+    }
   }
 
   async function reviewDraft(draft: CommunicationDraft, decision: "approved" | "rejected") {
     try {
       const updated = await reviewCommunicationDraft(draft.draft_id, decision, decision === "approved" ? "用户确认草稿" : "用户拒绝草稿");
       setDrafts((current) => current.map((item) => item.draft_id === updated.draft_id ? updated : item));
-    } catch (error) { setDraftMessage(errorMessage(error)); }
+      setDraftDetail("");
+    } catch (error) {
+      setDraftMessage("草稿审核失败，请重试。");
+      setDraftDetail(errorMessage(error));
+    }
   }
 
   async function handlePriority(event: FormEvent<HTMLFormElement>, item: OpportunitySummary) {
@@ -141,120 +156,149 @@ export function OpportunitiesPage() {
   }
 
   return (
-    <main className="page opportunities-page">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">职业机会</p>
-          <h1>机会</h1>
-          <p>先查看历史岗位与来源证据，再由你决定是否加入求职流程。</p>
-        </div>
-      </div>
+    <main className="page page--wide">
+      <PageHeader
+        eyebrow="职业机会"
+        title="机会"
+        description="先查看历史岗位与来源证据，再由你决定是否加入求职流程。"
+      />
 
       <JobRadarPanel />
 
-      <section className="opportunity-list" aria-labelledby="communication-drafts-title">
-        <div className="section-heading"><div><p className="eyebrow">人工确认</p><h2 id="communication-drafts-title">沟通草稿</h2></div><span>{drafts.length} 条</span></div>
-        <p>草稿只保存在本地，批准也不会自动发送。</p>
-        {communicationSummary && <div className="summary-strip" aria-label="沟通摘要">
-          <span>今日新增 {communicationSummary.created_today}/{communicationSummary.daily_limit}</span>
-          <span>剩余 {communicationSummary.remaining_today}</span>
-          <span>已回复 {communicationSummary.reply_count}</span>
-          <span>待跟进 {communicationSummary.follow_up_count}</span>
-          <span>邮件 {communicationSummary.channel_counts.email ?? 0}</span>
-          <span>平台消息 {communicationSummary.channel_counts.platform_message ?? 0}</span>
-        </div>}
-        <textarea aria-label="沟通草稿内容" value={draftBody} onChange={(event) => setDraftBody(event.target.value)} placeholder="写下跟进或沟通草稿" />
-        <button className="button button-primary" type="button" onClick={() => void createDraft()} disabled={!items.length || !draftBody.trim()}>保存草稿</button>
-        {draftMessage && <p role="status">{draftMessage}</p>}
-        {drafts.map((draft) => { const statusLabel = draft.status === "pending_review" ? "待确认" : draft.status === "approved" ? "已批准" : draft.status === "rejected" ? "已拒绝" : draft.status === "sent" ? "已记录发送" : draft.status === "replied" ? "已回复" : draft.status === "follow_up" ? "待跟进" : draft.status === "closed" ? "已结束" : draft.status === "blocked" ? "已阻断" : "待确认"; const blockedReason = draft.provenance.blocked_reason === "daily_communication_limit" ? "已达到今日沟通上限，草稿仍保留在本地。" : null; return <article className="opportunity-record" key={draft.draft_id}><p>{draft.body}</p><small>{statusLabel}</small>{blockedReason && <p className="muted">{blockedReason}</p>}{draft.status === "pending_review" && <div><button type="button" onClick={() => void reviewDraft(draft, "approved")}>确认草稿</button><button type="button" onClick={() => void reviewDraft(draft, "rejected")}>拒绝</button></div>}</article>; })}
-      </section>
-
-      <section className="opportunity-list" aria-labelledby="opportunity-list-title">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">由你确认</p>
-            <h2 id="opportunity-list-title">求职流程</h2>
+      <Surface className="surface--flow">
+        <Section
+          title="沟通草稿"
+          icon={MessagesSquare}
+          description="草稿只保存在本地，批准也不会自动发送。"
+          meta={`${drafts.length} 条`}
+        >
+          {communicationSummary && <div className="summary-strip" aria-label="沟通摘要">
+            <span>今日新增 {communicationSummary.created_today}/{communicationSummary.daily_limit}</span>
+            <span>剩余 {communicationSummary.remaining_today}</span>
+            <span>已回复 {communicationSummary.reply_count}</span>
+            <span>待跟进 {communicationSummary.follow_up_count}</span>
+            <span>邮件 {communicationSummary.channel_counts.email ?? 0}</span>
+            <span>平台消息 {communicationSummary.channel_counts.platform_message ?? 0}</span>
+          </div>}
+          <div className="draft-composer">
+            <Field label="新建草稿">
+              <textarea
+                className="textarea"
+                aria-label="沟通草稿内容"
+                value={draftBody}
+                onChange={(event) => setDraftBody(event.target.value)}
+                placeholder="写下跟进或沟通草稿"
+              />
+            </Field>
+            <Button
+              variant="primary"
+              onClick={() => void createDraft()}
+              disabled={!items.length || !draftBody.trim()}
+            >
+              保存草稿
+            </Button>
           </div>
-          {loadState === "ready" && <span>{items.length} 项</span>}
-        </div>
+          {draftMessage && (
+            <div style={{ marginTop: "var(--space-3)" }}>
+              {draftDetail
+                ? <ErrorNotice label={draftMessage} detail={draftDetail} />
+                : <InlineNotice tone={draftMessage.includes("已保存") ? "success" : "muted"} role="status">{draftMessage}</InlineNotice>}
+            </div>
+          )}
+          {drafts.length > 0 && (
+            <div className="draft-list">
+              {drafts.map((draft) => { const statusLabel = draft.status === "pending_review" ? "待确认" : draft.status === "approved" ? "已批准" : draft.status === "rejected" ? "已拒绝" : draft.status === "sent" ? "已记录发送" : draft.status === "replied" ? "已回复" : draft.status === "follow_up" ? "待跟进" : draft.status === "closed" ? "已结束" : draft.status === "blocked" ? "已阻断" : "待确认"; const blockedReason = draft.provenance.blocked_reason === "daily_communication_limit" ? "已达到今日沟通上限，草稿仍保留在本地。" : null; return (
+                <article className="draft-item" key={draft.draft_id}>
+                  <div className="draft-item__head">
+                    <span className={draft.status === "pending_review" ? "badge badge--gold" : draft.status === "rejected" || draft.status === "blocked" ? "badge badge--danger" : "badge badge--green"}>{statusLabel}</span>
+                    {draft.status === "pending_review" && (
+                      <div className="draft-item__actions">
+                        <Button size="sm" variant="primary" onClick={() => void reviewDraft(draft, "approved")}>确认草稿</Button>
+                        <Button size="sm" variant="secondary" onClick={() => void reviewDraft(draft, "rejected")}>拒绝</Button>
+                      </div>
+                    )}
+                  </div>
+                  <p>{draft.body}</p>
+                  {blockedReason && <InlineNotice tone="muted">{blockedReason}</InlineNotice>}
+                </article>
+              ); })}
+            </div>
+          )}
+        </Section>
+      </Surface>
 
-        {loadState === "loading" && (
-          <div className="opportunity-state" aria-live="polite">
-            <span className="status-spinner" aria-hidden="true" />
-            <p>正在读取求职流程…</p>
-          </div>
-        )}
+      <Surface>
+        <Section
+          title="求职流程"
+          icon={BriefcaseBusiness}
+          description="只有经过你确认的岗位才会进入这里；优先级由你保存。"
+          meta={loadState === "ready" ? `${items.length} 项` : undefined}
+        >
+          {loadState === "loading" && <LoadingState label="正在读取求职流程…" />}
 
-        {loadState === "error" && (
-          <div className="opportunity-state" role="alert">
-            <AlertCircle size={24} aria-hidden="true" />
-            <h3>暂时无法读取求职流程</h3>
-            <p>{loadError}</p>
-            <button className="secondary-command" type="button" onClick={() => void load()}>
-              <RefreshCw size={16} aria-hidden="true" />
-              <span>重试</span>
-            </button>
-          </div>
-        )}
+          {loadState === "error" && (
+            <ErrorState
+              title="暂时无法读取求职流程"
+              description="恢复连接后重试即可，已确认的内容不会丢失。"
+              detail={loadError}
+              onRetry={() => void load()}
+            />
+          )}
 
-        {loadState === "ready" && items.length === 0 && (
-          <div className="opportunity-state">
-            <Inbox size={24} aria-hidden="true" />
-            <h3>还没有加入求职流程的岗位</h3>
-            <p>在上方历史岗位库中选择岗位，查看详情后点击“加入求职流程”。</p>
-          </div>
-        )}
+          {loadState === "ready" && items.length === 0 && (
+            <EmptyState
+              icon={BriefcaseBusiness}
+              title="还没有加入求职流程的岗位"
+              description="在上方历史岗位库中选择岗位，查看详情后点击“加入求职流程”。"
+            />
+          )}
 
-        {loadState === "ready" && items.length > 0 && (
-          <div className="opportunity-records">
-            {items.map((item, index) => {
-              const opportunityId = item.opportunity.entity_id;
-              const selectedPriority = priorityDrafts[opportunityId] ?? item.user_priority?.level ?? "";
-              const priorityError = priorityErrors[opportunityId];
-              return (
-                <article className="opportunity-record" key={opportunityId}>
-                  <header className="record-header">
-                    <div className="record-identity">
-                      <BriefcaseBusiness size={18} aria-hidden="true" />
+          {loadState === "ready" && items.length > 0 && (
+            <div className="opportunity-records">
+              {items.map((item, index) => {
+                const opportunityId = item.opportunity.entity_id;
+                const selectedPriority = priorityDrafts[opportunityId] ?? item.user_priority?.level ?? "";
+                const priorityError = priorityErrors[opportunityId];
+                return (
+                  <article className="opportunity-record" key={opportunityId}>
+                    <header className="opportunity-record__head">
                       <div>
                         <h3>求职机会 {index + 1}</h3>
-                        <p>{stateLabels[item.opportunity.state] ?? "进行中"}</p>
+                        <p className="text-aux">{stateLabels[item.opportunity.state] ?? "进行中"}</p>
                       </div>
-                    </div>
-                  </header>
+                    </header>
 
-                  <div className="priority-columns">
-                    <section aria-label={`求职机会 ${index + 1} 的建议优先级`}>
-                      <div className="priority-heading">
-                        <h4>系统建议</h4>
-                        {item.suggested_priority ? (
-                          <span className={`priority-badge priority-badge--${item.suggested_priority.level}`}>
-                            {priorityLabels[item.suggested_priority.level]}
-                          </span>
-                        ) : (
-                          <span className="priority-empty">暂无建议</span>
+                    <div className="priority-grid">
+                      <section className="priority-cell" aria-label={`求职机会 ${index + 1} 的建议优先级`}>
+                        <div className="priority-cell__head">
+                          <h4>系统建议</h4>
+                          {item.suggested_priority ? (
+                            <span className={`priority-badge priority-badge--${item.suggested_priority.level}`}>
+                              {priorityLabels[item.suggested_priority.level]}
+                            </span>
+                          ) : (
+                            <span className="text-aux">暂无建议</span>
+                          )}
+                        </div>
+                        {item.suggested_priority && (
+                          <ul>{item.suggested_priority.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
                         )}
-                      </div>
-                      {item.suggested_priority && (
-                        <ul>{item.suggested_priority.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
-                      )}
-                    </section>
+                      </section>
 
-                    <section aria-label={`求职机会 ${index + 1} 的用户优先级`}>
-                      <div className="priority-heading">
-                        <h4>我的优先级</h4>
-                        {item.user_priority ? (
-                          <span className={`priority-badge priority-badge--${item.user_priority.level}`}>
-                            {priorityLabels[item.user_priority.level]}
-                          </span>
-                        ) : (
-                          <span className="priority-empty">尚未设置</span>
-                        )}
-                      </div>
-                      <form className="priority-form" onSubmit={(event) => void handlePriority(event, item)}>
-                        <label>
-                          <span className="sr-only">选择求职机会 {index + 1} 的优先级</span>
+                      <section className="priority-cell" aria-label={`求职机会 ${index + 1} 的用户优先级`}>
+                        <div className="priority-cell__head">
+                          <h4>我的优先级</h4>
+                          {item.user_priority ? (
+                            <span className={`priority-badge priority-badge--${item.user_priority.level}`}>
+                              {priorityLabels[item.user_priority.level]}
+                            </span>
+                          ) : (
+                            <span className="text-aux">尚未设置</span>
+                          )}
+                        </div>
+                        <form className="priority-form" onSubmit={(event) => void handlePriority(event, item)}>
                           <select
+                            className="select"
                             aria-label={`选择求职机会 ${index + 1} 的优先级`}
                             value={selectedPriority}
                             onChange={(event) => setPriorityDrafts((current) => ({
@@ -265,10 +309,8 @@ export function OpportunitiesPage() {
                             <option value="">选择优先级</option>
                             {priorityLevels.map((level) => <option key={level} value={level}>{priorityLabels[level]}</option>)}
                           </select>
-                        </label>
-                        <label className="priority-note">
-                          <span className="sr-only">填写优先级原因</span>
                           <input
+                            className="input"
                             aria-label={`填写求职机会 ${index + 1} 的优先级原因`}
                             value={priorityReasons[opportunityId] ?? ""}
                             onChange={(event) => setPriorityReasons((current) => ({
@@ -278,21 +320,30 @@ export function OpportunitiesPage() {
                             maxLength={2048}
                             placeholder="原因（可选）"
                           />
-                        </label>
-                        <button className="secondary-command" type="submit" disabled={!selectedPriority || priorityPending[opportunityId]}>
-                          <Check size={16} aria-hidden="true" />
-                          <span>{priorityPending[opportunityId] ? "保存中…" : "保存"}</span>
-                        </button>
-                      </form>
-                      {priorityError && <p className="inline-error" role="alert">{priorityError}</p>}
-                    </section>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                          <Button
+                            variant="secondary"
+                            type="submit"
+                            loading={priorityPending[opportunityId]}
+                            disabled={!selectedPriority}
+                            icon={<Check size={15} aria-hidden="true" />}
+                          >
+                            {priorityPending[opportunityId] ? "保存中…" : "保存"}
+                          </Button>
+                          {priorityError && (
+                            <div style={{ gridColumn: "1 / -1" }}>
+                              <ErrorNotice label="保存优先级失败，请重试。" detail={priorityError} />
+                            </div>
+                          )}
+                        </form>
+                      </section>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </Section>
+      </Surface>
     </main>
   );
 }

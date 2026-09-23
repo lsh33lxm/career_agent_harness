@@ -180,7 +180,7 @@ describe("JobRadarPanel", () => {
 
     render(<MemoryRouter><JobRadarPanel /></MemoryRouter>);
     fireEvent.click(await screen.findByRole("button", { name: "开始演示闭环" }));
-    expect((await screen.findByRole("listitem")).textContent).toContain("Agent 平台经验 · req_1 · proposed");
+    expect(await screen.findByText("Agent 平台经验 · req_1 · proposed")).toBeTruthy();
     expect(screen.getByText("岗位 Evidence：evidence_job_1")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "生成目标 ResumeRevision" })).toBeNull();
     fireEvent.change(screen.getAllByRole("textbox", { name: "手动编辑（用户内容）" })[2], { target: { value: "用户核实后的经历" } });

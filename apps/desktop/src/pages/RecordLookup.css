@@ -1,10 +1,98 @@
-.record-page { display: grid; gap: var(--space-3); }
-.record-lookup { padding: var(--space-4); min-width: 0; overflow-wrap: anywhere; }
-.record-lookup form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-2); }
-.record-lookup label { display: grid; gap: 6px; min-width: 0; flex: 1 1 220px; }
-.record-lookup input { width: 100%; min-width: 0; padding: 9px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface); color: var(--ink); }
-.record-lookup button { padding: 10px 16px; background: var(--green); color: var(--on-green); border: 0; border-radius: var(--radius-control); cursor: pointer; }
-.record-lookup pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; padding: var(--space-2); background: var(--surface-soft); }
-.record-lookup article { margin-top: var(--space-3); border-top: 1px solid var(--border); padding-top: var(--space-2); }
-.record-lookup li { margin-bottom: var(--space-2); }
-@media (max-width: 768px) { .record-lookup { padding: var(--space-2); } }
+/* Structured resume/record sections (shared by 简历 page). */
+.structured-sections {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fact-row {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.fact-row > header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fact-row__id {
+  display: grid;
+  min-width: 0;
+}
+
+.fact-row__id h3 {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.fact-row__id small {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.fact-row__content p {
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.fact-row__content pre {
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Round 2 简历双栏 */
+.resume-workspace {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.resume-tip {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--info-soft);
+  border: 1px solid color-mix(in srgb, var(--green) 18%, var(--border));
+  border-radius: var(--radius-md);
+}
+
+.resume-tip svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--green);
+}
+
+.resume-tip strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.resume-tip p {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 980px) {
+  .resume-workspace {
+    grid-template-columns: 1fr;
+  }
+}

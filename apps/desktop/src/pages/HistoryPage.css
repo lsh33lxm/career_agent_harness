@@ -1,14 +1,47 @@
-.history-page { display: grid; gap: 20px; }
-.history-page .today-panel { padding: 24px; min-width: 0; overflow-wrap: anywhere; }
-.history-application label { display: block; margin-bottom: 8px; }
-.history-application select { width: 100%; max-width: 100%; min-width: 0; padding: 10px; color: inherit; background: var(--surface, #fffdf7); border: 1px solid var(--border, #dcd9ca); border-radius: 6px; }
-.history-record { border-top: 1px solid var(--border, #dcd9ca); padding-top: 12px; margin-top: 18px; }
-.history-record dl { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: 8px 16px; }
-.history-record dd { margin: 0; }
-@media (max-width: 768px) {
-  .history-page .today-panel { padding: 16px; }
-  .history-record dl { grid-template-columns: minmax(0, 1fr); }
-  .history-record dt { font-weight: 600; }
+/* 职业历程 */
+.history-application {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 720px;
+}
+
+.history-application__summary {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.history-application__summary h2 {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.history-application__facts {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.history-record {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--hairline);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.history-record h3 {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.history-record__feedback {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 .history-story-steps { display: grid; gap: 8px; margin: 16px 0; padding: 0; list-style: none; }
 .history-story-steps li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }

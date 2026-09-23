@@ -76,6 +76,8 @@ interface RuntimeConfig {
   demoMode: boolean;
 }
 
+import { isVisualReviewMode, visualReviewRequest } from "./visualReview";
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -135,6 +137,10 @@ export async function apiRequest<T>(
   init: RequestInit = {},
   idempotencyKey?: string,
 ): Promise<T> {
+  // 仅开发环境的视觉验收模式：fixture 直出，不触网（生产构建中此分支被移除）。
+  if (import.meta.env.DEV && isVisualReviewMode()) {
+    return visualReviewRequest(path, init) as Promise<T>;
+  }
   const config = runtimeConfig();
   let response: Response;
   const headers = new Headers(init.headers);
@@ -168,6 +174,9 @@ export async function apiRequest<T>(
 }
 
 export async function apiRequestBlob(path: string, init: RequestInit = {}): Promise<Blob> {
+  if (import.meta.env.DEV && isVisualReviewMode()) {
+    throw new ApiError("视觉验收模式不提供文件下载");
+  }
   const config = runtimeConfig();
   const headers = new Headers(init.headers);
   if (config.launchToken) headers.set("Authorization", `Bearer ${config.launchToken}`);

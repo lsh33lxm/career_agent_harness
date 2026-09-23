@@ -2,7 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { ProjectsPage } from "../pages/ProjectsPage";
 import { ResumePage } from "../pages/ResumePage";
-import { SectionPage } from "../pages/SectionPage";
+import { SettingsPage } from "../pages/SettingsPage";
 import { OpportunitiesPage } from "../pages/OpportunitiesPage";
 import { TodayPage } from "../pages/TodayPage";
 import { CapabilitiesPage } from "../pages/CapabilitiesPage";
@@ -14,8 +14,6 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { PluginsPage } from "../pages/PluginsPage";
 import { KnowledgePage } from "../pages/KnowledgePage";
 import { ContextPage } from "../pages/ContextPage";
-
-const sections = [["settings", "设置", "偏好设置页面尚未接入，未读取本地配置。"]] as const;
 
 export function App() {
   return (
@@ -34,13 +32,7 @@ export function App() {
             <Route path="plugins" element={<PluginsPage />} />
             <Route path="knowledge" element={<KnowledgePage />} />
             <Route path="context" element={<ContextPage />} />
-            {sections.map(([path, title, emptyLabel]) => (
-              <Route
-                key={path}
-                path={path}
-                element={<SectionPage title={title} emptyLabel={emptyLabel} />}
-              />
-            ))}
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

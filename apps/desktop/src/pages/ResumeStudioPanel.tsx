@@ -20,6 +20,8 @@ import {
 import { getResumeRevision } from "../api/projectResume";
 import type { ResumeRevisionRead } from "../api/projectResume";
 import { atsStatusLabels, decisionLabels, displayLabel, rendererLabels } from "../app/displayLabels";
+import { Button } from "../components/ui/Button";
+import { Field } from "../components/ui/Field";
 
 const DRAFT_KEY = "ach.resume-studio.draft.v1";
 
@@ -324,34 +326,34 @@ export function ResumeStudioPanel() {
   }
 
   return (
-    <section className="resume-studio panel" aria-label="简历工作室">
-      <div className="section-heading">
+    <section className="resume-studio" aria-label="简历工作室">
+      <div className="resume-studio__head">
         <div>
-          <p className="eyebrow">简历工作室</p>
+          <span className="eyebrow">简历工作室</span>
           <h2>目标岗位定制与预览</h2>
         </div>
-        <span className="service-status"><Palette size={15} />观复模板</span>
+        <span className="badge"><Palette size={12} aria-hidden="true" />观复模板</span>
       </div>
       <div className="resume-studio-grid">
-        <label>基础简历精确引用<input value={resumeId} onChange={(event) => setResumeId(event.target.value)} placeholder="输入高级引用" /></label>
-        <label>生成修订精确引用<input value={revisionId} onChange={(event) => setRevisionId(event.target.value)} placeholder="输入高级引用" /></label>
-        <label>目标岗位档案精确引用<input value={profileId} onChange={(event) => setProfileId(event.target.value)} placeholder="输入高级引用" /></label>
-        <label>目标岗位<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：平台工程师" /></label>
-        <label>公司（可选）<input value={company} onChange={(event) => setCompany(event.target.value)} placeholder="例如：目标公司" /></label>
-        <label>渲染模板<select aria-label="渲染模板" value={templateId} onFocus={loadTemplates} onChange={(event) => setTemplateId(event.target.value)}>
+        <Field label="基础简历精确引用"><input className="input" value={resumeId} onChange={(event) => setResumeId(event.target.value)} placeholder="输入高级引用" /></Field>
+        <Field label="生成修订精确引用"><input className="input" value={revisionId} onChange={(event) => setRevisionId(event.target.value)} placeholder="输入高级引用" /></Field>
+        <Field label="目标岗位档案精确引用"><input className="input" value={profileId} onChange={(event) => setProfileId(event.target.value)} placeholder="输入高级引用" /></Field>
+        <Field label="目标岗位"><input className="input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：平台工程师" /></Field>
+        <Field label="公司（可选）"><input className="input" value={company} onChange={(event) => setCompany(event.target.value)} placeholder="例如：目标公司" /></Field>
+        <Field label="渲染模板"><select className="select" aria-label="渲染模板" value={templateId} onFocus={loadTemplates} onChange={(event) => setTemplateId(event.target.value)}>
           {templates.map((template) => <option key={template.template_id} value={template.template_id} disabled={template.status !== "active"}>{templateDisplayName(template.name)} · {displayLabel(template.renderer, rendererLabels)}{template.status === "disabled" ? "（不可用）" : ""}</option>)}
-        </select></label>
+        </select></Field>
       </div>
       <div className="button-row">
-        <button className="button button-secondary" type="button" onClick={saveProfile} disabled={!resumeId || !profileId || !title}>保存目标岗位</button>
-        <button className="button button-secondary" type="button" onClick={loadRevisionDraft} disabled={!revisionId}>加载到本地草稿</button>
-        <button className="button button-primary" type="button" onClick={render} disabled={!revisionId}>生成预览与 PDF</button>
+        <button className="btn btn--secondary" type="button" onClick={saveProfile} disabled={!resumeId || !profileId || !title}>保存目标岗位</button>
+        <button className="btn btn--secondary" type="button" onClick={loadRevisionDraft} disabled={!revisionId}>加载到本地草稿</button>
+        <button className="btn btn--primary" type="button" onClick={render} disabled={!revisionId}>生成预览与 PDF</button>
       </div>
-      <p className="resume-studio-message">{message}</p>
+      <p className="text-aux" role="status">{message}</p>
       <div className="resume-draft-workspace">
-        <div><label>建议草稿（JSON，本地自动保存）<textarea aria-label="简历建议草稿" value={draftContent} onChange={(event) => updateDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></label><div className="button-row"><button className="button button-secondary" type="button" onClick={undoDraft} disabled={draftHistory.length === 0}>撤销</button><button className="button button-secondary" type="button" onClick={redoDraft} disabled={draftFuture.length === 0}>重做</button><button className="button button-secondary" type="button" onClick={() => void validateDraft()} disabled={!parsedDraft}>校验简历结构</button><button className="button button-primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新修订</button></div>{validationMessage && <p role="status">{validationMessage}</p>}<label>证据精确引用<input aria-label="草稿证据精确引用" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="输入证据引用" /></label></div>
+        <div><Field label="建议草稿（JSON，本地自动保存）"><textarea className="textarea resume-studio__editor" aria-label="简历建议草稿" value={draftContent} onChange={(event) => updateDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></Field><div className="button-row"><button className="btn btn--secondary" type="button" onClick={undoDraft} disabled={draftHistory.length === 0}>撤销</button><button className="btn btn--secondary" type="button" onClick={redoDraft} disabled={draftFuture.length === 0}>重做</button><button className="btn btn--secondary" type="button" onClick={() => void validateDraft()} disabled={!parsedDraft}>校验简历结构</button><button className="btn btn--primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新修订</button></div>{validationMessage && <p role="status">{validationMessage}</p>}<Field label="证据精确引用"><input className="input" aria-label="草稿证据精确引用" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="输入证据引用" /></Field></div>
         <div>
-          <label>预览主题<select aria-label="预览主题" value={previewTheme} onChange={(event) => setPreviewTheme(event.target.value)}><option value="warm-paper">暖纸</option><option value="compact-ink">紧凑墨色</option></select></label>
+          <Field label="预览主题"><select className="select" aria-label="预览主题" value={previewTheme} onChange={(event) => setPreviewTheme(event.target.value)}><option value="warm-paper">暖纸</option><option value="compact-ink">紧凑墨色</option></select></Field>
           <article className={`resume-draft-preview ${previewTheme}`} aria-label="草稿实时预览">
             {parsedDraft ? Object.entries(parsedDraft).map(([key, value]) => <section key={key}><strong>{key}</strong><p>{typeof value === "string" ? value : JSON.stringify(value)}</p></section>) : <p>{draftContent ? "JSON 格式无效" : "尚未加载草稿"}</p>}
           </article>
@@ -361,7 +363,7 @@ export function ResumeStudioPanel() {
         <div className="resume-studio-output">
           <div className="resume-studio-output-heading">
             <h3>预览</h3>
-            <button className="resume-download" type="button" onClick={download}><FileDown size={14} />下载 PDF</button>
+            <Button size="sm" variant="secondary" onClick={() => void download()} icon={<FileDown size={13} aria-hidden="true" />}>下载 PDF</Button>
           </div>
           <div className="resume-preview" dangerouslySetInnerHTML={{ __html: run.preview_html }} />
           {report && (
@@ -374,12 +376,12 @@ export function ResumeStudioPanel() {
           <div className="resume-render-review">
             <strong>导出文件人工审核</strong>
             <p>生成物不会自动成为简历事实或申请用最终稿。</p>
-            <label>审核理由<input aria-label="审核理由" value={reviewReason} onChange={(event) => setReviewReason(event.target.value)} disabled={Boolean(review)} /></label>
+            <Field label="审核理由"><input className="input" aria-label="审核理由" value={reviewReason} onChange={(event) => setReviewReason(event.target.value)} disabled={Boolean(review)} /></Field>
             <div className="button-row">
-              <button className="button button-secondary" type="button" onClick={() => submitReview("rejected")} disabled={!reviewReason.trim() || Boolean(review)}><X size={14} />拒绝</button>
-              <button className="button button-primary" type="button" onClick={() => submitReview("approved")} disabled={!reviewReason.trim() || Boolean(review)}><Check size={14} />批准</button>
+              <button className="btn btn--secondary" type="button" onClick={() => submitReview("rejected")} disabled={!reviewReason.trim() || Boolean(review)}><X size={14} />拒绝</button>
+              <button className="btn btn--primary" type="button" onClick={() => submitReview("approved")} disabled={!reviewReason.trim() || Boolean(review)}><Check size={14} />批准</button>
             </div>
-            {review && <span className="service-status">已由用户{displayLabel(review.decision, decisionLabels)}</span>}
+            {review && <span className="badge badge--green">已由用户{displayLabel(review.decision, decisionLabels)}</span>}
           </div>
         </div>
       )}

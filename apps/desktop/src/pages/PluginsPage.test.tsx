@@ -72,6 +72,7 @@ it("shows manifest details, policy, audit and uninstall impact without external 
   vi.stubGlobal("fetch", fetcher);
 
   render(<PluginsPage />);
+  fireEvent.click(screen.getByRole("tab", { name: "本地工具" }));
   expect(await screen.findByRole("heading", { name: "本地连通性检查" })).toBeTruthy();
   fireEvent.click(screen.getByText("查看详情与权限"));
   expect(screen.getByText("builtin://echo-fixture")).toBeTruthy();

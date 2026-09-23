@@ -30,6 +30,7 @@ npm --prefix apps/desktop test -- --run  -> 24 files, 68 tests passed
 npm --prefix apps/desktop run build     -> Vite production build passed
 .venv/Scripts/python.exe -m pytest -q tests/integration/test_full_demo_career_loop.py -> 2 passed
 .venv/Scripts/ruff.exe check backend tests migrations scripts -> All checks passed
+.venv/Scripts/python.exe -m pytest -q -> 717 passed, 5 skipped（Windows symlink 权限限制）
 ```
 
 使用临时目录 `ACH_DATA_DIR=%TEMP%/ach-demo-e2e-integration` 启动 Demo API 后，实际 POST 完整闭环并重新 GET `/api/v1/career-loop/demo-story`；返回 8 个链路步骤和岗位、申请、面试、知识关联。CUA 浏览器截图未完成，原因是当前 Codex 浏览器通道拒绝 `apikey` 认证配置。

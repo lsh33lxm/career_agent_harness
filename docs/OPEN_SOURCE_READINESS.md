@@ -10,6 +10,7 @@
 - Legacy 核心岗位 CSV 已完成只读审计：492 行，使用固定 seed 生成 24 条脱敏岗位摘要；Demo Mode 机会页支持离线搜索和详情查看。
 - 新增隔离 Demo Career Loop：`ACH_ENV=demo` + 独立 `ACH_DATA_DIR` 时，完整岗位到申请、面试准备和复盘提案由本地 API 持久化；真实模式仍要求 launch token。
 - 新增只读 Demo Story 聚合：历史页与知识页从现有 Core SQLite 反向展示岗位、简历、申请、面试、知识提案和事件链；不创建第二套数据库，也不将 Demo 提案提升为 Career Core 事实。
+- Demo JD 分析现在通过现有 `JobService.propose_requirement` 写入 `JobRequirement` proposal；3 条要求各自带稳定 ID、Evidence 引用和人工审核状态，重复闭环不会重复创建。
 
 ## 验证证据
 

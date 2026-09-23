@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
@@ -8,9 +9,11 @@ from sqlalchemy import text
 
 from career_harness.adapters.job_sources import OfflineFixtureJobSource
 from career_harness.core.application import ApplicationState, SubmissionAuthority
+from career_harness.core.capability import CapabilityEvidenceScope
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef
 from career_harness.core.interview import InterviewRound
+from career_harness.core.job import JobRef, JobRequirementImportance
 from career_harness.core.knowledge.models import (
     KnowledgeAuthority,
     KnowledgeCategory,
@@ -46,6 +49,7 @@ class OfflineCareerLoopResult:
     application_id: str
     application_revision: int
     application_state: str
+    requirement_ids: tuple[str, ...] = ()
     company_research_proposal_id: str | None = None
     star_prep_proposal_id: str | None = None
     memory_proposal_id: str | None = None
@@ -82,7 +86,13 @@ class OfflineCareerLoopService:
             if item.entity_id.startswith("application_")
         )
         if not applications:
-            return {"available": False, "message": "尚未运行演示闭环", "events": [], "links": []}
+            return {
+                "available": False,
+                "message": "尚未运行演示闭环",
+                "steps": [],
+                "events": [],
+                "links": [],
+            }
         application = applications[0]
         opportunity = self.opportunity_repository.get(application.opportunity_id)
         interviews = self.applications.repository.engine
@@ -92,6 +102,33 @@ class OfflineCareerLoopService:
             )
         )
         with interviews.connect() as connection:
+            staging_row = (
+                connection.execute(
+                    text(
+                        "SELECT staging_id, raw_sha256, suggested_score, gaps, admitted_job_id "
+                        "FROM job_staging_record WHERE admitted_opportunity_id=:opportunity "
+                        "ORDER BY created_at LIMIT 1"
+                    ),
+                    {"opportunity": application.opportunity_id},
+                )
+                .mappings()
+                .first()
+            )
+            requirement_rows = (
+                connection.execute(
+                    text(
+                        "SELECT requirement_id, requirement_text, status "
+                        "FROM job_requirement_revision WHERE job_id=:job_id "
+                        "AND job_revision=:revision ORDER BY requirement_id"
+                    ),
+                    {
+                        "job_id": staging_row["admitted_job_id"] if staging_row else "",
+                        "revision": 1,
+                    },
+                )
+                .mappings()
+                .all()
+            )
             rows = (
                 connection.execute(
                     text(
@@ -209,11 +246,30 @@ class OfflineCareerLoopService:
                 for row in knowledge_rows
             ],
         ]
+        evidence_ref_id = None
+        if staging_row:
+            evidence_ref_id = (
+                "evidence_job_staging_"
+                + hashlib.sha256(
+                    (staging_row["staging_id"] + staging_row["raw_sha256"]).encode()
+                ).hexdigest()[:32]
+            )
         return {
             "available": True,
+            "staging_id": staging_row["staging_id"] if staging_row else None,
             "application_id": application.entity_id,
             "opportunity_id": opportunity.opportunity.entity_id if opportunity else None,
             "resume_revision_id": application.resume_revision_id,
+            "evidence_ref_id": evidence_ref_id,
+            "requirements": [dict(row) for row in requirement_rows],
+            "score": staging_row["suggested_score"] if staging_row else None,
+            "gaps": (
+                json.loads(staging_row["gaps"])
+                if staging_row and isinstance(staging_row["gaps"], str)
+                else staging_row["gaps"]
+                if staging_row
+                else []
+            ),
             "interviews": [item.model_dump(mode="json") for item in interview_rows],
             "steps": steps,
             "events": events,
@@ -244,12 +300,37 @@ class OfflineCareerLoopService:
         if record.status.value == "staged":
             admission = self.radar.admit(record.staging_id, actor="user")
             opportunity = admission.admission.opportunity
+            record = self.radar.repository.get(record.staging_id) or record
         else:
             detail = self.opportunity_repository.get(record.admitted_opportunity_id or "")
             opportunity = detail.opportunity if detail is not None else None
         if opportunity is None:
             raise RuntimeError("岗位 admission 未返回 Opportunity")
         seed = self.radar.resume_proposal_seed(record.staging_id)
+        requirement_ids: list[str] = []
+        if record.admitted_job_id:
+            job_revision = JobRef(job_id=record.admitted_job_id, revision=1)
+            for ordinal, requirement_text in enumerate(seed.requirement_texts):
+                digest = hashlib.sha256((record.staging_id + str(ordinal)).encode()).hexdigest()[
+                    :24
+                ]
+                requirement_id = f"job_requirement_demo_{digest}"
+                self.radar.jobs.propose_requirement(
+                    Command(
+                        command_id=f"command_{requirement_id}",
+                        command_type="job_requirement.demo_propose",
+                        target=EntityRef(entity_id=requirement_id, kind=EntityKind.JOB_REQUIREMENT),
+                        expected_revision=0,
+                        idempotency_key=f"demo-job-requirement-{requirement_id}",
+                        actor="agent:offline-career-loop",
+                    ),
+                    job=job_revision,
+                    requirement_text=requirement_text,
+                    importance=JobRequirementImportance.REQUIRED,
+                    required_scopes=(CapabilityEvidenceScope.EVIDENCE,),
+                    source_evidence_refs=(seed.evidence_ref_id,),
+                )
+                requirement_ids.append(requirement_id)
         base = self.resume_studio.repository.resumes.get_base(resume_id, 1)
         if base is None or base.candidate_id != candidate_id:
             raise ValueError("闭环需要匹配 candidate 的 ResumeBase#1")
@@ -410,6 +491,7 @@ class OfflineCareerLoopService:
             render_run_id=run.render_run_id,
             ats_status=report.status.value,
             keyword_gaps=report.keyword_gaps,
+            requirement_ids=tuple(requirement_ids),
             application_id=application.entity_id,
             application_revision=application.revision,
             application_state=application.state.value,

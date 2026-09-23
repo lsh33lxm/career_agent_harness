@@ -22,12 +22,23 @@ export interface DemoStoryEvent {
   occurred_at: string;
 }
 
+export interface DemoStoryRequirement {
+  requirement_id: string;
+  requirement_text: string;
+  status: string;
+}
+
 export interface DemoStory {
   available: boolean;
   message?: string;
+  staging_id?: string | null;
   application_id?: string;
   opportunity_id?: string | null;
   resume_revision_id?: string | null;
+  evidence_ref_id?: string | null;
+  score?: number | null;
+  gaps?: string[];
+  requirements?: DemoStoryRequirement[];
   steps: DemoStoryStep[];
   events: DemoStoryEvent[];
   links: DemoStoryLink[];

@@ -78,6 +78,13 @@ def test_full_demo_career_loop_persists_and_replays(tmp_path: Path) -> None:
     story = loop.demo_story()
     assert story["available"] is True
     assert story["application_id"] == result.application_id
+    assert story["staging_id"] == result.staging_id
+    assert story["evidence_ref_id"] == result.evidence_ref_id
+    assert story["score"] == result.score
+    assert story["gaps"] == list(result.gaps)
+    assert len(result.requirement_ids) == 3
+    assert len(story["requirements"]) == 3
+    assert all(item["status"] == "proposed" for item in story["requirements"])
     assert [step["label"] for step in story["steps"]][-1] == "完成面试复盘"
     assert any(link["kind"] == "岗位" for link in story["links"])
     assert any(link["kind"] == "知识" for link in story["links"])

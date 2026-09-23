@@ -10,6 +10,7 @@
 - Demo API 可在 `ACH_ENV=demo` 下不使用 launch token，仅绑定 `127.0.0.1`；数据目录由 `ACH_DATA_DIR` 指向独立目录，与真实用户库分离。
 - 前端回归：23 个测试文件、67 个测试通过；生产构建通过。
 - Demo Story 读模型：`GET /api/v1/career-loop/demo-story` 从现有 SQLite 只读组合岗位、申请、面试、知识提案和领域事件；历史页展示岗位到面试复盘步骤，知识页展示可反向追溯关联。
+- JD 分析持久化：完整 Demo 闭环为演示岗位写入 3 条 `JobRequirement` proposal，保留原始 Evidence 引用和 `proposed` 审核状态；Demo Story 返回评分、能力 gap、Evidence ID 和要求列表，重复执行保持稳定 ID。
 - 真实本地 API 验收（2026-09-23）：使用临时独立 `ACH_DATA_DIR`、`ACH_ENV=demo` 启动 `127.0.0.1:8765`；POST `/api/v1/career-loop/demo-full` 返回 `application_fbdd11d28d86432cb74ee48a`、`interview_demo_fbdd11d28d86432cb74ee48a`，随后重新 GET Demo Story 仍返回 8 个步骤、4 类知识提案和完整关联，证明重读持久化成功。
 - 本轮前端回归：24 个测试文件、68 个测试通过；`npm run build` 通过；后端 focused E2E 2 passed；Ruff `backend tests migrations scripts` 通过。
 

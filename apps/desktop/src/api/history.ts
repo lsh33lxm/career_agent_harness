@@ -72,3 +72,17 @@ export function createInterviewFeedbackProposal(
     { method: "POST", body: JSON.stringify(input) },
   );
 }
+
+export function createOfferPreparationProposal(applicationId: string): Promise<{ proposal_id: string }> {
+  return apiRequest<{ proposal_id: string }>(
+    `/api/v1/outcome-insights/applications/${encodeURIComponent(applicationId)}/offer-preparation`,
+    { method: "POST" },
+  );
+}
+
+export function createRejectionPatternProposal(): Promise<{ proposal_id: string }> {
+  return apiRequest<{ proposal_id: string }>(
+    "/api/v1/outcome-insights/rejection-pattern",
+    { method: "POST" },
+  );
+}

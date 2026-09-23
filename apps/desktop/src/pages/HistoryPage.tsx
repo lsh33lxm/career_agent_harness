@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { ApiError } from "../api/client";
-import { createInterviewFeedbackProposal, createInterviewPrepProposal, listApplications, listInterviews, listOutcomes } from "../api/history";
+import { createInterviewFeedbackProposal, createInterviewPrepProposal, createOfferPreparationProposal, createRejectionPatternProposal, listApplications, listInterviews, listOutcomes } from "../api/history";
 import type { ApplicationRead, ApplicationState, InterviewRead, OutcomeRead } from "../api/history";
 import { actorLabels, displayLabel } from "../app/displayLabels";
 import "./HistoryPage.css";
@@ -22,6 +22,7 @@ const message = (error: unknown) => error instanceof ApiError ? error.message : 
 function OutcomePanel({ applicationId }: { applicationId: string }) {
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<Load<OutcomeRead[]>>({ status: "loading" });
+  const [insightMessage, setInsightMessage] = useState("");
   useEffect(() => {
     const controller = new AbortController();
     setState({ status: "loading" });
@@ -32,6 +33,22 @@ function OutcomePanel({ applicationId }: { applicationId: string }) {
     });
     return () => controller.abort();
   }, [applicationId, attempt]);
+  async function offerPreparation() {
+    try {
+      const result = await createOfferPreparationProposal(applicationId);
+      setInsightMessage(`Offer 准备清单已创建，等待审核：${result.proposal_id}`);
+    } catch (error) {
+      setInsightMessage(`Offer 准备清单生成失败：${error instanceof Error ? error.message : "未知错误"}`);
+    }
+  }
+  async function rejectionPattern() {
+    try {
+      const result = await createRejectionPatternProposal();
+      setInsightMessage(`投递结果分析已创建，等待审核：${result.proposal_id}`);
+    } catch (error) {
+      setInsightMessage(`投递结果分析生成失败：${error instanceof Error ? error.message : "未知错误"}`);
+    }
+  }
   return (
     <section className="today-panel history-outcomes" aria-labelledby="outcomes-title">
       <h2 id="outcomes-title" className="today-section-title"><span />已记录的结果</h2>
@@ -52,6 +69,9 @@ function OutcomePanel({ applicationId }: { applicationId: string }) {
           </dl>
         </article>
       ))}
+      {state.status === "ready" && state.data.some((outcome) => outcome.result === "offer") && <button type="button" onClick={() => void offerPreparation()}>生成 Offer 准备清单</button>}
+      {state.status === "ready" && state.data.some((outcome) => outcome.result === "rejection") && <button type="button" onClick={() => void rejectionPattern()}>分析投递结果模式</button>}
+      {insightMessage && <p role="status">{insightMessage}</p>}
     </section>
   );
 }

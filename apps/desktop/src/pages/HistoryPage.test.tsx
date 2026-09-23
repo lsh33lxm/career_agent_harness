@@ -2,11 +2,11 @@ import { MemoryRouter } from "react-router-dom";
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { listApplications, listInterviews, listOutcomes } from "../api/history";
+import { createOfferPreparationProposal, createRejectionPatternProposal, listApplications, listInterviews, listOutcomes } from "../api/history";
 import type { ApplicationRead, OutcomeRead } from "../api/history";
 import { HistoryPage } from "./HistoryPage";
 
-vi.mock("../api/history", () => ({ listApplications: vi.fn(), listInterviews: vi.fn(), listOutcomes: vi.fn() }));
+vi.mock("../api/history", () => ({ listApplications: vi.fn(), listInterviews: vi.fn(), listOutcomes: vi.fn(), createOfferPreparationProposal: vi.fn(), createRejectionPatternProposal: vi.fn() }));
 const application = (id: string): ApplicationRead => ({
   entity_id: id, revision: 4, opportunity_id: "opportunity_a", opportunity_revision: 2,
   state: "interview", resume_revision_id: "resume_revision_a", submission_authority: "user_confirmed",
@@ -20,6 +20,8 @@ const outcome = (id: string): OutcomeRead => ({
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(listInterviews).mockResolvedValue([]);
+  vi.mocked(createRejectionPatternProposal).mockResolvedValue({ proposal_id: "rejection_pattern_1" });
+  vi.mocked(createOfferPreparationProposal).mockResolvedValue({ proposal_id: "offer_prep_1" });
 });
 afterEach(cleanup);
 
@@ -32,6 +34,8 @@ it("renders real current state separately from historical outcome revisions and 
   expect(screen.getByText("application_a#2")).toBeTruthy();
   expect(screen.getByText("门户回执")).toBeTruthy();
   expect(screen.getByText("evidence_1")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "分析投递结果模式" }));
+  expect(await screen.findByText(/投递结果分析已创建/)).toBeTruthy();
 });
 
 it("does not infer outcomes for empty applications", async () => {

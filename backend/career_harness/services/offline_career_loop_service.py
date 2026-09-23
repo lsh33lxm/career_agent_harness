@@ -23,7 +23,7 @@ from career_harness.services.application_service import ApplicationService
 from career_harness.services.interview_prep_service import InterviewPrepService
 from career_harness.services.interview_service import InterviewService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
-from career_harness.services.resume_service import canonical_value_hash
+from career_harness.services.resume_service import ResumeService, canonical_value_hash
 from career_harness.services.resume_studio_service import ResumeStudioService
 
 
@@ -287,7 +287,8 @@ class OfflineCareerLoopService:
         contacts a portal and never creates a portal receipt.
         """
         if self.resume_studio.repository.resumes.get_base(resume_id, 1) is None:
-            self.resume_studio.repository.resumes.save_base_revision(
+            resume_service = ResumeService(self.resume_studio.commands)
+            resume_service.save_base_revision(
                 Command(
                     command_id=f"command_{resume_id}_seed",
                     command_type="resume.demo_seed",
@@ -304,7 +305,7 @@ class OfflineCareerLoopService:
                     "skills": ["Python", "SQLite"],
                 },
             )
-            self.resume_studio.repository.resumes.create_revision(
+            resume_service.create_revision(
                 Command(
                     command_id=f"command_{resume_revision_id}_seed",
                     command_type="resume.demo_revision_seed",

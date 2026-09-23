@@ -96,3 +96,26 @@ def test_full_demo_career_loop_persists_and_replays(tmp_path: Path) -> None:
         "interview.scheduled",
         "interview.completed",
     ]
+
+
+def test_full_demo_loop_seeds_resume_in_an_empty_database(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    artifacts = ArtifactStore(tmp_path / "artifacts")
+    commands = CommandService(engine)
+    studio = ResumeStudioService(commands, ResumeStudioRepository(engine, artifacts))
+    loop = OfflineCareerLoopService(
+        OpportunityRadarService(engine, artifacts),
+        studio,
+        KnowledgeRepository(engine, artifacts),
+        MemoryRepository(engine),
+    )
+
+    result = loop.run_full_demo(
+        resume_id="resume_demo",
+        resume_revision_id="resume_demo_revision",
+        candidate_id="candidate_demo",
+    )
+
+    assert result.application_state == "interview"
+    assert studio.repository.resumes.get_base("resume_demo") is not None
+    assert studio.repository.resumes.get_revision("resume_demo_revision") is not None

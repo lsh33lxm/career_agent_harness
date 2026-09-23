@@ -25,6 +25,7 @@ from career_harness.api.offline_career_loop import (
     create_offline_career_loop_router,
 )
 from career_harness.api.opportunities import OpportunityApi, create_opportunity_router
+from career_harness.api.outcome_insights import OutcomeInsightApi, create_outcome_insight_router
 from career_harness.api.plugins import PluginApi, create_plugin_router
 from career_harness.api.project_reads import ProjectReadApi, create_project_read_router
 from career_harness.api.resume_studio import ResumeStudioApi, create_resume_studio_router
@@ -71,6 +72,7 @@ def create_app(
     offline_career_loop_api: OfflineCareerLoopApi | None = None,
     communication_api: CommunicationApi | None = None,
     interview_prep_api: InterviewPrepApi | None = None,
+    outcome_insight_api: OutcomeInsightApi | None = None,
 ) -> FastAPI:
     active_settings = settings or Settings()
     app = FastAPI(title="Agent Career Harness Local API", version=__version__)
@@ -152,5 +154,7 @@ def create_app(
         app.include_router(create_communication_router(communication_api))
     if interview_prep_api is not None:
         app.include_router(create_interview_prep_router(interview_prep_api))
+    if outcome_insight_api is not None:
+        app.include_router(create_outcome_insight_router(outcome_insight_api))
 
     return app

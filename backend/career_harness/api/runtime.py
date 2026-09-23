@@ -20,6 +20,7 @@ from career_harness.api.memory import MemoryApi
 from career_harness.api.model_providers import ModelProviderApi
 from career_harness.api.offline_career_loop import OfflineCareerLoopApi
 from career_harness.api.opportunities import OpportunityApi
+from career_harness.api.outcome_insights import OutcomeInsightApi
 from career_harness.api.plugins import PluginApi
 from career_harness.api.project_reads import ProjectReadApi
 from career_harness.api.resume_studio import ResumeStudioApi
@@ -66,6 +67,7 @@ from career_harness.services.model_provider_service import ModelProviderService
 from career_harness.services.offline_career_loop_service import OfflineCareerLoopService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
 from career_harness.services.opportunity_service import OpportunityService
+from career_harness.services.outcome_insight_service import OutcomeInsightService
 from career_harness.services.plugin_service import PluginLifecycleManager
 from career_harness.services.resume_studio_service import ResumeStudioService
 from career_harness.services.source_connector_service import (
@@ -231,6 +233,9 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
                 InterviewSessionRepository(engine),
                 task_service,
             )
+        ),
+        outcome_insight_api=OutcomeInsightApi(
+            OutcomeInsightService(ApplicationRepository(engine), knowledge_repository)
         ),
         legacy_import_api=LegacyImportApi(
             legacy_import_service, legacy_connector_service

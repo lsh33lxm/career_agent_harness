@@ -1,0 +1,47 @@
+"""Project evidence, scan-scope, capability-state, and L1 enhancement contracts."""
+
+from career_harness.core.project.executor import L1ManualExecutor, ManualExecutor, ManualPlanRequest
+from career_harness.core.project.models import (
+    Project,
+    ProjectCapabilityBasis,
+    ProjectCapabilityBasisKind,
+    ProjectCapabilityLevel,
+    ProjectCapabilityState,
+    ProjectEnhancementTask,
+    ProjectEnhancementTaskStatus,
+    ProjectEvidence,
+    ProjectEvidenceAuthority,
+    ProjectEvidenceClaimKind,
+    ProjectEvidenceFreshness,
+    ProjectEvidenceReviewStatus,
+    ProjectPathError,
+    ProjectScanScope,
+    ProjectScopeViolation,
+    ProjectSourceEntry,
+    ProjectSourceManifest,
+    normalize_project_path,
+)
+
+__all__ = [
+    "L1ManualExecutor",
+    "ManualExecutor",
+    "ManualPlanRequest",
+    "Project",
+    "ProjectCapabilityBasis",
+    "ProjectCapabilityBasisKind",
+    "ProjectCapabilityLevel",
+    "ProjectCapabilityState",
+    "ProjectEnhancementTask",
+    "ProjectEnhancementTaskStatus",
+    "ProjectEvidence",
+    "ProjectEvidenceAuthority",
+    "ProjectEvidenceClaimKind",
+    "ProjectEvidenceFreshness",
+    "ProjectEvidenceReviewStatus",
+    "ProjectPathError",
+    "ProjectScanScope",
+    "ProjectScopeViolation",
+    "ProjectSourceEntry",
+    "ProjectSourceManifest",
+    "normalize_project_path",
+]

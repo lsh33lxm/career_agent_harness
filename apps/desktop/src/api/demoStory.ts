@@ -36,6 +36,23 @@ export interface DemoStoryPatch {
   review_reason: string | null;
 }
 
+export interface DemoStoryPatchItem {
+  patch_id: string;
+  revision: number;
+  review_status: "proposed" | "accepted" | "rejected";
+  reviewed_at: string | null;
+  review_source: string;
+  review_note: string | null;
+  operations: Array<{
+    before: unknown;
+    after: unknown;
+    target_path: string;
+    reason: string;
+    requirement_ids: string[];
+    evidence_ids: string[];
+  }>;
+}
+
 export interface DemoStory {
   available: boolean;
   message?: string;
@@ -43,11 +60,14 @@ export interface DemoStory {
   application_id?: string;
   opportunity_id?: string | null;
   resume_revision_id?: string | null;
+  application_state?: string;
+  application_revision?: number;
   evidence_ref_id?: string | null;
   score?: number | null;
   gaps?: string[];
   requirements?: DemoStoryRequirement[];
   resume_patch?: DemoStoryPatch | null;
+  resume_patches?: DemoStoryPatchItem[];
   steps: DemoStoryStep[];
   events: DemoStoryEvent[];
   links: DemoStoryLink[];

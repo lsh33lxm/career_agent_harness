@@ -166,11 +166,11 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     for table in reversed(TABLES):
-        op.execute(f"DROP TRIGGER trg_{table}_no_delete")
-        op.execute(f"DROP TRIGGER trg_{table}_no_update")
+        op.execute(f"DROP TRIGGER IF EXISTS trg_{table}_no_delete")
+        op.execute(f"DROP TRIGGER IF EXISTS trg_{table}_no_update")
     op.execute("DROP TRIGGER trg_outcome_evidence_ref_sealed")
     op.execute("DROP TRIGGER trg_outcome_record_seal")
-    op.execute("DROP TRIGGER trg_application_submission_stable")
+    op.execute("DROP TRIGGER IF EXISTS trg_application_submission_stable")
     op.drop_table("outcome_evidence_ref")
     op.drop_index("ix_outcome_record_application_id", table_name="outcome_record")
     op.drop_table("outcome_record")

@@ -114,6 +114,7 @@ class ResumeService:
         *,
         decision: ResumePatchStatus,
         review_reason: str,
+        edited_operations: tuple[ResumePatchOperation, ...] | None = None,
     ) -> ResumePatch:
         self._require(command, EntityKind.RESUME_PATCH, user=True)
         if decision not in {ResumePatchStatus.ACCEPTED, ResumePatchStatus.REJECTED}:
@@ -123,9 +124,12 @@ class ResumeService:
             raise ValueError("review requires the exact proposed ResumePatch revision")
         if proposal.proposed_by_kind is ActorKind.AGENT and command.actor == proposal.proposed_by:
             raise ValueError("the proposer cannot review its own ResumePatch")
+        operations = edited_operations or proposal.operations
+        self._validate_operations(operations)
         patch = proposal.model_copy(
             update={
                 "revision": command.expected_revision + 1,
+                "operations": operations,
                 "status": decision,
                 "reviewed_by": command.actor,
                 "reviewed_by_kind": ActorKind.USER,

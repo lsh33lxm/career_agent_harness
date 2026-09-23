@@ -5,5 +5,7 @@ interface Window {
     apiBaseUrl: string;
     launchToken?: string;
     demoMode?: boolean;
+    startupError?: string | null;
   };
+  __ACH_RUNTIME_ERROR__?: string;
 }

@@ -1,13 +1,25 @@
 from pathlib import Path
 
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from sqlalchemy import text
 
+from career_harness.api.offline_career_loop import (
+    OfflineCareerLoopApi,
+    create_offline_career_loop_router,
+)
+from career_harness.api.runtime import create_runtime_app
+from career_harness.config import Settings
 from career_harness.core.commands import Command
 from career_harness.core.common import EntityKind, EntityRef
 from career_harness.core.resume import ResumePatchStatus, RevisionRef
 from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.memory_repository import MemoryRepository
+from career_harness.db.migrations import upgrade_to_head
 from career_harness.db.resume_studio_repository import ResumeStudioRepository
+from career_harness.db.session import create_sqlite_engine, sqlite_url
+from career_harness.platform import AppPaths
 from career_harness.services.command_service import CommandService
 from career_harness.services.offline_career_loop_service import OfflineCareerLoopService
 from career_harness.services.opportunity_radar_service import OpportunityRadarService
@@ -69,12 +81,9 @@ def test_full_demo_career_loop_persists_and_replays(tmp_path: Path) -> None:
     )
 
     assert result.opportunity_id.startswith("opportunity_")
-    assert result.application_state == "interview"
-    assert result.application_revision == 4
-    assert result.interview_id is not None
-    assert result.interview_revision == 2
-    assert result.interview_prep_proposal_id is not None
-    assert result.interview_feedback_proposal_id is not None
+    assert result.application_state == "preparing"
+    assert result.application_revision == 1
+    assert result.interview_id is None
     assert replay == result
     story = loop.demo_story()
     assert story["available"] is True
@@ -88,7 +97,7 @@ def test_full_demo_career_loop_persists_and_replays(tmp_path: Path) -> None:
     assert all(item["status"] == "proposed" for item in story["requirements"])
     assert story["resume_patch"]["patch_id"] == result.patch_id
     assert story["resume_patch"]["status"] == "proposed"
-    assert [step["label"] for step in story["steps"]][-1] == "完成面试复盘"
+    assert story["steps"][-1]["status"] == "尚未建立关联"
     assert any(link["kind"] == "岗位" for link in story["links"])
     assert any(link["kind"] == "知识" for link in story["links"])
 
@@ -136,11 +145,6 @@ def test_full_demo_career_loop_persists_and_replays(tmp_path: Path) -> None:
         ]
     assert event_types == [
         "application.created",
-        "application.state_changed",
-        "application.submission_recorded",
-        "application.state_changed",
-        "interview.scheduled",
-        "interview.completed",
     ]
 
 
@@ -162,7 +166,129 @@ def test_full_demo_loop_seeds_resume_in_an_empty_database(tmp_path: Path) -> Non
         candidate_id="candidate_demo",
     )
 
-    assert result.application_state == "interview"
+    assert result.application_state == "preparing"
     assert studio.repository.resumes.get_base("resume_demo") is not None
     assert studio.repository.resumes.get_revision("resume_demo_revision") is not None
     assert loop.demo_story()["available"] is True
+
+
+def test_demo_story_api_is_disabled_outside_demo_mode() -> None:
+    app = FastAPI()
+    app.include_router(create_offline_career_loop_router(OfflineCareerLoopApi(None)))
+    response = TestClient(app).get("/api/v1/career-loop/demo-story")
+    assert response.status_code == 403
+    assert response.json()["detail"] == "该演示流程仅在隔离 Demo Mode 中可用"
+
+
+def test_demo_runtime_requires_explicit_isolated_data_directory(
+    monkeypatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("ACH_DATA_DIR", raising=False)
+    with pytest.raises(ValueError, match="explicit isolated ACH_DATA_DIR"):
+        create_runtime_app(Settings(environment="demo"))
+    paths = AppPaths.resolve(environment={"ACH_DATA_DIR": str(tmp_path / "isolated")})
+    app = create_runtime_app(Settings(environment="demo"), paths)
+    assert app.state.settings.environment == "demo"
+
+
+def test_demo_user_review_creates_target_revision_before_submission(tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    artifacts = ArtifactStore(tmp_path / "artifacts")
+    commands = CommandService(engine)
+    studio = ResumeStudioService(commands, ResumeStudioRepository(engine, artifacts))
+    loop = OfflineCareerLoopService(
+        OpportunityRadarService(engine, artifacts),
+        studio,
+        KnowledgeRepository(engine, artifacts),
+        MemoryRepository(engine),
+    )
+
+    started = loop.start_demo(
+        resume_id="resume_demo",
+        resume_revision_id="resume_demo_revision",
+        candidate_id="candidate_demo",
+    )
+    application = loop.applications.repository.get(started.application_id)
+    assert application is not None
+    assert application.state.value == "preparing"
+    assert application.resume_revision_id is None
+    story = loop.demo_story()
+    patches = story["resume_patches"]
+    assert len(patches) == 3
+    assert all(item["operations"][0]["requirement_ids"] for item in patches)
+    by_path = {item["operations"][0]["target_path"]: item for item in patches}
+    summary = by_path["/summary"]
+    skill_keep = by_path["/skills/0"]
+    skill_reject = by_path["/skills/1"]
+    with pytest.raises(ValueError, match="仍有待人工审核"):
+        loop.create_demo_resume_revision(application_id=started.application_id)
+    with pytest.raises(ValueError, match="未找到待审核"):
+        loop.approve_demo_resume(patch_id="patch_invalid", application_id=started.application_id)
+    loop.approve_demo_resume(
+        patch_id=summary["patch_id"],
+        application_id=started.application_id,
+        decision=ResumePatchStatus.ACCEPTED,
+        edited_value="用户手动确认的演示摘要",
+    )
+    loop.approve_demo_resume(
+        patch_id=skill_reject["patch_id"],
+        application_id=started.application_id,
+        decision=ResumePatchStatus.REJECTED,
+    )
+    loop.approve_demo_resume(
+        patch_id=skill_keep["patch_id"],
+        application_id=started.application_id,
+        decision=ResumePatchStatus.ACCEPTED,
+    )
+    assert loop.demo_story()["resume_patches"][0]["operations"][0]["evidence_ids"]
+    created = loop.create_demo_resume_revision(application_id=started.application_id)
+    assert created["application_state"] == "preparing"
+    application = loop.applications.repository.get(started.application_id)
+    assert application is not None
+    assert application.state.value == "preparing"
+    assert application.resume_revision_id is not None
+    assert application.resume_revision_id.startswith("resume_revision_demo_target_")
+    target = studio.repository.resumes.get_revision(application.resume_revision_id)
+    assert target is not None
+    assert {ref.entity_id for ref in target.accepted_patch_refs} == {
+        summary["patch_id"],
+        skill_keep["patch_id"],
+    }
+    assert skill_reject["patch_id"] not in {ref.entity_id for ref in target.accepted_patch_refs}
+    assert target.content["summary"] == "用户手动确认的演示摘要"
+    assert (
+        studio.repository.resumes.get_base("resume_demo", 1).sections["summary"]
+        == "已确认的演示经历摘要"
+    )
+    assert application.submission_authority is None and application.submitted_at is None
+    engine.dispose()
+    database_url = sqlite_url(tmp_path / "fact-service.db")
+    upgrade_to_head(database_url)
+    reopened_engine = create_sqlite_engine(database_url)
+    reopened_studio = ResumeStudioService(
+        CommandService(reopened_engine),
+        ResumeStudioRepository(reopened_engine, ArtifactStore(tmp_path / "artifacts")),
+    )
+    reopened_loop = OfflineCareerLoopService(
+        OpportunityRadarService(reopened_engine, ArtifactStore(tmp_path / "artifacts")),
+        reopened_studio,
+        KnowledgeRepository(reopened_engine, ArtifactStore(tmp_path / "artifacts")),
+        MemoryRepository(reopened_engine),
+    )
+    reread = reopened_loop.demo_story()
+    assert reread["resume_revision_id"] == created["resume_revision_id"]
+    assert {item["patch_id"]: item["review_status"] for item in reread["resume_patches"]} == {
+        summary["patch_id"]: "accepted",
+        skill_keep["patch_id"]: "accepted",
+        skill_reject["patch_id"]: "rejected",
+    }
+    assert (
+        reopened_loop.applications.repository.get(started.application_id).resume_revision_id
+        == created["resume_revision_id"]
+    )
+    assert (
+        reopened_loop.create_demo_resume_revision(application_id=started.application_id)[
+            "resume_revision_id"
+        ]
+        == created["resume_revision_id"]
+    )

@@ -93,6 +93,20 @@ class ApplicationService:
         )
         return self._commit_application(command, next_application, "application.state_changed")
 
+    def attach_prepared_resume(
+        self, command: Command, *, resume_revision_id: OpaqueId
+    ) -> Application:
+        self._require_user(command, EntityKind.APPLICATION)
+        current = self._exact_application(command)
+        if current.state not in {ApplicationState.PREPARING, ApplicationState.READY_FOR_REVIEW}:
+            raise ValueError("仅准备中的申请可以关联简历版本")
+        if self.resumes.get_revision(resume_revision_id) is None:
+            raise ValueError("申请需要一个精确 ResumeRevision")
+        updated = current.model_copy(
+            update={"revision": current.revision + 1, "resume_revision_id": resume_revision_id}
+        )
+        return self._commit_application(command, updated, "application.resume_revision_attached")
+
     def record_submission(
         self,
         command: Command,

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { CirclePlus, Search } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
@@ -5,6 +6,14 @@ import { navigation } from "./navigation";
 
 export function AppShell() {
   const demoMode = window.__ACH_CONFIG__?.demoMode === true || import.meta.env.VITE_DEMO_MODE === "true";
+  const [runtimeError, setRuntimeError] = useState(
+    window.__ACH_CONFIG__?.startupError ?? window.__ACH_RUNTIME_ERROR__ ?? "",
+  );
+  useEffect(() => {
+    const onRuntimeError = () => setRuntimeError(window.__ACH_RUNTIME_ERROR__ ?? "");
+    window.addEventListener("ach-runtime-error", onRuntimeError);
+    return () => window.removeEventListener("ach-runtime-error", onRuntimeError);
+  }, []);
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -32,6 +41,7 @@ export function AppShell() {
 
       <div className="workspace">
         {demoMode && <div className="demo-banner" role="status">演示模式 · 仅展示脱敏样例，不连接真实模型或外部平台</div>}
+        {runtimeError && <div className="demo-banner" role="alert">{runtimeError}</div>}
         <header className="topbar">
           <label className="search-field">
             <Search size={17} aria-hidden="true" />

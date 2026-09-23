@@ -2,6 +2,18 @@
 
 更新时间：2026-09-23；分支：`refactor/v1.4-integration`；当前集成基线：`7edcbd9`（沟通限流按渠道统计与中文状态投影）。
 
+## Desktop Verification Gate v0.1（2026-09-23）
+
+- 已新增本地 Playwright E2E 配置和隔离运行脚本 `scripts/verify_desktop_gate.ps1`；脚本动态分配端口、使用任务专属 `artifacts/verification/desktop-gate-<timestamp>` 数据目录、请求拦截外网，并只清理其创建的进程树。因当前 Windows Playwright test runner 挂在 teardown，完整 UI 用例未取得通过结果或截图；Playwright 1.63 对应 Chromium 1243 下载遇到 Google Storage 30 秒超时，本机缓存 Chromium 1234 可由直接 Playwright API 启动，但 runner 仍未完成。
+- 修复 sidecar 启动参数：通过参数显式传递非敏感 environment/host/port/origin；launch token 仍只作为子进程环境变量。端口探测现在会识别连接成功但不返回 API 响应的占用者并更换端口。
+- 本轮最终自动回归：`.venv/Scripts/python.exe -m pytest -q` 为 `720 passed, 5 skipped`；`.venv/Scripts/ruff.exe check backend tests migrations scripts` 通过；`npm test -- --run` 为 24 个测试文件、71 项通过；`npm run build`、`cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml` 与 `git diff --check` 通过。`npm run lint` 未定义；按要求的 `ruff check .` 会遍历只读参考仓库，报告其 2,368 条既有问题，已改用项目源码目录 lint。
+- Windows 发布构建通过：使用独立 `CARGO_TARGET_DIR=artifacts/verification/tauri-target-20260923`，运行 `npm --workspace @ach/desktop exec -- tauri build`，生成 NSIS 安装包。为构建使用当前源码 sidecar，旧的仓库 sidecar 在构建结束后按 SHA-256 原样恢复（前后均为 `692fd89ab87bd7c1936f3af50febee39d0a9a6c6002ab2c9f16fd05e479fe8091`）。
+- 干净隔离安装启动通过：安装至忽略目录 `artifacts/verification/clean-install-v3`，设置 `ACH_DESKTOP_DEMO=1`、`ACH_DATA_DIR=artifacts/verification/desktop-runtime-smoke-v3`；主窗口标题“观复职业工作台”，sidecar 端口 `54145` 健康，34 个 migration 完成，前端发出本地 `/health`、Today、Knowledge 请求。关闭窗口后 App/sidecar 退出。
+- 端口冲突恢复通过：本轮监听器占用 `46282`；sidecar 日志记录 `loopback port 46282 is occupied by a non-API service`，随后切换 `51643` 并记录 `local API ready`。窗口关闭后 App/sidecar 进程均退出。发布 exe PE subsystem 为 `2`（Windows GUI，无 console subsystem）。
+- 失败侧车诊断曾通过真实安装启动复现：旧构建 sidecar 不支持当前 demo token 规则，日志保留 traceback、退出码和 readiness failure，UI 窗口继续显示；随后已以源码 sidecar 重建并完成成功启动。旧 sidecar 文件没有被最终覆盖。
+- 截图尚未生成；Demo 岗位/Patch/Revision/Application 本轮新 UI 链路 ID 尚未产生。后端此前已验收记录仍是岗位 `opportunity_4a0d1f026edd89e3e11afe3694be250a`、Patch `patch_cbbabb4065401b997538e9ea` / `patch_e75651e1963b3a36df4167c0` / `patch_4493228e40647df83ac75e1a`、Revision `resume_revision_demo_target_83a14d40fb26dd09ecf0c151`、Application `application_fbdd11d28d86432cb74ee48a`，本轮没有将其冒充为桌面验收结果。
+- 当前 Gate：**NO-GO**（缺真实浏览器逐步交互截图、浏览器 runner teardown 阻塞和页面断 API/失败状态截图）。桌面安装启动、无控制台子系统、sidecar ready/退出及端口占用恢复已实测通过。
+
 ## 当前结论
 
 - v2.0 Slice A–E（Plugin Foundation、Career Knowledge、Resume Studio、Opportunity Radar、Lifecycle / Replacement）：**DONE for local/offline scope**。
@@ -21,8 +33,12 @@
 
 ## 最新验证
 
-- Backend：`715 passed, 5 skipped`；5 项均为 Windows symlink 创建权限限制；全量回归覆盖本次文档提交前的实现，最新 Git HEAD 以 `git rev-parse HEAD` 为准。
-- Frontend：`23 test files, 67 passed`，`npm run build` 通过；包含本地草稿撤销/重做覆盖，旧内部 ID 输入用例已由列表/选择流程用例替代。
+- Resume Review Gate v0.1（本地 Demo only）：逐 Patch 接受、拒绝和手动编辑写入 Career Core 审核修订与事件；仅用户确认的 Patch 形成独立 ResumeRevision 快照，基础简历不覆盖；preparing Application 精确引用版本。Story、历史与知识读模型保留岗位、Requirement proposal、Evidence、审核、版本和申请的稳定 ID；Demo API 要求显式隔离 `ACH_DATA_DIR`。
+- Resume Review Gate 独立 HTTP/重启验收：`ACH_DATA_DIR=%TEMP%/ach-resume-review-gate-20260923`；岗位 `opportunity_4a0d1f026edd89e3e11afe3694be250a`，Patch `patch_cbbabb4065401b997538e9ea`（手动编辑后接受）、`patch_e75651e1963b3a36df4167c0`（接受）、`patch_4493228e40647df83ac75e1a`（拒绝），Revision `resume_revision_demo_target_83a14d40fb26dd09ecf0c151`，Application `application_fbdd11d28d86432cb74ee48a`。API 进程重启后 Story 与 Application 仍读取同一版本和审核决定；基础简历保持不变，申请状态为 `preparing`。
+- 当前工作树最终验证：`.venv/Scripts/python.exe -m pytest -q` 通过 `720 passed, 5 skipped`；5 项因 Windows symlink 创建权限跳过。`npm test -- --run` 为 24 个测试文件、71 项通过；`npm run build`（含 `tsc -b`）通过；`.venv/Scripts/ruff.exe check backend tests migrations scripts` 与 `git diff --check` 通过。仓库没有 `npm run lint` 脚本。系统 Python 裸跑因未安装项目依赖导致 collection error，不属于有效回归；项目虚拟环境完整回归通过。
+- 本地运行检查：Vite `http://127.0.0.1:5183` HTTP 200；隔离 Demo API `http://127.0.0.1:8783/health` HTTP 200 且 `environment=demo`。CUA 浏览器通道报 `unsupported Codex auth method: apikey`，本轮没有浏览器截图或可视点击证据；不将 HTTP 检查视为可视验收。
+- 原始 legacy CSV 本轮只读指纹复核与此前记录相同：SHA-256 `477ed75bb81dd2a66a1b06f91c8af5bfb5997704b6a0c4d0d7bf19b9482eef60cd`；原始 `agent_rader` 工作区未写入。
+- 历史回归基线（更早提交）：Backend `715 passed, 5 skipped`；Frontend `23 test files, 67 passed`，不代表当前工作树计数。
 - Knowledge/Today focused：backend `2 passed`；frontend `7 passed`；真实 overview API 返回岗位 1,028、面试 503、问题 4,816、刷题 324、待复核 709。
 - Legacy preview：读取 7,575、新增 0、更新 0、未变化 7,575、重复 684、失败 0；FK errors 0，源 metadata signature 不变。
 - Clean-install migration：首轮读取 7,575、新增 7,575、重复 684、失败 0；第二轮新增 0、未变化 7,575，导入前后源签名一致；`Python` 查询返回 10 条并抽样核对源文件、SHA-256、行号、批次与 JD。默认 `%LOCALAPPDATA%\AgentCareerHarness` 也已完成一次同样的幂等导入，岗位 staging 1,028、历史投影 6,547、失败 0。
@@ -31,9 +47,9 @@
 
 ## 下一阶段与授权依赖
 
-1. 真实 marketplace、WeKnora、crawler/portal、Typst compiler 与 external-write adapters 仍需 credentials、license/terms/security 核验和明确授权。
-2. 按 CANONICAL_CUTOVER_GATE 决定 source identity/authority/mapping，再实施结构化 Core 导入；当前只保存历史 evidence。
-3. 本地 A–E 已收口；后续只处理已登记 external boundary，或由新的产品授权开启下一切片。
+1. 修复 CUA 浏览器认证并完成 Resume Review Gate 可视端到端验收；随后复验 Tauri Windows 安装、sidecar 生命周期、端口冲突和退出清理。本地 HTTP、组件测试与生产构建不能替代这一步。
+2. 真实 marketplace、WeKnora、crawler/portal、Typst compiler 与 external-write adapters 仍需 credentials、license/terms/security 核验和明确授权。
+3. 按 CANONICAL_CUTOVER_GATE 决定 source identity/authority/mapping，再实施结构化 Core 导入；当前只保存历史 evidence。
 
 禁止 main merge、push、生产 Feishu 写入、canonical cutover、legacy 修改和破坏性迁移。
 

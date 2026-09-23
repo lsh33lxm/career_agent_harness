@@ -13,10 +13,13 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { admitStagedJob } from "../api/jobRadar";
+import { localizedApiError } from "../api/client";
 import { getDemoJob, listDemoJobs } from "../api/demoJobs";
-import { runDemoFullLoop } from "../api/demoLoop";
+import { approveDemoResume, createDemoResumeRevision, startDemoLoop, type DemoLoopResult } from "../api/demoLoop";
+import { getDemoStory, type DemoStory } from "../api/demoStory";
 import {
   getLegacyImportStatus,
   getLegacyJob,
@@ -53,7 +56,7 @@ const sourceClassLabels: Record<string, string> = {
 };
 
 function message(error: unknown): string {
-  return error instanceof Error ? error.message : "本地服务请求失败";
+  return localizedApiError(error);
 }
 
 function shortHash(value: string): string {
@@ -118,6 +121,10 @@ export function JobRadarPanel() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [admitting, setAdmitting] = useState<string | null>(null);
   const [demoLoopMessage, setDemoLoopMessage] = useState("");
+  const [demoLoop, setDemoLoop] = useState<DemoLoopResult | null>(null);
+  const [demoStory, setDemoStory] = useState<DemoStory | null>(null);
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [manualEdits, setManualEdits] = useState<Record<string, string>>({});
   const demoMode = window.__ACH_CONFIG__?.demoMode === true || import.meta.env.VITE_DEMO_MODE === "true";
 
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -136,7 +143,7 @@ export function JobRadarPanel() {
       if (!signal?.aborted) {
         if (demoMode) {
           setJobs(listDemoJobs());
-          setError("演示数据已加载；本地职业核心尚未连接，修改不会保存到真实数据。");
+          setError("演示数据已加载；本地职业核心尚未连接，审核操作暂不能保存。检查本地服务后重试。");
           setLoadState("ready");
         } else {
           setError(message(caught));
@@ -151,6 +158,49 @@ export function JobRadarPanel() {
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
+
+  useEffect(() => {
+    if (!demoMode) return;
+    const controller = new AbortController();
+    getDemoStory(controller.signal).then((story) => {
+      if (!controller.signal.aborted && story.available) {
+        setDemoStory(story);
+        if (story.application_id) setDemoLoop((current) => current ?? ({
+          staging_id: story.staging_id ?? "", opportunity_id: story.opportunity_id ?? "",
+          application_id: story.application_id!, application_state: "preparing",
+          patch_id: story.resume_patches?.[0]?.patch_id ?? null,
+          resume_revision_id: story.resume_revision_id ?? "", interview_id: null,
+          interview_revision: null, interview_prep_proposal_id: null, interview_feedback_proposal_id: null,
+        }));
+      }
+    }).catch(() => undefined);
+    return () => controller.abort();
+  }, [demoMode]);
+
+  async function refreshDemoStory() {
+    const story = await getDemoStory();
+    setDemoStory(story);
+    return story;
+  }
+
+  async function reviewDemoPatch(patchId: string, decision: "accepted" | "rejected", edit = false) {
+    if (!demoLoop) return;
+    setDemoBusy(true);
+    setDemoLoopMessage("正在保存审核决定…");
+    try {
+      await approveDemoResume(patchId, demoLoop.application_id, decision, edit ? manualEdits[patchId] : undefined);
+      const story = await refreshDemoStory();
+      setDemoLoopMessage("审核已写入本地演示数据库，可在历史与知识页查看。");
+      if (!story.resume_patches?.some((patch) => patch.review_status === "proposed")) {
+        setDemoLoopMessage("所有修改已审核。确认后可生成独立目标简历版本。");
+      }
+    } catch (caught) {
+      setDemoLoopMessage(`${message(caught)} 可重试；页面将从数据库重新读取审核状态。`);
+      try { await refreshDemoStory(); } catch { /* Keep the explicit save error visible. */ }
+    } finally {
+      setDemoBusy(false);
+    }
+  }
 
   async function searchJobs(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -254,15 +304,53 @@ export function JobRadarPanel() {
             type="button"
             onClick={() => {
               setDemoLoopMessage("正在保存演示闭环…");
-              void runDemoFullLoop()
-                .then((result) => setDemoLoopMessage(`已保存：申请 ${result.application_id} · 面试复盘提案待审核`))
-                .catch((caught) => setDemoLoopMessage(message(caught)));
+              setDemoBusy(true);
+              void startDemoLoop()
+                .then((result) => {
+                  setDemoLoop(result);
+                  setDemoLoopMessage(`已创建准备中申请 ${result.application_id}；请逐条审核岗位目标简历草稿。`);
+                  return refreshDemoStory();
+                })
+                .catch((caught) => setDemoLoopMessage(message(caught)))
+                .finally(() => setDemoBusy(false));
             }}
+            disabled={demoBusy}
           >
-            运行完整演示闭环
+            开始演示闭环
           </button>
         )}
       </div>
+      {demoMode && demoStory?.resume_patches?.length ? <section className="today-panel" aria-label="简历修改审核">
+        <h3>目标简历草稿 · 本地演示 / 待人工审核</h3>
+        <p>岗位：{demoStory.opportunity_id ?? "尚未建立关联"} · 申请：{demoStory.application_id ?? "尚未建立关联"} · 状态：{demoStory.application_state ?? "尚未建立关联"}</p>
+        <h4>岗位要求与来源</h4>
+        {demoStory.requirements?.length ? <ul>{demoStory.requirements.map((requirement) => <li key={requirement.requirement_id}>{requirement.requirement_text} · {requirement.requirement_id} · {requirement.status}</li>)}</ul> : <p>JD 要求：尚未建立关联</p>}
+        <p>岗位 Evidence：{demoStory.evidence_ref_id ?? "尚未建立关联"}</p>
+        <p>基础简历保持不变。岗位来源 Evidence 只说明岗位上下文，不证明个人经历或技能。</p>
+        {demoStory.resume_patches.map((patch) => <article key={patch.patch_id}>
+          <h4>Patch {patch.patch_id} · {patch.review_status === "proposed" ? "待审核" : patch.review_status === "accepted" ? "已接受" : "已拒绝"}</h4>
+          {patch.operations.map((operation, index) => <div key={`${patch.patch_id}-${index}`}>
+            <p>修改前：{JSON.stringify(operation.before)} → 建议：{JSON.stringify(operation.after)}</p>
+            <p>{operation.reason} · JD 要求：{operation.requirement_ids.join("、") || "尚未建立关联"} · Evidence：{operation.evidence_ids.join("、") || "尚未建立关联"}</p>
+            {patch.review_status === "proposed" && <label>手动编辑（用户内容）<textarea value={manualEdits[patch.patch_id] ?? String(operation.after ?? "")} onChange={(event) => setManualEdits((current) => ({ ...current, [patch.patch_id]: event.target.value }))} /></label>}
+          </div>)}
+          <p>{patch.review_source} {patch.reviewed_at ? `· ${patch.reviewed_at}` : ""} {patch.review_note ? `· ${patch.review_note}` : ""}</p>
+          {patch.review_status === "proposed" && <div className="button-row">
+            <button type="button" disabled={demoBusy} onClick={() => void reviewDemoPatch(patch.patch_id, "accepted")}>接受</button>
+            <button type="button" disabled={demoBusy} onClick={() => void reviewDemoPatch(patch.patch_id, "rejected")}>拒绝</button>
+            <button type="button" disabled={demoBusy} onClick={() => void reviewDemoPatch(patch.patch_id, "accepted", true)}>保存手动编辑并接受</button>
+          </div>}
+        </article>)}
+        {demoLoop && demoStory.resume_patches.every((patch) => patch.review_status !== "proposed") && !demoStory.resume_revision_id && <button type="button" disabled={demoBusy} onClick={() => {
+          setDemoBusy(true); setDemoLoopMessage("正在生成不可覆盖的目标简历版本…");
+          void createDemoResumeRevision(demoLoop.application_id).then(async (result) => {
+            setDemoLoopMessage(`已持久化 ${result.resume_revision_id}，申请仍处于准备中。`);
+            await refreshDemoStory();
+          }).catch((caught) => setDemoLoopMessage(`${message(caught)} 请检查审核项后重试。`)).finally(() => setDemoBusy(false));
+        }}>生成目标 ResumeRevision</button>}
+        {demoStory.resume_revision_id && <p>已生成版本：{demoStory.resume_revision_id} · 申请：{demoStory.application_id} · 状态仍为准备中</p>}
+        <nav aria-label="演示追溯页面"><Link to="/history">申请与历史</Link> · <Link to="/resume">简历版本</Link> · <Link to="/knowledge">知识追溯</Link></nav>
+      </section> : null}
       {demoLoopMessage && <p className="inline-status" role="status">{demoLoopMessage}</p>}
 
       <div className="legacy-import-bar">

@@ -3,6 +3,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { apiRequest } from "../api/client";
 import {
@@ -258,7 +259,8 @@ export function KnowledgePage() {
 
       {overviewMessage && <p className="knowledge-message">{overviewMessage}</p>}
       {demoStory?.available && <section className="knowledge-demo-story" aria-label="演示闭环关联">
-        <div><p className="eyebrow">演示闭环</p><h2>岗位、简历、申请与面试已关联</h2><p>这些关联来自本地 Demo 数据库，可从历史事件回溯，不代表真实投递或真实面试。</p></div>
+        <div><p className="eyebrow">演示闭环</p><h2>岗位、证据、简历与申请关联</h2><p>这些关联来自本地 Demo 数据库，可从历史事件回溯，不代表真实投递。<Link to="/opportunities">返回岗位</Link> · <Link to="/history">查看历史</Link> · <Link to="/resume">查看简历</Link></p></div>
+        <div className="knowledge-story-links">{(demoStory.resume_patches ?? []).map((patch) => <span key={patch.patch_id}><strong>Resume Patch</strong>{patch.review_source}<small>{patch.patch_id}#{patch.revision} · {patch.reviewed_at ?? "尚未建立关联"} · {patch.operations.flatMap((item) => item.evidence_ids).join("、") || "尚未建立关联"}</small></span>)}</div>
         <div className="knowledge-story-links">{demoStory.links.map((link) => <span key={`${link.kind}-${link.id}`}><strong>{link.kind}</strong>{link.label}<small>{link.id}</small></span>)}</div>
       </section>}
       {overview && overview.job_count === 0 && (

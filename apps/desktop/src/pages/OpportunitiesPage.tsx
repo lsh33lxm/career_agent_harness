@@ -8,6 +8,7 @@ import {
   type OpportunitySummary,
   type PriorityLevel,
 } from "../api/client";
+import { localizedApiError } from "../api/client";
 import { JobRadarPanel } from "./JobRadarPanel";
 import { createCommunicationDraft, getCommunicationSummary, listCommunicationDrafts, reviewCommunicationDraft, type CommunicationDraft, type CommunicationSummary } from "../api/communications";
 
@@ -37,7 +38,7 @@ function requestId(prefix: string): string {
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "本地职业核心暂时不可用";
+  return localizedApiError(error);
 }
 
 export function OpportunitiesPage() {

@@ -79,7 +79,7 @@ class Application(DomainEntity):
             self.submission_evidence_ref_id,
             self.submitted_at,
         )
-        if pre_submission and any(value is not None for value in submission):
+        if pre_submission and any(value is not None for value in submission[1:]):
             raise ValueError("pre-submission application cannot carry submission metadata")
         if not pre_submission and any(
             value is None

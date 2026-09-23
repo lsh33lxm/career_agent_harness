@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { ApiError, getHealth, type HealthResponse } from "./client";
+import { getHealth, localizedApiError, type HealthResponse } from "./client";
 
 type HealthState =
   | { status: "loading" }
@@ -20,8 +20,7 @@ export function useHealth(): [HealthState, () => void] {
       .then((data) => setState({ status: "online", data }))
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          const message = error instanceof ApiError ? error.message : "Local API is unavailable";
-          setState({ status: "offline", message });
+          setState({ status: "offline", message: localizedApiError(error) });
         }
       });
     return () => controller.abort();

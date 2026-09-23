@@ -266,8 +266,7 @@ class JobRequirementRevisionRow(Base):
             name="ck_job_requirement_counts",
         ),
         CheckConstraint(
-            "length(trim(proposed_by)) > 0 AND "
-            "proposed_by_kind IN ('user', 'agent', 'rule')",
+            "length(trim(proposed_by)) > 0 AND proposed_by_kind IN ('user', 'agent', 'rule')",
             name="ck_job_requirement_proposer",
         ),
         CheckConstraint(
@@ -349,9 +348,7 @@ class JobRequirementEvidenceRefRow(Base):
     __tablename__ = "job_requirement_evidence_ref"
     __table_args__ = (
         UniqueConstraint("requirement_id", "requirement_revision", "evidence_ref_id"),
-        CheckConstraint(
-            "requirement_revision >= 1", name="ck_job_requirement_evidence_revision"
-        ),
+        CheckConstraint("requirement_revision >= 1", name="ck_job_requirement_evidence_revision"),
         CheckConstraint("ordinal >= 0", name="ck_job_requirement_evidence_ordinal"),
         ForeignKeyConstraint(
             ["requirement_id", "requirement_revision"],
@@ -666,8 +663,7 @@ class CapabilityEvidenceBindingRow(Base):
             name="ck_capability_evidence_exactly_one_source",
         ),
         CheckConstraint(
-            "authority IN ('code_verified', 'document_supported', 'user_confirmed', "
-            "'ai_inferred')",
+            "authority IN ('code_verified', 'document_supported', 'user_confirmed', 'ai_inferred')",
             name="ck_capability_evidence_authority",
         ),
         CheckConstraint(
@@ -775,8 +771,7 @@ class CapabilityInvestmentStateRow(Base):
             name="ck_capability_investment_reasons",
         ),
         CheckConstraint(
-            "json_type(market_binding_ids) = 'array' "
-            "AND json_array_length(market_binding_ids) > 0",
+            "json_type(market_binding_ids) = 'array' AND json_array_length(market_binding_ids) > 0",
             name="ck_capability_investment_market_bindings",
         ),
         CheckConstraint(
@@ -934,8 +929,7 @@ class ProjectEvidenceRow(Base):
             name="ck_project_evidence_claim_kind",
         ),
         CheckConstraint(
-            "authority IN ('code_verified', 'document_supported', 'user_confirmed', "
-            "'ai_inferred')",
+            "authority IN ('code_verified', 'document_supported', 'user_confirmed', 'ai_inferred')",
             name="ck_project_evidence_authority",
         ),
         CheckConstraint(
@@ -1702,7 +1696,7 @@ class ApplicationRevisionRow(Base):
             name="ck_application_state",
         ),
         CheckConstraint(
-            "(state IN ('preparing', 'ready_for_review') AND resume_revision_id IS NULL "
+            "(state IN ('preparing', 'ready_for_review') "
             "AND submission_authority IS NULL AND submission_evidence_ref_id IS NULL "
             "AND submitted_at IS NULL) OR (state NOT IN ('preparing', 'ready_for_review') "
             "AND resume_revision_id IS NOT NULL "

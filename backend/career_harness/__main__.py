@@ -24,7 +24,7 @@ def main() -> None:
     settings = Settings(
         host=args.host,
         port=args.port,
-        launch_token=args.token,
+        launch_token=args.token or None,
         environment=args.environment,
         allowed_origin=args.allowed_origin,
     )

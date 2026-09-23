@@ -9,6 +9,7 @@
     "dev": "npm --workspace @ach/desktop run dev",
     "build": "npm --workspace @ach/desktop run build",
     "test": "npm --workspace @ach/desktop run test",
+    "test:e2e": "npm --workspace @ach/desktop run test:e2e",
     "tauri": "npm --workspace @ach/desktop run tauri"
   }
 }

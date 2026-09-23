@@ -81,6 +81,8 @@ from career_harness.storage import ArtifactStore
 
 
 def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> FastAPI:
+    if settings.environment == "demo" and paths is None and not os.getenv("ACH_DATA_DIR"):
+        raise ValueError("Demo Mode requires an explicit isolated ACH_DATA_DIR")
     active_paths = paths or AppPaths.resolve()
     active_paths.ensure_directories()
     database_url = sqlite_url(active_paths.database)
@@ -224,7 +226,10 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         job_radar_api=JobRadarApi(
             opportunity_radar_service
         ),
-        offline_career_loop_api=OfflineCareerLoopApi(offline_career_loop_service),
+        offline_career_loop_api=OfflineCareerLoopApi(
+            offline_career_loop_service,
+            demo_mode=settings.environment == "demo",
+        ),
         communication_api=CommunicationApi(CommunicationRepository(engine)),
         interview_prep_api=InterviewPrepApi(
             InterviewPrepService(

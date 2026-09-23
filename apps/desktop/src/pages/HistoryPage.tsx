@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { ApiError } from "../api/client";
+import { localizedApiError } from "../api/client";
 import { createInterviewFeedbackProposal, createInterviewPrepProposal, createOfferPreparationProposal, createRejectionPatternProposal, listApplications, listInterviews, listOutcomes } from "../api/history";
 import type { ApplicationRead, ApplicationState, InterviewRead, OutcomeRead } from "../api/history";
 import { actorLabels, displayLabel } from "../app/displayLabels";
@@ -19,7 +19,7 @@ const results: Record<OutcomeRead["result"], string> = {
 };
 type Load<T> = { status: "loading" } | { status: "error"; message: string }
   | { status: "ready"; data: T };
-const message = (error: unknown) => error instanceof ApiError ? error.message : "暂时无法读取 Core";
+const message = (error: unknown) => localizedApiError(error);
 
 function OutcomePanel({ applicationId }: { applicationId: string }) {
   const [attempt, setAttempt] = useState(0);
@@ -160,10 +160,12 @@ export function HistoryPage() {
       {state.status === "ready" && state.data.length === 0 && <section className="today-panel empty-state"><h2>还没有申请记录</h2><p>在 Core 中记录申请后，这里会显示真实进展。</p></section>}
       {demoStory?.available && <section className="today-panel history-story" aria-labelledby="demo-story-title">
         <p className="eyebrow">演示闭环</p>
-        <h2 id="demo-story-title">从岗位到面试复盘</h2>
-        <p>以下步骤来自隔离 Demo 数据库的已保存记录，刷新后会重新读取。</p>
+        <h2 id="demo-story-title">从岗位到目标简历审核</h2>
+        <p>以下步骤来自隔离 Demo 数据库的已保存记录，刷新后会重新读取。<Link to="/opportunities">返回演示岗位</Link> · <Link to="/resume">查看简历</Link> · <Link to="/knowledge">查看知识</Link></p>
         <p>岗位评分 {demoStory.score == null ? "待确认" : `${Math.round(demoStory.score * 100)} 分`} · JD 要求 {demoStory.requirements?.length ?? 0} 条 · 证据 {demoStory.evidence_ref_id ?? "尚未建立关联"} · 能力差距 {demoStory.gaps?.length ? demoStory.gaps.join("、") : "暂无"}</p>
         <p>目标简历修改：{demoStory.resume_patch ? `${demoStory.resume_patch.patch_id} · ${demoStory.resume_patch.status === "proposed" ? "待人工审核" : demoStory.resume_patch.status === "accepted" ? "已接受" : "已拒绝"}` : "尚未建立关联"}</p>
+        <p>申请 {demoStory.application_id ?? "尚未建立关联"} · 状态 {demoStory.application_state ?? "尚未建立关联"} · 简历版本 {demoStory.resume_revision_id ?? "尚未建立关联"}</p>
+        {demoStory.resume_patches?.map((patch) => <p key={patch.patch_id}>Patch {patch.patch_id}#{patch.revision} · {patch.review_source} · {patch.reviewed_at ?? "尚未建立关联"} · {patch.operations.flatMap((op) => op.evidence_ids).join("、") || "尚未建立关联"}</p>)}
         <ol className="history-story-steps">
           {demoStory.steps.map((step) => <li key={step.key} data-status={step.status === "尚未建立关联" ? "pending" : "done"}><span>{step.label}</span><small>{step.status}</small></li>)}
         </ol>

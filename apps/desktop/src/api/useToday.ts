@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { ApiError } from "./client";
+import { localizedApiError } from "./client";
 import { getToday, type TodayQueue } from "./today";
 
 export type TodayState =
@@ -21,8 +21,7 @@ export function useToday(): [TodayState, () => void] {
       .then((data) => setState({ status: "ready", data }))
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          const message = error instanceof ApiError ? error.message : "Local API is unavailable";
-          setState({ status: "error", message });
+          setState({ status: "error", message: localizedApiError(error) });
         }
       });
     return () => controller.abort();

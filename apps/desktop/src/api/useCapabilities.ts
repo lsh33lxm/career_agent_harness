@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { getCapabilities, type CapabilityWorkspace } from "./capabilities";
-import { ApiError } from "./client";
+import { localizedApiError } from "./client";
 
 export interface CapabilityQuery {
   candidateId: string;
@@ -34,8 +34,7 @@ export function useCapabilities(
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
-          const message = error instanceof ApiError ? error.message : "Local API is unavailable";
-          setState({ status: "error", message });
+          setState({ status: "error", message: localizedApiError(error) });
         }
       });
     return () => controller.abort();

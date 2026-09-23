@@ -115,6 +115,21 @@ function runtimeConfig(): RuntimeConfig {
   return { apiBaseUrl: parsedBaseUrl.origin, launchToken: launchToken ?? "", demoMode };
 }
 
+export function localizedApiError(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.message === "Local API is unavailable" || error.message.startsWith("Local API request failed")) {
+      return "本地职业核心暂不可用，请检查服务后重试。";
+    }
+    if (error.message.startsWith("Local API must use an explicit")) {
+      return "本地服务地址无效，请重新启动应用。";
+    }
+    if (/[\u3400-\u9fff]/.test(error.message)) return error.message;
+    return "职业核心暂时不可用，请检查本地服务后重试。";
+  }
+  if (error instanceof Error && /[\u3400-\u9fff]/.test(error.message)) return error.message;
+  return "职业核心暂时不可用，请检查本地服务后重试。";
+}
+
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},

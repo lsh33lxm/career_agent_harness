@@ -11,6 +11,7 @@
 - 新增隔离 Demo Career Loop：`ACH_ENV=demo` + 独立 `ACH_DATA_DIR` 时，完整岗位到申请、面试准备和复盘提案由本地 API 持久化；真实模式仍要求 launch token。
 - 新增只读 Demo Story 聚合：历史页与知识页从现有 Core SQLite 反向展示岗位、简历、申请、面试、知识提案和事件链；不创建第二套数据库，也不将 Demo 提案提升为 Career Core 事实。
 - Demo JD 分析现在通过现有 `JobService.propose_requirement` 写入 `JobRequirement` proposal；3 条要求各自带稳定 ID、Evidence 引用和人工审核状态，重复闭环不会重复创建。
+- Demo 简历修改保持 review-gated：闭环只创建 Evidence-backed ResumePatch proposal；用户需在 Resume Studio 审核后创建 ResumeRevision，避免自动把模型/规则建议提升为职业事实。
 
 ## 验证证据
 

@@ -26,6 +26,12 @@
 - 前端专项测试通过，`npm run build`（`apps/desktop`）通过。当前官方站点现场仍返回前端壳、未解析出线上岗位，因此该链路由保存的 fixture 和后端集成测试验证，不能冒充线上抓取成功。
 - 新增 `GET /api/v1/jobs/staging/{staging_id}/source-document`，从内容寻址 Evidence artifact 读取完整原始岗位响应，返回来源 URL、抓取时间和 SHA-256；fixture 回归验证原文与暂存哈希一致。快照只读，不写回旧来源。
 
+## 2026-09-24 申请看板与面试日历读取切片
+
+- 新增 `/applications` 桌面页，复用现有 `/api/v1/applications` 和 `/api/v1/applications/{id}/interviews` 读模型，按 Career Core 申请状态分列展示，并按本机时区排序已安排面试。
+- 页面不创建第二套状态机；当前为只读投影，申请状态转移、本人确认投递、面试安排/改期/取消写操作仍需通过现有 `ApplicationService` 与 `InterviewService` 命令 API 接入。
+- 页面专项测试 1 项和桌面生产构建通过。
+
 ## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — NO-GO
 
 - 当前源码生产构建上的真实 Chromium Resume Review 流程通过：逐 Patch 接受、拒绝、手动编辑、生成 ResumeRevision；基础简历保持不变，Application 保持 `preparing`；历史和知识页能追溯稳定 ID。

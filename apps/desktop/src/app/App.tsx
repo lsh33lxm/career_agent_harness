@@ -16,6 +16,7 @@ import { KnowledgePage } from "../pages/KnowledgePage";
 import { ContextPage } from "../pages/ContextPage";
 import { AIWorkbenchPage } from "../pages/AIWorkbenchPage";
 import { CommunicationMailboxPage } from "../pages/CommunicationMailboxPage";
+import { ApplicationsPage } from "../pages/ApplicationsPage";
 
 export function App() {
   return (
@@ -36,6 +37,7 @@ export function App() {
             <Route path="context" element={<ContextPage />} />
             <Route path="ai-workbench" element={<AIWorkbenchPage />} />
             <Route path="communications" element={<CommunicationMailboxPage />} />
+            <Route path="applications" element={<ApplicationsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

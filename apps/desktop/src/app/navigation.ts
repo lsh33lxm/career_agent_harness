@@ -2,6 +2,7 @@ import {
   CircleUserRound,
   Brain,
   Mail,
+  KanbanSquare,
   FolderKanban,
   FileText,
   Gauge,
@@ -47,6 +48,7 @@ export const navigationGroups: NavigationGroup[] = [
       { path: "/context", label: "我的", icon: CircleUserRound },
       { path: "/ai-workbench", label: "AI 工作台", icon: Brain },
       { path: "/communications", label: "求职沟通邮箱", icon: Mail },
+      { path: "/applications", label: "申请与面试", icon: KanbanSquare },
     ],
   },
   {

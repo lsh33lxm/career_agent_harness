@@ -32,6 +32,7 @@
 - 页面不创建第二套状态机；当前为只读投影，申请状态转移、本人确认投递、面试安排/改期/取消写操作仍需通过现有 `ApplicationService` 与 `InterviewService` 命令 API 接入。
 - 页面专项测试 1 项和桌面生产构建通过。
 - 新增受用户命令保护的 Application/Interview API：创建申请、准备状态切换、绑定 ResumeRevision、本人确认投递、合法状态推进，以及安排/完成/取消面试；所有命令要求精确 revision 并固定 `actor=user`。API 集成测试 1 项通过，未提交申请安排面试会被拒绝。
+- 机会页新增“创建准备中申请”用户动作，调用上述 API 后跳转提示到申请看板；不会自动投递或发送消息。申请页专项测试和机会页回归共 4 项通过，生产构建通过。
 
 ## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — NO-GO
 

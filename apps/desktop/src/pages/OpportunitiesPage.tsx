@@ -12,6 +12,7 @@ import { localizedApiError } from "../api/client";
 import { JobRadarPanel } from "./JobRadarPanel";
 import { OfficialSourcesPanel } from "./OfficialSourcesPanel";
 import { createCommunicationDraft, getCommunicationSummary, listCommunicationDrafts, reviewCommunicationDraft, type CommunicationDraft, type CommunicationSummary } from "../api/communications";
+import { createApplication } from "../api/history";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Section, Surface } from "../components/ui/Section";
 import { EmptyState, ErrorState, LoadingState } from "../components/ui/States";
@@ -61,6 +62,7 @@ export function OpportunitiesPage() {
   const [draftBody, setDraftBody] = useState("");
   const [draftMessage, setDraftMessage] = useState("");
   const [draftDetail, setDraftDetail] = useState("");
+  const [applicationMessage, setApplicationMessage] = useState<Record<string, string>>({});
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoadState("loading");
@@ -153,6 +155,22 @@ export function OpportunitiesPage() {
       }));
     } finally {
       setPriorityPending((current) => ({ ...current, [opportunityId]: false }));
+    }
+  }
+
+  async function startApplication(item: OpportunitySummary) {
+    const opportunityId = item.opportunity.entity_id;
+    const applicationId = `application_${opportunityId.replace(/^opportunity_/, "")}`;
+    try {
+      await createApplication({
+        command_id: requestId("command_application_create"),
+        application_id: applicationId,
+        opportunity_id: opportunityId,
+        opportunity_revision: item.opportunity.revision,
+      });
+      setApplicationMessage((current) => ({ ...current, [opportunityId]: `已创建准备中申请 ${applicationId}，可到“申请与面试”继续。` }));
+    } catch (error) {
+      setApplicationMessage((current) => ({ ...current, [opportunityId]: errorMessage(error) }));
     }
   }
 
@@ -339,6 +357,10 @@ export function OpportunitiesPage() {
                           )}
                         </form>
                       </section>
+                    </div>
+                    <div className="button-row" style={{ marginTop: "var(--space-3)" }}>
+                      <Button variant="primary" onClick={() => void startApplication(item)} icon={<BriefcaseBusiness size={14} aria-hidden="true" />}>创建准备中申请</Button>
+                      {applicationMessage[opportunityId] && <InlineNotice tone={applicationMessage[opportunityId].startsWith("已创建") ? "success" : "muted"} role="status">{applicationMessage[opportunityId]}</InlineNotice>}
                     </div>
                   </article>
                 );

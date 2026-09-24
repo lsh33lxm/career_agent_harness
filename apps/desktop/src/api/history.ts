@@ -54,6 +54,18 @@ export function listInterviews(applicationId: string, signal?: AbortSignal): Pro
   );
 }
 
+export function createApplication(input: {
+  command_id: string;
+  application_id: string;
+  opportunity_id: string;
+  opportunity_revision: number;
+}): Promise<ApplicationRead> {
+  return apiRequest<ApplicationRead>("/api/v1/applications", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export function createInterviewPrepProposal(
   interviewId: string, input: { mode: "technical" | "behavioral"; focus: string },
 ): Promise<{ proposal_id: string }> {

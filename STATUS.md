@@ -1,5 +1,12 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-25 当前提交安装版 Resume Review 与来源回归
+
+- 当前提交重建 Windows sidecar 与 NSIS 安装包；Cargo check、桌面生产构建通过。安装包 SHA-256：`227ca724c0f0baf5f0384ad13bd31b509b8b0509743525e28e1f87b34b734a72`；sidecar SHA-256：`c7c5b63c62ef79d42288154cc2f3555305b2e61226b4a852173f359f5d6f8c26`。
+- 在新安装目录与隔离数据目录完成真实安装窗口 Resume Review：接受、拒绝、手动编辑后接受、生成 ResumeRevision、两张截图、原生窗口关闭及 Playwright 清理；安装退出码 0、桌面退出码 0、sidecar 数量 0，结果 `passed`。
+- 本地证据目录：`artifacts/verification/installed-runtime-capability-20250925/evidence/`；截图均为 `1860x1200`，不纳入 Git。
+- 官方来源、Job Radar 与 JD 要求后端专项回归：17 项通过。美图详情路由仍未证实；字节跳动官方页面可达并含职位描述字段，但列表/详情接口尚未定位，不接入猜测接口。
+
 ## 2026-09-25 官方 JD 审核能力映射闭环
 
 - 官方来源面板读取现有个人能力档案与当前能力图谱，只展示 active 能力节点。

@@ -211,4 +211,13 @@ def create_job_radar_router(api: JobRadarApi) -> APIRouter:
         except Exception as error:
             raise _error(error) from error
 
+    @router.get("/staging/{staging_id}/source-document")
+    def source_document(
+        staging_id: str = Path(min_length=3, max_length=128),
+    ) -> dict[str, object]:
+        try:
+            return api.service.source_document(staging_id)
+        except Exception as error:
+            raise _error(error) from error
+
     return router

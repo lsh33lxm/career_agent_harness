@@ -75,6 +75,21 @@ export function admitStagedJob(stagingId: string): Promise<unknown> {
   });
 }
 
+export interface JobSourceDocument {
+  staging_id: string;
+  source_id: string;
+  source_ref: string;
+  raw_sha256: string;
+  captured_at: string;
+  raw_text: string;
+}
+
+export function getJobSourceDocument(stagingId: string): Promise<JobSourceDocument> {
+  return apiRequest<JobSourceDocument>(
+    `/api/v1/jobs/staging/${encodeURIComponent(stagingId)}/source-document`,
+  );
+}
+
 export interface JobRequirement {
   requirement_id: string;
   revision: number;

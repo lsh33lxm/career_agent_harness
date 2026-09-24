@@ -40,6 +40,9 @@ async def test_fixture_search_lists_staging_and_requires_user_admission(tmp_path
         seed = await client.get(
             f"/api/v1/jobs/staging/{staging_id}/resume-proposal-seed", headers=AUTH
         )
+        source_document = await client.get(
+            f"/api/v1/jobs/staging/{staging_id}/source-document", headers=AUTH
+        )
         opportunities = await client.get("/api/v1/opportunities", headers=AUTH)
         policies = await client.get("/api/v1/jobs/source-policies", headers=AUTH)
 
@@ -51,6 +54,10 @@ async def test_fixture_search_lists_staging_and_requires_user_admission(tmp_path
     assert admitted.status_code == 201
     assert seed.status_code == 200
     assert seed.json()["status"] == "proposal_only"
+    assert source_document.status_code == 200
+    assert source_document.json()["staging_id"] == staging_id
+    assert source_document.json()["raw_sha256"] == collected.json()[0]["raw_sha256"]
+    assert "Platform Engineer" in source_document.json()["raw_text"]
     assert opportunities.json()[0]["job"]["job_id"] == (
         admitted.json()["admission"]["decision"]["job"]["job_id"]
     )

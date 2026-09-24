@@ -459,6 +459,24 @@ class OpportunityRadarService:
             ),
         )
 
+    def source_document(self, staging_id: str) -> dict[str, object]:
+        """Read the immutable public-source payload captured for a staged job."""
+        record = self.repository.get(staging_id)
+        if record is None:
+            raise KeyError("job staging record not found")
+        try:
+            raw_text = self.artifact_store.read(record.raw_sha256).decode("utf-8", errors="replace")
+        except (OSError, ValueError) as error:
+            raise RuntimeError("岗位来源快照文件缺失或校验失败") from error
+        return {
+            "staging_id": record.staging_id,
+            "source_id": record.source_id,
+            "source_ref": record.source_ref,
+            "raw_sha256": record.raw_sha256,
+            "captured_at": record.created_at,
+            "raw_text": raw_text,
+        }
+
     @staticmethod
     def _rank(
         normalized: NormalizedJobRecord,

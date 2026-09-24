@@ -4,6 +4,7 @@ import { useState } from "react";
 import { localizedApiError } from "../api/client";
 import {
   admitStagedJob,
+  getJobSourceDocument,
   listJobRequirements,
   proposeJobRequirement,
   reviewJobRequirement,
@@ -36,6 +37,7 @@ export function OfficialSourcesPanel() {
   const [loading, setLoading] = useState(false);
   const [requirements, setRequirements] = useState<Record<string, JobRequirement[]>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<Record<string, string>>({});
 
   async function search() {
     setLoading(true);
@@ -96,6 +98,18 @@ export function OfficialSourcesPanel() {
     }
   }
 
+  async function showSourceDocument(item: JobStagingRecord) {
+    setBusy(`document:${item.staging_id}`);
+    try {
+      const document = await getJobSourceDocument(item.staging_id);
+      setDocuments((current) => ({ ...current, [item.staging_id]: document.raw_text }));
+    } catch (error) {
+      setMessage(localizedApiError(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <Surface>
       <Section
@@ -132,6 +146,8 @@ export function OfficialSourcesPanel() {
                 {requirement.review_reason && <small>{requirement.review_reason}</small>}
               </div>)}
             </div>}
+            <Button size="sm" variant="secondary" loading={busy === `document:${item.staging_id}`} onClick={() => void showSourceDocument(item)}>查看完整来源快照</Button>
+            {documents[item.staging_id] && <pre className="source-document" aria-label={`${item.normalized.title} 完整来源快照`}>{documents[item.staging_id]}</pre>}
             {item.normalized.source_url && <a href={item.normalized.source_url} target="_blank" rel="noreferrer" aria-label={`打开 ${item.normalized.title} 官方来源`}><ExternalLink size={16} aria-hidden="true" /></a>}
           </article>)}
         </div>}

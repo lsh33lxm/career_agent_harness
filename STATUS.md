@@ -24,6 +24,7 @@
 - 官方来源面板现在支持用户点击“加入并审核 JD”：先调用现有 staging admission，再按岗位 Evidence 和稳定 ID 幂等创建候选要求。
 - 每条候选要求显示原文文本和状态，用户可逐条拒绝或接受；拒绝保留审核理由，接受继续由后端要求正式能力映射，不能绕过领域状态机。
 - 前端专项测试通过，`npm run build`（`apps/desktop`）通过。当前官方站点现场仍返回前端壳、未解析出线上岗位，因此该链路由保存的 fixture 和后端集成测试验证，不能冒充线上抓取成功。
+- 新增 `GET /api/v1/jobs/staging/{staging_id}/source-document`，从内容寻址 Evidence artifact 读取完整原始岗位响应，返回来源 URL、抓取时间和 SHA-256；fixture 回归验证原文与暂存哈希一致。快照只读，不写回旧来源。
 
 ## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — NO-GO
 

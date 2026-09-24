@@ -27,6 +27,7 @@ class RequirementProposalRequest(FrozenModel):
 class RequirementReviewRequest(FrozenModel):
     decision: JobRequirementStatus
     review_reason: str = Field(min_length=1, max_length=2048)
+    final_requirement_text: str | None = Field(default=None, min_length=1, max_length=4096)
     capability_id: str | None = Field(default=None, min_length=3, max_length=128)
     graph_version_id: str | None = Field(default=None, min_length=3, max_length=128)
 
@@ -111,6 +112,7 @@ def create_job_requirement_router(api: JobRequirementApi) -> APIRouter:
                 command,
                 decision=request.decision,
                 review_reason=request.review_reason,
+                final_requirement_text=request.final_requirement_text,
                 capability_id=request.capability_id,
                 graph_version_id=request.graph_version_id,
             )

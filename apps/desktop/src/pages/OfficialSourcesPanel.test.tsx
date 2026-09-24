@@ -73,7 +73,8 @@ describe("OfficialSourcesPanel", () => {
     render(<OfficialSourcesPanel />);
     fireEvent.click(screen.getByRole("button", { name: "读取官方岗位" }));
     fireEvent.click(await screen.findByRole("button", { name: "加入并审核 JD" }));
-    expect(await screen.findByText("熟悉 Python · proposed")).toBeTruthy();
+    expect(await screen.findByDisplayValue("熟悉 Python")).toBeTruthy();
+    expect(screen.getByText(/proposed/)).toBeTruthy();
     expect(proposeJobRequirement).toHaveBeenCalledWith("job_2", 1, expect.objectContaining({ requirement_text: "熟悉 Python" }));
   });
 });

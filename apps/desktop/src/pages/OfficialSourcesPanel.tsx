@@ -37,6 +37,7 @@ export function OfficialSourcesPanel() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [requirements, setRequirements] = useState<Record<string, JobRequirement[]>>({});
+  const [requirementEdits, setRequirementEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Record<string, string>>({});
   const [details, setDetails] = useState<Record<string, string>>({});
@@ -90,6 +91,7 @@ export function OfficialSourcesPanel() {
       const result = await reviewJobRequirement(requirement.requirement_id, requirement.revision, {
         decision,
         review_reason: decision === "accepted" ? "用户确认纳入岗位匹配" : "用户确认不纳入岗位匹配",
+        final_requirement_text: requirementEdits[requirement.requirement_id]?.trim() || requirement.requirement_text,
       });
       setRequirements((current) => ({ ...current, [item.staging_id]: current[item.staging_id].map((row) => row.requirement_id === requirement.requirement_id ? result.requirement : row) }));
       setMessage(decision === "accepted" ? "接受需要能力映射；请先在能力档案中绑定后重试。" : "候选要求已拒绝并保留审核记录。");
@@ -155,7 +157,8 @@ export function OfficialSourcesPanel() {
             {item.status === "staged" && <Button size="sm" variant="primary" loading={busy === item.staging_id} onClick={() => void admitAndPrepare(item)}>加入并审核 JD</Button>}
             {item.status === "admitted" && <div className="record-list__requirements" aria-label={`${item.normalized.title} JD 候选要求`}>
               {(requirements[item.staging_id] ?? []).map((requirement) => <div key={requirement.requirement_id}>
-                <span>{requirement.requirement_text} · {requirement.status}</span>
+                {requirement.status === "proposed" ? <input className="input" aria-label={`编辑候选要求 ${requirement.requirement_id}`} value={requirementEdits[requirement.requirement_id] ?? requirement.requirement_text} onChange={(event) => setRequirementEdits((current) => ({ ...current, [requirement.requirement_id]: event.target.value }))} /> : <span>{requirement.requirement_text}</span>}
+                <span> · {requirement.status}</span>
                 {requirement.status === "proposed" && <span className="button-row"><Button size="sm" variant="secondary" loading={busy === requirement.requirement_id} onClick={() => void review(item, requirement, "rejected")}>拒绝</Button><Button size="sm" variant="primary" loading={busy === requirement.requirement_id} onClick={() => void review(item, requirement, "accepted")}>接受</Button></span>}
                 {requirement.review_reason && <small>{requirement.review_reason}</small>}
               </div>)}

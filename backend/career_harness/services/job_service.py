@@ -111,6 +111,7 @@ class JobService:
         *,
         decision: JobRequirementStatus,
         review_reason: str,
+        final_requirement_text: str | None = None,
         capability_id: OpaqueId | None = None,
         graph_version_id: OpaqueId | None = None,
     ) -> JobRequirementCommit:
@@ -132,6 +133,7 @@ class JobService:
         requirement_data.update(
             {
                 "revision": command.expected_revision + 1,
+                "requirement_text": final_requirement_text or proposal.requirement_text,
                 "status": decision,
                 "capability_id": capability_id,
                 "graph_version_id": graph_version_id,

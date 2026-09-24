@@ -99,3 +99,49 @@ async def test_acceptance_without_official_capability_mapping_is_rejected(tmp_pa
 
     assert response.status_code == 409
     assert "official capability" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_user_review_can_accept_edited_text_as_new_requirement_revision(
+    tmp_path: Path,
+) -> None:
+    app = create_runtime_app(
+        Settings.for_test(token=TOKEN),
+        AppPaths.resolve(environment={"ACH_DATA_DIR": str(tmp_path / "data")}),
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        seeded = await client.post("/api/v1/jobs/fixture-search", headers=AUTH, json={})
+        staging_id = seeded.json()[0]["staging_id"]
+        raw_sha = seeded.json()[0]["raw_sha256"]
+        evidence_digest = hashlib.sha256((staging_id + raw_sha).encode()).hexdigest()[:32]
+        evidence_ref = f"evidence_job_staging_{evidence_digest}"
+        admitted = await client.post(f"/api/v1/jobs/staging/{staging_id}/admit", headers=AUTH)
+        job_id = admitted.json()["admission"]["decision"]["job"]["job_id"]
+        await client.post(
+            f"/api/v1/jobs/{job_id}/revisions/1/requirements",
+            headers=AUTH,
+            json={
+                "requirement_id": "requirement_edit_fixture",
+                "requirement_text": "熟悉 Python",
+                "source_evidence_refs": [evidence_ref],
+            },
+        )
+        response = await client.post(
+            "/api/v1/jobs/requirements/requirement_edit_fixture/revisions/1/review",
+            headers=AUTH,
+            json={
+                "decision": "rejected",
+                "review_reason": "已核对原文后调整",
+                "final_requirement_text": "熟悉 Python 和 SQL",
+            },
+        )
+        history = await client.get(
+            f"/api/v1/jobs/{job_id}/revisions/1/requirements", headers=AUTH
+        )
+
+    assert response.status_code == 200
+    assert response.json()["requirement"]["revision"] == 2
+    assert response.json()["requirement"]["requirement_text"] == "熟悉 Python 和 SQL"
+    assert response.json()["requirement"]["source_evidence_refs"] == [evidence_ref]
+    assert history.json()[0]["requirement_text"] == "熟悉 Python 和 SQL"

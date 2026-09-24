@@ -156,6 +156,7 @@ export function reviewJobRequirement(
   request: {
     decision: "accepted" | "rejected" | "superseded";
     review_reason: string;
+    final_requirement_text?: string;
     capability_id?: string;
     graph_version_id?: string;
   },

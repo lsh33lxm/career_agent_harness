@@ -141,7 +141,9 @@ def test_interview_schedule_complete_cancel_is_exact_and_idempotent(tmp_path: Pa
             }
 
 
-def test_interview_reschedule_preserves_identity_and_requires_current_revision(tmp_path: Path) -> None:
+def test_interview_reschedule_preserves_identity_and_requires_current_revision(
+    tmp_path: Path,
+) -> None:
     _, _, interviews = _services(tmp_path)
     scheduled = interviews.schedule_interview(
         _schedule_command(),
@@ -163,16 +165,31 @@ def test_interview_reschedule_preserves_identity_and_requires_current_revision(t
     assert rescheduled.evidence_refs == scheduled.evidence_refs
     with pytest.raises(RevisionConflict):
         interviews.reschedule_interview(
-            _command("interview_001", EntityKind.INTERVIEW, "command_stale_reschedule", expected_revision=1),
+            _command(
+                "interview_001",
+                EntityKind.INTERVIEW,
+                "command_stale_reschedule",
+                expected_revision=1,
+            ),
             scheduled_at=datetime(2026, 1, 12, 9, 0, tzinfo=UTC),
         )
     cancelled = interviews.cancel_interview(
-        _command("interview_001", EntityKind.INTERVIEW, "command_cancel_for_reschedule", expected_revision=2)
+        _command(
+            "interview_001",
+            EntityKind.INTERVIEW,
+            "command_cancel_for_reschedule",
+            expected_revision=2,
+        )
     )
     assert cancelled.revision == 3
     with pytest.raises(ValueError, match="only a scheduled Interview"):
         interviews.reschedule_interview(
-            _command("interview_001", EntityKind.INTERVIEW, "command_cancel_then_reschedule", expected_revision=3),
+            _command(
+                "interview_001",
+                EntityKind.INTERVIEW,
+                "command_cancel_then_reschedule",
+                expected_revision=3,
+            ),
             scheduled_at=datetime(2026, 1, 12, 9, 0, tzinfo=UTC),
         )
 

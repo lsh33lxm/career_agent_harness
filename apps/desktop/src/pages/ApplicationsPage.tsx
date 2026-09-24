@@ -1,7 +1,7 @@
 import { CalendarDays, ClipboardList, Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { attachResumeToApplication, listApplications, listInterviews, setApplicationPreparationState, submitApplication, type ApplicationRead, type InterviewRead } from "../api/history";
+import { attachResumeToApplication, listApplications, listInterviews, scheduleInterview, setApplicationPreparationState, submitApplication, type ApplicationRead, type InterviewRead } from "../api/history";
 import { listResumeBases, listResumeRevisions, type ResumeRevisionRead } from "../api/projectResume";
 import { localizedApiError } from "../api/client";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -32,6 +32,7 @@ export function ApplicationsPage() {
   const [selectedResume, setSelectedResume] = useState<Record<string, string>>({});
   const [actionMessage, setActionMessage] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [interviewDrafts, setInterviewDrafts] = useState<Record<string, { round: InterviewRead["round"]; scheduled_at: string }>>({});
 
   useEffect(() => {
     const controller = new AbortController();
@@ -90,6 +91,18 @@ export function ApplicationsPage() {
     finally { setBusy(null); }
   }
 
+  async function createInterview(item: ApplicationRead) {
+    const draft = interviewDrafts[item.entity_id];
+    if (!draft?.scheduled_at) return;
+    setBusy(`interview:${item.entity_id}`);
+    try {
+      const created = await scheduleInterview({ command_id: `command_interview_${item.entity_id}_${Date.now()}`, interview_id: `interview_${item.entity_id}_${Date.now()}`, application_id: item.entity_id, application_revision: item.revision, round: draft.round, scheduled_at: new Date(draft.scheduled_at).toISOString() });
+      setInterviews((current) => [...current, created]);
+      setActionMessage((current) => ({ ...current, [item.entity_id]: "面试轮次已安排并写入本地日历。" }));
+    } catch (caught) { setActionMessage((current) => ({ ...current, [item.entity_id]: localizedApiError(caught) })); }
+    finally { setBusy(null); }
+  }
+
   return (
     <main className="page page--wide">
       <PageHeader eyebrow="求职流程" title="申请看板与面试日历" description="状态来自 Career Core；页面只读取现有申请和面试记录。" />
@@ -109,6 +122,7 @@ export function ApplicationsPage() {
                 <small>版本 {item.revision} · {item.submitted_at ? dateLabel(item.submitted_at) : "尚未投递"}</small>
                 {item.state === "preparing" && <div className="application-actions"><select className="select" aria-label={`选择 ${item.entity_id} 的简历版本`} value={selectedResume[item.entity_id] ?? ""} onChange={(event) => setSelectedResume((current) => ({ ...current, [item.entity_id]: event.target.value }))}><option value="">选择简历版本</option>{resumeRevisions.map((revision) => <option key={revision.revision_id} value={revision.revision_id}>{revision.revision_id}</option>)}</select><button className="btn btn--secondary" type="button" disabled={!selectedResume[item.entity_id] || busy === item.entity_id} onClick={() => void attachResume(item)}>关联简历</button>{item.resume_revision_id && <button className="btn btn--primary" type="button" disabled={busy === item.entity_id} onClick={() => void markReady(item)}>进入待本人确认</button>}</div>}
                 {item.state === "ready_for_review" && <button className="btn btn--primary" type="button" disabled={busy === item.entity_id || !item.resume_revision_id} onClick={() => void confirmSubmission(item)}>本人确认投递</button>}
+                {(item.state === "submitted_by_user" || item.state === "screen" || item.state === "oa" || item.state === "interview") && <div className="application-actions"><select className="select" aria-label={`选择 ${item.entity_id} 的面试轮次`} value={interviewDrafts[item.entity_id]?.round ?? "technical"} onChange={(event) => setInterviewDrafts((current) => ({ ...current, [item.entity_id]: { round: event.target.value as InterviewRead["round"], scheduled_at: current[item.entity_id]?.scheduled_at ?? "" } }))}><option value="screen">初筛</option><option value="technical">技术面</option><option value="loop">综合面</option><option value="offer_talk">Offer 沟通</option></select><input className="input" type="datetime-local" aria-label={`填写 ${item.entity_id} 的面试时间`} value={interviewDrafts[item.entity_id]?.scheduled_at ?? ""} onChange={(event) => setInterviewDrafts((current) => ({ ...current, [item.entity_id]: { round: current[item.entity_id]?.round ?? "technical", scheduled_at: event.target.value } }))} /><button className="btn btn--secondary" type="button" disabled={!interviewDrafts[item.entity_id]?.scheduled_at || busy === `interview:${item.entity_id}`} onClick={() => void createInterview(item)}>安排面试</button></div>}
                 {actionMessage[item.entity_id] && <p className="text-aux" role="status">{actionMessage[item.entity_id]}</p>}
               </article>)}
             </section>;

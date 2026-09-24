@@ -25,6 +25,8 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 本地浏览和记录不会自动投递岗位、自动发送邮件或执行后台批量外部操作。简历修改、申请状态和每封沟通草稿都由你审核和确认。
 
+已发布 Windows 预发布版：[`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)。安装包 SHA-256：`5c40a3bf730a9fcf508cef02462a4d351d3324bc305dd8e817ac3780b042201f`。这是预发布版本，请先在隔离环境试用。
+
 ## 隐私、数据与验收状态
 
 - 默认数据保存在本机；Demo 浏览不连接外部模型或平台。连接外部模型或邮箱需要你主动配置并触发。

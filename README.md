@@ -23,7 +23,9 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 仓库已有 Windows 预发布版 [`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)，其中包含安装包、数据 manifest 和 SHA-256 校验文件。它对应此前已验证的发布快照；当前源码分支的后续修改尚未生成新的安装包，因此不要把 Beta.4 当作当前源码的构建产物。
 
-当前源码已完成浏览器版 Resume Review 流程、全新 NSIS 安装、492 条离线种子加载、sidecar 退出和端口占用恢复检查。当前 **Desktop Verification Gate v0.1 仍为 NO-GO**：已安装 Windows 窗口上的真实 Resume Review 点击链路、完整截图和 Playwright 正常 teardown 还没有形成可重复的最终证据。源码测试、API 检查或强制终止进程都不能替代这一门槛。
+当前源码已完成浏览器版 Resume Review 流程、全新 NSIS 安装、492 条离线种子加载、sidecar 退出、端口占用恢复，以及已安装 Windows 窗口中的真实 Resume Review 点击链路。安装版验收已完成接受、拒绝、手动编辑后接受、生成 ResumeRevision、两张窗口截图、原生窗口关闭和 Playwright teardown；当前 **Desktop Verification Gate v0.1：GO（当前源码验证范围）**。这不代表稳定版发布，也不启用自动投递、自动发信或后台批量外部操作。
+
+申请页提供按 Career Core 状态分列的申请看板、面试安排/改期/完成/取消和 RFC 5545 `.ics` 日历导出。导出的事件使用稳定面试 ID、UTC 时间和申请关联字段，便于导入本地日历。
 
 本地浏览和记录不会自动投递岗位、自动发送邮件或执行后台批量外部操作。简历修改、申请状态和每封沟通草稿都由你审核和确认。
 
@@ -33,7 +35,7 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 - 默认数据保存在本机；Demo 浏览不连接外部模型或平台。连接外部模型或邮箱需要你主动配置并触发。
 - 职位种子只发布已筛查的规范化元数据。职位来源证据不等于个人经历或技能证据。
-- **当前 Desktop Verification Gate v0.1：NO-GO**。真实 Windows 安装窗口上的 Resume Review 点击链路、完整截图与 Playwright teardown 证据尚未完成；源码测试或隔离 API 验证不能替代这项门槛。未完成该验收前，不把任何新 Beta 安装包称为已通过桌面验收。
+- **当前 Desktop Verification Gate v0.1：GO（当前源码验证范围）**。已安装窗口证据位于本地验证目录，不进入 GitHub 快照；稳定版仍需单独的稳定性决策。
 
 ## 本地开发
 

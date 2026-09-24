@@ -31,7 +31,7 @@ def test_tencent_fixture_search_normalizes_full_description_and_provenance() -> 
     assert normalized.company == "腾讯"
     assert normalized.location == "深圳"
     assert normalized.source_url == "https://join.qq.com/job/123"
-    assert normalized.requirements == ("岗位职责：参与 Agent 工程", "熟悉 Python", "了解 RAG")
+    assert normalized.requirements == ()
     assert source.terms().status.value == "verified"
 
 
@@ -41,6 +41,20 @@ def test_empty_official_page_is_a_successful_empty_snapshot() -> None:
     )
     assert source.search("") == ()
     assert source.health().status == "ok"
+
+
+def test_requirement_parser_excludes_duties_after_explicit_section() -> None:
+    fixture = """
+    <script type="application/ld+json">
+    {"@type":"JobPosting","title":"后端实习生",
+     "hiringOrganization":{"name":"示例公司"},
+     "description":"岗位职责\\n- 参与服务开发\\n- 编写测试\\n任职要求\\n- 熟悉 Python\\n- 了解 SQL",
+     "url":"https://join.qq.com/job/requirements"}
+    </script>
+    """
+    source = OfficialCampusJobSource(TENCENT_CAMPUS, fixture_html=fixture)
+    normalized = source.normalize(source.search("")[0])
+    assert normalized.requirements == ("熟悉 Python", "了解 SQL")
 
 
 def test_query_filters_without_inventing_unknown_fields() -> None:

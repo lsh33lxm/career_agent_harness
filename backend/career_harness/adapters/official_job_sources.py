@@ -92,11 +92,31 @@ def _html_links(html: str, base_url: str, allowed_hosts: frozenset[str]) -> tupl
 def _requirements(description: str | None) -> tuple[str, ...]:
     if not description:
         return ()
-    lines = [
-        _clean_text(line.lstrip("-•* "))
-        for line in re.split(r"(?:<br\s*/?>|\n|\r)+", description)
-    ]
-    return tuple(line for line in lines if line and len(line) <= 1000)[:80]
+    requirement_heading = re.compile(
+        r"(任职要求|岗位要求|职位要求|资格要求|qualification|requirement|must have)",
+        re.IGNORECASE,
+    )
+    duty_heading = re.compile(
+        r"(岗位职责|工作职责|工作内容|职位描述|responsibilit|what you will do)",
+        re.IGNORECASE,
+    )
+    selected: list[str] = []
+    section = "unknown"
+    for raw_line in re.split(r"(?:<br\s*/?>|\n|\r)+", description):
+        line = _clean_text(raw_line.lstrip("-•* "))
+        if not line:
+            continue
+        if requirement_heading.search(line):
+            section = "requirements"
+            continue
+        if duty_heading.search(line):
+            section = "duties"
+            continue
+        if section == "duties":
+            continue
+        if section in {"requirements", "unknown"} and len(line) <= 1000:
+            selected.append(line)
+    return tuple(selected[:80])
 
 
 class OfficialCampusJobSource:

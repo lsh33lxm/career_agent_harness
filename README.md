@@ -19,17 +19,17 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 种子来自经只读迁移和隐私筛查的历史岗位资料。据项目维护者确认，来源台账中的记录均有再分发许可、授权或所有权依据。发布包只包含规范化岗位元数据，不含截图、网页快照、抓取原文、个人资料或运行数据库。Demo Mode 浏览这些岗位不需要 API Key 或外网连接。
 
-## 安装 Windows Beta
+## Windows 构建状态
 
-当前版本为 **`v0.1.0-beta.3` 预发布版**，适用于 Windows x64。该仓库为私有仓库，请使用有访问权限的 GitHub 账号打开[私有 Release 页面](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.3)，下载并运行 [NSIS 安装程序](https://github.com/lsh33lxm/career_agent_harness/releases/download/v0.1.0-beta.3/Agent-Career-Harness_0.1.0_x64-setup.exe)。同时下载 [SHA256SUMS.txt](https://github.com/lsh33lxm/career_agent_harness/releases/download/v0.1.0-beta.3/SHA256SUMS.txt) 校验安装包，并查看[职位数据清单](https://github.com/lsh33lxm/career_agent_harness/releases/download/v0.1.0-beta.3/manifest.json)。
+当前公开仓库没有已发布且完成安装复验的 Windows NSIS 安装包，因此不提供未经验证的下载链接。可在 Windows 本机按以下命令构建和验证前端；只有安装、离线 Demo、sidecar 退出、端口恢复和真实 Resume Review 浏览器点击链路全部留有证据后，才会创建 `v0.1.0-beta.N` 预发布版。
 
-首次启动可直接浏览离线 Demo 职位。Beta 是预发布版本，不是稳定版；本地浏览和记录不会自动投递岗位、自动发送邮件或执行后台批量外部操作。简历修改、申请状态和每封沟通草稿都由你审核和确认。
+本地浏览和记录不会自动投递岗位、自动发送邮件或执行后台批量外部操作。简历修改、申请状态和每封沟通草稿都由你审核和确认。
 
 ## 隐私、数据与验收状态
 
 - 默认数据保存在本机；Demo 浏览不连接外部模型或平台。连接外部模型或邮箱需要你主动配置并触发。
 - 职位种子只发布已筛查的规范化元数据。职位来源证据不等于个人经历或技能证据。
-- **当前源码的 Desktop Verification Gate v0.1 浏览器验收：GO**（2026-09-24，生产前端与隔离 Demo API 的 Resume Review 流程及 3 项 Playwright E2E 通过，测试进程正常退出）。`v0.1.0-beta.3` 安装包没有因本次验收重建，因此此结果不代表该安装包经过了同一轮复验；Beta 仍是预发布版本。
+- **当前 Desktop Verification Gate v0.1：NO-GO**。真实 Windows Resume Review 浏览器点击链路、完整截图与 Playwright teardown 证据尚未完成；源码测试或隔离 API 验证不能替代这项门槛。未完成安装包复验前，不把任何 Beta 安装包称为已通过桌面验收。
 
 ## 本地开发
 

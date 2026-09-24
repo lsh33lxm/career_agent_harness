@@ -1,5 +1,12 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-24 Desktop Verification Gate 浏览器子门复验
+
+- 运行 `powershell -ExecutionPolicy Bypass -File .\scripts\verify_desktop_gate.ps1` 成功，生产前端构建通过。
+- 3 个 Playwright 用例全部通过：Resume Review 逐条接受/拒绝/手动编辑并生成 ResumeRevision；API 重启后 History/Knowledge 保留稳定 ID；API 不可用时 Demo Mode 保持可用并显示中文恢复提示。
+- 本次证据目录：`artifacts/verification/desktop-gate-20260924-145756/`；`run-summary.json` 为 `result=passed`，生成完整流程截图和独立 Playwright 输出，脚本 finally 正常清理自己启动的 API/Vite 进程。
+- 本次验证确认浏览器子门已通过，但尚未在本次源码提交上重新安装 NSIS 包。因此整体 Desktop Verification Gate 继续为 **NO-GO**，剩余门槛是 NSIS 全新安装、492 条职位离线加载、sidecar 退出和端口恢复复验。
+
 ## 2026-09-24 官方国内校招来源适配器首个切片
 
 - 新增腾讯校招 `join.qq.com` 与美图校招 `campus.meitu.com` 两个只读官方来源适配器，统一接入现有 Job Radar 暂存、去重、公开来源 Evidence 和用户准入流程。

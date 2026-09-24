@@ -57,6 +57,12 @@ class InterviewTransitionRequest(FrozenModel):
     evidence_refs: tuple[str, ...] | None = None
 
 
+class RescheduleInterviewRequest(FrozenModel):
+    command_id: str = Field(min_length=3, max_length=128)
+    expected_revision: int = Field(ge=1)
+    scheduled_at: datetime
+
+
 @dataclass(frozen=True, slots=True)
 class ApplicationCommandApi:
     applications: ApplicationService
@@ -131,6 +137,13 @@ def create_application_command_router(api: ApplicationCommandApi) -> APIRouter:
     def cancel_interview(request: InterviewTransitionRequest, interview_id: str = Path(min_length=3, max_length=128)):
         try:
             return api.interviews.cancel_interview(_command(request.command_id, EntityKind.INTERVIEW, interview_id, request.expected_revision, "interview.cancel"))
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/interviews/{interview_id}/reschedule")
+    def reschedule_interview(request: RescheduleInterviewRequest, interview_id: str = Path(min_length=3, max_length=128)):
+        try:
+            return api.interviews.reschedule_interview(_command(request.command_id, EntityKind.INTERVIEW, interview_id, request.expected_revision, "interview.reschedule"), scheduled_at=request.scheduled_at)
         except Exception as error:
             raise _error(error) from error
 

@@ -84,6 +84,30 @@ class InterviewService:
             command, status=InterviewStatus.CANCELLED, event_type="interview.cancelled"
         )
 
+    def reschedule_interview(
+        self,
+        command: Command,
+        *,
+        scheduled_at: datetime,
+    ) -> Interview:
+        self._require_interview_target(command)
+        if command.expected_revision < 1:
+            raise ValueError("Interview rescheduling requires an existing revision")
+        current = self.repository.get(command.target.entity_id, command.expected_revision)
+        if current is None:
+            raise ValueError("Interview rescheduling requires the exact current revision")
+        if current.status is not InterviewStatus.SCHEDULED:
+            raise ValueError("only a scheduled Interview can be rescheduled")
+        next_interview = current.model_copy(
+            update={
+                "revision": current.revision + 1,
+                "scheduled_at": scheduled_at,
+                "created_at": command.issued_at,
+                "created_by": command.actor,
+            }
+        )
+        return self._commit(command, next_interview, "interview.rescheduled")
+
     def _transition(
         self,
         command: Command,

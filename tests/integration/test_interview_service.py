@@ -141,6 +141,42 @@ def test_interview_schedule_complete_cancel_is_exact_and_idempotent(tmp_path: Pa
             }
 
 
+def test_interview_reschedule_preserves_identity_and_requires_current_revision(tmp_path: Path) -> None:
+    _, _, interviews = _services(tmp_path)
+    scheduled = interviews.schedule_interview(
+        _schedule_command(),
+        application_id="application_001",
+        application_revision=3,
+        round=InterviewRound.TECHNICAL,
+        scheduled_at=SCHEDULED_AT,
+    )
+    moved_at = datetime(2026, 1, 11, 14, 30, tzinfo=UTC)
+    rescheduled = interviews.reschedule_interview(
+        _command("interview_001", EntityKind.INTERVIEW, "command_reschedule", expected_revision=1),
+        scheduled_at=moved_at,
+    )
+    assert rescheduled.revision == 2
+    assert rescheduled.scheduled_at == moved_at.replace(tzinfo=None)
+    assert rescheduled.application_id == scheduled.application_id
+    assert rescheduled.application_revision == scheduled.application_revision
+    assert rescheduled.round is scheduled.round
+    assert rescheduled.evidence_refs == scheduled.evidence_refs
+    with pytest.raises(RevisionConflict):
+        interviews.reschedule_interview(
+            _command("interview_001", EntityKind.INTERVIEW, "command_stale_reschedule", expected_revision=1),
+            scheduled_at=datetime(2026, 1, 12, 9, 0, tzinfo=UTC),
+        )
+    cancelled = interviews.cancel_interview(
+        _command("interview_001", EntityKind.INTERVIEW, "command_cancel_for_reschedule", expected_revision=2)
+    )
+    assert cancelled.revision == 3
+    with pytest.raises(ValueError, match="only a scheduled Interview"):
+        interviews.reschedule_interview(
+            _command("interview_001", EntityKind.INTERVIEW, "command_cancel_then_reschedule", expected_revision=3),
+            scheduled_at=datetime(2026, 1, 12, 9, 0, tzinfo=UTC),
+        )
+
+
 def test_interview_prep_creates_evidence_backed_proposal(tmp_path: Path) -> None:
     engine, _, interviews = _services(tmp_path)
     interviews.schedule_interview(

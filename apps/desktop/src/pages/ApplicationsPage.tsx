@@ -1,7 +1,7 @@
 import { CalendarDays, ClipboardList, Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { attachResumeToApplication, listApplications, listInterviews, scheduleInterview, setApplicationPreparationState, submitApplication, type ApplicationRead, type InterviewRead } from "../api/history";
+import { attachResumeToApplication, cancelInterview, completeInterview, listApplications, listInterviews, rescheduleInterview, scheduleInterview, setApplicationPreparationState, submitApplication, type ApplicationRead, type InterviewRead } from "../api/history";
 import { listResumeBases, listResumeRevisions, type ResumeRevisionRead } from "../api/projectResume";
 import { localizedApiError } from "../api/client";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -33,6 +33,7 @@ export function ApplicationsPage() {
   const [actionMessage, setActionMessage] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [interviewDrafts, setInterviewDrafts] = useState<Record<string, { round: InterviewRead["round"]; scheduled_at: string }>>({});
+  const [rescheduleDrafts, setRescheduleDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const controller = new AbortController();
@@ -53,7 +54,7 @@ export function ApplicationsPage() {
   }, []);
 
   const upcoming = useMemo(
-    () => interviews.filter((item) => item.status === "scheduled").sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)),
+    () => [...interviews].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)),
     [interviews],
   );
 
@@ -103,6 +104,35 @@ export function ApplicationsPage() {
     finally { setBusy(null); }
   }
 
+  function updateInterview(updated: InterviewRead) {
+    setInterviews((current) => current.map((item) => item.entity_id === updated.entity_id ? updated : item));
+  }
+
+  async function transitionInterview(item: InterviewRead, action: "complete" | "cancel") {
+    setBusy(`interview-action:${item.entity_id}`);
+    try {
+      const updated = action === "complete"
+        ? await completeInterview(item.entity_id, { command_id: `command_complete_${item.entity_id}_${item.revision}`, expected_revision: item.revision })
+        : await cancelInterview(item.entity_id, { command_id: `command_cancel_${item.entity_id}_${item.revision}`, expected_revision: item.revision });
+      updateInterview(updated);
+      setActionMessage((current) => ({ ...current, [item.application_id]: action === "complete" ? "面试已标记为完成。" : "面试已取消。" }));
+    } catch (caught) { setActionMessage((current) => ({ ...current, [item.application_id]: localizedApiError(caught) })); }
+    finally { setBusy(null); }
+  }
+
+  async function reschedule(item: InterviewRead) {
+    const value = rescheduleDrafts[item.entity_id];
+    if (!value) return;
+    setBusy(`interview-action:${item.entity_id}`);
+    try {
+      const updated = await rescheduleInterview(item.entity_id, { command_id: `command_reschedule_${item.entity_id}_${item.revision}`, expected_revision: item.revision, scheduled_at: new Date(value).toISOString() });
+      updateInterview(updated);
+      setRescheduleDrafts((current) => ({ ...current, [item.entity_id]: "" }));
+      setActionMessage((current) => ({ ...current, [item.application_id]: "面试时间已更新。" }));
+    } catch (caught) { setActionMessage((current) => ({ ...current, [item.application_id]: localizedApiError(caught) })); }
+    finally { setBusy(null); }
+  }
+
   return (
     <main className="page page--wide">
       <PageHeader eyebrow="求职流程" title="申请看板与面试日历" description="状态来自 Career Core；页面只读取现有申请和面试记录。" />
@@ -129,12 +159,12 @@ export function ApplicationsPage() {
           })}
         </section>
         <Surface>
-          <Section title="面试日历" icon={CalendarDays} description="按本机时区显示已安排轮次；点击信息可回到申请标识。" meta={`${upcoming.length} 场待进行`}>
+          <Section title="面试日历" icon={CalendarDays} description="按本机时区显示面试轮次；完成、取消和改期都会保留新的记录版本。" meta={`${upcoming.filter((item) => item.status === "scheduled").length} 场待进行`}>
             {upcoming.length === 0 ? <p className="text-aux">暂无已安排面试。</p> : <div className="calendar-list" aria-label="已安排面试">
               {upcoming.map((item) => <article className="calendar-list__item" key={`${item.entity_id}:${item.revision}`}>
                 <CalendarDays size={17} aria-hidden="true" />
-                <div><strong>{dateLabel(item.scheduled_at)}</strong><p>{item.round} · 申请 {item.application_id} · 申请版本 {item.application_revision}</p></div>
-                <span className="badge"><Clock3 size={13} aria-hidden="true" />已安排</span>
+                <div><strong>{dateLabel(item.scheduled_at)}</strong><p>{item.round} · 申请 {item.application_id} · 申请版本 {item.application_revision}</p>{item.status === "scheduled" && <div className="application-actions"><input className="input" type="datetime-local" aria-label={`改期 ${item.entity_id}`} value={rescheduleDrafts[item.entity_id] ?? ""} onChange={(event) => setRescheduleDrafts((current) => ({ ...current, [item.entity_id]: event.target.value }))} /><button className="btn btn--secondary" type="button" disabled={!rescheduleDrafts[item.entity_id] || busy === `interview-action:${item.entity_id}`} onClick={() => void reschedule(item)}>改期</button><button className="btn btn--secondary" type="button" disabled={busy === `interview-action:${item.entity_id}`} onClick={() => void transitionInterview(item, "complete")}>完成</button><button className="btn btn--secondary" type="button" disabled={busy === `interview-action:${item.entity_id}`} onClick={() => void transitionInterview(item, "cancel")}>取消</button></div>}</div>
+                <span className="badge"><Clock3 size={13} aria-hidden="true" />{item.status === "scheduled" ? "已安排" : item.status === "completed" ? "已完成" : "已取消"}</span>
               </article>)}
             </div>}
           </Section>

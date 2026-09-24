@@ -82,6 +82,18 @@ export function scheduleInterview(input: { command_id: string; interview_id: str
   return apiRequest<InterviewRead>("/api/v1/interviews", { method: "POST", body: JSON.stringify(input) });
 }
 
+export function completeInterview(interviewId: string, input: { command_id: string; expected_revision: number }): Promise<InterviewRead> {
+  return apiRequest<InterviewRead>(`/api/v1/interviews/${encodeURIComponent(interviewId)}/complete`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function cancelInterview(interviewId: string, input: { command_id: string; expected_revision: number }): Promise<InterviewRead> {
+  return apiRequest<InterviewRead>(`/api/v1/interviews/${encodeURIComponent(interviewId)}/cancel`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function rescheduleInterview(interviewId: string, input: { command_id: string; expected_revision: number; scheduled_at: string }): Promise<InterviewRead> {
+  return apiRequest<InterviewRead>(`/api/v1/interviews/${encodeURIComponent(interviewId)}/reschedule`, { method: "POST", body: JSON.stringify(input) });
+}
+
 export function createInterviewPrepProposal(
   interviewId: string, input: { mode: "technical" | "behavioral"; focus: string },
 ): Promise<{ proposal_id: string }> {

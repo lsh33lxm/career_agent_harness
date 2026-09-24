@@ -358,3 +358,9 @@
   records fail with 404 and no Application write route/service is exposed. API regression passed
   `11`; full backend verification passed `334` tests with `3` known Windows symlink-permission
   skips.
+- Added user-controlled interview completion, cancellation, and rescheduling commands. Rescheduling
+  requires the exact current scheduled revision, preserves the Application/round/evidence binding,
+  and creates `interview.rescheduled`; the desktop calendar exposes all three actions with revision
+  conflict/error feedback. Focused backend verification passed `11` tests; desktop page test and
+  production build passed. Desktop Verification Gate remains NO-GO pending real Windows browser
+  Resume Review clicks, complete screenshots, and Playwright teardown evidence.

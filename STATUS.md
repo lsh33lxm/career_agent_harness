@@ -8,6 +8,7 @@
 - 全新安装验证目录：`artifacts/verification/installed-runtime-head-20260924-221910/`。安装退出码 0；被占用端口 `57281` 后恢复到 `56677`；`/health=200`，环境为 `demo`；离线 packaged seed 返回 492 条；应用退出码 0，未留下本轮桌面端或 sidecar 进程。
 - 全量后端 `747 passed, 5 skipped`；前端 `29 个测试文件 / 79 passed`；Cargo check 通过。5 项跳过均为 Windows symlink 创建权限限制。Ruff 全仓仍有 22 个既有格式/行长问题，未将其混入本轮改动。
 - 整体 Desktop Verification Gate 仍不改判为 GO：当前已有源构建浏览器证据和安装生命周期证据，但尚未在安装后桌面窗口中完成同一套真实 Resume Review 点击链路；不得据此创建新的 prerelease。
+- 本轮尝试使用 Windows Computer Use 连接已安装窗口；`cua.getState()` 返回 `apps=[]` 并报 `unsupported Codex auth method: apikey`，因此没有产生安装后窗口的点击或截图证据。该连接问题不能由 API/命令行验证替代。
 
 ## 2026-09-24 美图官方 SSR 岗位列表适配
 

@@ -16,6 +16,13 @@
 - 安装包 SHA-256：以 `artifacts/verification/tauri-target-20260924-current/release/bundle/nsis/Agent Career Harness_0.1.0_x64-setup.exe` 为准，验证摘要保存在 `artifacts/verification/installed-runtime-current-20260924/`。
 - 浏览器子门与安装门均通过，**Desktop Verification Gate v0.1：GO（本次源码验证范围）**。仍禁止自动投递、自动发信和正式稳定版发布。
 
+## 2026-09-24 Beta.4 预发布
+
+- 从源码文档提交 `bd5327f` 生成干净快照分支 `snapshot-desktop-gate-full-20260924`，最终快照提交 `034371529f64c90da23a84e15dff7f912e2676be`；仅保留根 `README.md`，没有 `docs/`、参考仓库、运行数据库、日志或缓存。
+- GitHub 预发布：`v0.1.0-beta.4`，地址：<https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4>。
+- 已上传 Windows NSIS 安装包、`SHA256SUMS.txt` 和 `manifest.json`。安装包 SHA-256：`5c40a3bf730a9fcf508cef02462a4d351d3324bc305dd8e817ac3780b042201f`。
+- 预发布说明明确 492 条 `legacy-jobs-v2` 数据、离线 Demo Mode、人工确认边界和 Desktop Verification Gate v0.1 为 GO；没有创建正式稳定版。
+
 ## 2026-09-24 官方国内校招来源适配器首个切片
 
 - 新增腾讯校招 `join.qq.com` 与美图校招 `campus.meitu.com` 两个只读官方来源适配器，统一接入现有 Job Radar 暂存、去重、公开来源 Evidence 和用户准入流程。

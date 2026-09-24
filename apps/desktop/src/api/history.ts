@@ -66,6 +66,22 @@ export function createApplication(input: {
   });
 }
 
+export function attachResumeToApplication(applicationId: string, input: { command_id: string; expected_revision: number; resume_revision_id: string }): Promise<ApplicationRead> {
+  return apiRequest<ApplicationRead>(`/api/v1/applications/${encodeURIComponent(applicationId)}/resume`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function setApplicationPreparationState(applicationId: string, input: { command_id: string; expected_revision: number; state: "preparing" | "ready_for_review" }): Promise<ApplicationRead> {
+  return apiRequest<ApplicationRead>(`/api/v1/applications/${encodeURIComponent(applicationId)}/preparation-state`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function submitApplication(applicationId: string, input: { command_id: string; expected_revision: number; resume_revision_id: string }): Promise<ApplicationRead> {
+  return apiRequest<ApplicationRead>(`/api/v1/applications/${encodeURIComponent(applicationId)}/submit`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function scheduleInterview(input: { command_id: string; interview_id: string; application_id: string; application_revision: number; round: InterviewRead["round"]; scheduled_at: string }): Promise<InterviewRead> {
+  return apiRequest<InterviewRead>("/api/v1/interviews", { method: "POST", body: JSON.stringify(input) });
+}
+
 export function createInterviewPrepProposal(
   interviewId: string, input: { mode: "technical" | "behavioral"; focus: string },
 ): Promise<{ proposal_id: string }> {

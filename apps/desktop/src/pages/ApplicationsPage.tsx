@@ -1,7 +1,8 @@
 import { CalendarDays, ClipboardList, Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { listApplications, listInterviews, type ApplicationRead, type InterviewRead } from "../api/history";
+import { attachResumeToApplication, listApplications, listInterviews, setApplicationPreparationState, submitApplication, type ApplicationRead, type InterviewRead } from "../api/history";
+import { listResumeBases, listResumeRevisions, type ResumeRevisionRead } from "../api/projectResume";
 import { localizedApiError } from "../api/client";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Section, Surface } from "../components/ui/Section";
@@ -27,6 +28,10 @@ export function ApplicationsPage() {
   const [interviews, setInterviews] = useState<InterviewRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [resumeRevisions, setResumeRevisions] = useState<ResumeRevisionRead[]>([]);
+  const [selectedResume, setSelectedResume] = useState<Record<string, string>>({});
+  const [actionMessage, setActionMessage] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -35,8 +40,11 @@ export function ApplicationsPage() {
       .then(async (items) => {
         if (controller.signal.aborted) return;
         const interviewLists = await Promise.all(items.map((item) => listInterviews(item.entity_id, controller.signal).catch(() => [])));
+        const bases = await listResumeBases(controller.signal).catch(() => []);
+        const revisions = (await Promise.all(bases.map((base) => listResumeRevisions(base.resume_id, controller.signal).catch(() => [])))).flat();
         setApplications(items);
         setInterviews(interviewLists.flat());
+        setResumeRevisions(revisions);
       })
       .catch((caught) => { if (!controller.signal.aborted) setError(localizedApiError(caught)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -47,6 +55,40 @@ export function ApplicationsPage() {
     () => interviews.filter((item) => item.status === "scheduled").sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)),
     [interviews],
   );
+
+  function updateApplication(updated: ApplicationRead) {
+    setApplications((current) => current.map((item) => item.entity_id === updated.entity_id ? updated : item));
+  }
+
+  async function attachResume(item: ApplicationRead) {
+    const resumeRevisionId = selectedResume[item.entity_id];
+    if (!resumeRevisionId) return;
+    setBusy(item.entity_id);
+    try {
+      updateApplication(await attachResumeToApplication(item.entity_id, { command_id: `command_attach_${item.entity_id}_${item.revision}`, expected_revision: item.revision, resume_revision_id: resumeRevisionId }));
+      setActionMessage((current) => ({ ...current, [item.entity_id]: "已关联简历版本；仍需你确认进入待投递状态。" }));
+    } catch (caught) { setActionMessage((current) => ({ ...current, [item.entity_id]: localizedApiError(caught) })); }
+    finally { setBusy(null); }
+  }
+
+  async function markReady(item: ApplicationRead) {
+    setBusy(item.entity_id);
+    try {
+      updateApplication(await setApplicationPreparationState(item.entity_id, { command_id: `command_ready_${item.entity_id}_${item.revision}`, expected_revision: item.revision, state: "ready_for_review" }));
+      setActionMessage((current) => ({ ...current, [item.entity_id]: "已进入待本人确认；不会自动投递。" }));
+    } catch (caught) { setActionMessage((current) => ({ ...current, [item.entity_id]: localizedApiError(caught) })); }
+    finally { setBusy(null); }
+  }
+
+  async function confirmSubmission(item: ApplicationRead) {
+    if (!item.resume_revision_id) return;
+    setBusy(item.entity_id);
+    try {
+      updateApplication(await submitApplication(item.entity_id, { command_id: `command_submit_${item.entity_id}_${item.revision}`, expected_revision: item.revision, resume_revision_id: item.resume_revision_id }));
+      setActionMessage((current) => ({ ...current, [item.entity_id]: "已记录本人确认投递；系统未替你发送或提交外部表单。" }));
+    } catch (caught) { setActionMessage((current) => ({ ...current, [item.entity_id]: localizedApiError(caught) })); }
+    finally { setBusy(null); }
+  }
 
   return (
     <main className="page page--wide">
@@ -65,6 +107,9 @@ export function ApplicationsPage() {
                 <p>机会：{item.opportunity_id}</p>
                 <p>简历：{item.resume_revision_id ?? "尚未关联"}</p>
                 <small>版本 {item.revision} · {item.submitted_at ? dateLabel(item.submitted_at) : "尚未投递"}</small>
+                {item.state === "preparing" && <div className="application-actions"><select className="select" aria-label={`选择 ${item.entity_id} 的简历版本`} value={selectedResume[item.entity_id] ?? ""} onChange={(event) => setSelectedResume((current) => ({ ...current, [item.entity_id]: event.target.value }))}><option value="">选择简历版本</option>{resumeRevisions.map((revision) => <option key={revision.revision_id} value={revision.revision_id}>{revision.revision_id}</option>)}</select><button className="btn btn--secondary" type="button" disabled={!selectedResume[item.entity_id] || busy === item.entity_id} onClick={() => void attachResume(item)}>关联简历</button>{item.resume_revision_id && <button className="btn btn--primary" type="button" disabled={busy === item.entity_id} onClick={() => void markReady(item)}>进入待本人确认</button>}</div>}
+                {item.state === "ready_for_review" && <button className="btn btn--primary" type="button" disabled={busy === item.entity_id || !item.resume_revision_id} onClick={() => void confirmSubmission(item)}>本人确认投递</button>}
+                {actionMessage[item.entity_id] && <p className="text-aux" role="status">{actionMessage[item.entity_id]}</p>}
               </article>)}
             </section>;
           })}

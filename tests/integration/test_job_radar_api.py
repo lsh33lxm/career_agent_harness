@@ -102,3 +102,38 @@ async def test_official_source_search_uses_existing_staging_pipeline(
     assert payload["source_id"] == TENCENT_CAMPUS.source_id
     assert payload["normalized"]["title"] == "腾讯 AI 实习生"
     assert payload["normalized"]["requirements"] == ["参与 Agent 工程", "熟悉 Python"]
+
+
+@pytest.mark.asyncio
+async def test_official_detail_returns_full_jd_and_provenance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = """
+    <script type="application/ld+json">
+    {"@type":"JobPosting","title":"腾讯 AI 实习生",
+     "hiringOrganization":{"name":"腾讯"},
+     "description":"岗位职责\\n参与 Agent 工程\\n任职要求\\n熟悉 Python",
+     "url":"https://join.qq.com/job/detail-fixture"}
+    </script>
+    """
+    monkeypatch.setattr(
+        job_radar,
+        "official_source",
+        lambda source_id: OfficialCampusJobSource(TENCENT_CAMPUS, fixture_html=fixture),
+    )
+    app = create_runtime_app(
+        Settings.for_test(token=TOKEN),
+        AppPaths.resolve(environment={"ACH_DATA_DIR": str(tmp_path / "data")}),
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/jobs/official-detail",
+            headers=AUTH,
+            json={"source_id": TENCENT_CAMPUS.source_id, "source_ref": "https://join.qq.com/job/detail-fixture"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["normalized"]["title"] == "腾讯 AI 实习生"
+    assert "熟悉 Python" in response.json()["raw_text"]
+    assert response.json()["source_ref"].endswith("detail-fixture")

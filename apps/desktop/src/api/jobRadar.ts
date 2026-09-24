@@ -69,6 +69,24 @@ export function searchOfficialJobs(
   });
 }
 
+export interface OfficialJobDetail {
+  source_id: string;
+  source_ref: string;
+  captured_at: string;
+  raw_text: string;
+  normalized: JobStagingRecord["normalized"];
+  health: { status: "ok" | "blocked" | "error"; message: string };
+}
+
+export function getOfficialJobDetail(
+  request: { source_id: OfficialSourceSearchRequest["source_id"]; source_ref: string },
+): Promise<OfficialJobDetail> {
+  return apiRequest<OfficialJobDetail>("/api/v1/jobs/official-detail", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
 export function admitStagedJob(stagingId: string): Promise<unknown> {
   return apiRequest(`/api/v1/jobs/staging/${encodeURIComponent(stagingId)}/admit`, {
     method: "POST",

@@ -47,6 +47,11 @@ class OfficialSourceSearchRequest(FixtureSearchRequest):
     source_id: str = Field(min_length=3, max_length=128)
 
 
+class OfficialDetailRequest(FrozenModel):
+    source_id: str = Field(min_length=3, max_length=128)
+    source_ref: str = Field(min_length=1, max_length=4096)
+
+
 class SourcePolicyUpdateRequest(FrozenModel):
     rate_limit_ms: int | None = Field(default=None, ge=0, le=300_000)
     max_retries: int | None = Field(default=None, ge=0, le=5)
@@ -150,6 +155,23 @@ def create_job_radar_router(api: JobRadarApi) -> APIRouter:
                 preferred_locations=request.preferred_locations,
                 minimum_salary=request.minimum_salary,
             )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post("/official-detail")
+    def official_detail(request: OfficialDetailRequest) -> dict[str, object]:
+        try:
+            source = official_source(request.source_id)
+            raw = source.fetch_detail(request.source_ref)
+            normalized = source.normalize(raw)
+            return {
+                "source_id": source.source_id,
+                "source_ref": raw.source_ref,
+                "captured_at": raw.captured_at,
+                "raw_text": raw.raw_text,
+                "normalized": normalized,
+                "health": source.health(),
+            }
         except Exception as error:
             raise _error(error) from error
 

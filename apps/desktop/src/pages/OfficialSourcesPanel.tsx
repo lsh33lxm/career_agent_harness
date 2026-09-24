@@ -5,6 +5,7 @@ import { localizedApiError } from "../api/client";
 import {
   admitStagedJob,
   getJobSourceDocument,
+  getOfficialJobDetail,
   listJobRequirements,
   proposeJobRequirement,
   reviewJobRequirement,
@@ -38,6 +39,7 @@ export function OfficialSourcesPanel() {
   const [requirements, setRequirements] = useState<Record<string, JobRequirement[]>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Record<string, string>>({});
+  const [details, setDetails] = useState<Record<string, string>>({});
 
   async function search() {
     setLoading(true);
@@ -110,6 +112,18 @@ export function OfficialSourcesPanel() {
     }
   }
 
+  async function showOfficialDetail(item: JobStagingRecord) {
+    setBusy(`detail:${item.staging_id}`);
+    try {
+      const detail = await getOfficialJobDetail({ source_id: item.source_id as OfficialSourceSearchRequest["source_id"], source_ref: item.source_ref });
+      setDetails((current) => ({ ...current, [item.staging_id]: detail.raw_text }));
+    } catch (error) {
+      setMessage(localizedApiError(error));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <Surface>
       <Section
@@ -147,7 +161,9 @@ export function OfficialSourcesPanel() {
               </div>)}
             </div>}
             <Button size="sm" variant="secondary" loading={busy === `document:${item.staging_id}`} onClick={() => void showSourceDocument(item)}>查看完整来源快照</Button>
+            <Button size="sm" variant="secondary" loading={busy === `detail:${item.staging_id}`} onClick={() => void showOfficialDetail(item)}>查看完整官方 JD</Button>
             {documents[item.staging_id] && <pre className="source-document" aria-label={`${item.normalized.title} 完整来源快照`}>{documents[item.staging_id]}</pre>}
+            {details[item.staging_id] && <pre className="source-document" aria-label={`${item.normalized.title} 完整官方 JD`}>{details[item.staging_id]}</pre>}
             {item.normalized.source_url && <a href={item.normalized.source_url} target="_blank" rel="noreferrer" aria-label={`打开 ${item.normalized.title} 官方来源`}><ExternalLink size={16} aria-hidden="true" /></a>}
           </article>)}
         </div>}

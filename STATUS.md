@@ -8,6 +8,8 @@
 - 专项测试 `tests/unit/test_official_job_sources.py` 5 项通过；Job Radar API 与现有 fixture 回归 7 项通过；项目范围 Ruff 通过。
 - 现场只读检查（2026-09-24）：腾讯和美图主页 HTTPS 均可达，但当前页面返回前端壳，未发现可解析 `JobPosting`，现场岗位数量均为 0。该结果标记为“来源可达、线上岗位解析未验证”，不能作为真实岗位抓取成功证据；完整链路由保存的官方页面形状 fixture 验证。
 - 当前新增入口为 `POST /api/v1/jobs/official-search`，支持来源 ID、关键词、偏好地点和岗位筛选参数。后续需要针对站点实际搜索 API 或岗位详情路由补充分页快照、完整 JD 现场验收与失效追踪。
+- 机会页已接入“国内官方校招来源”面板：可选择腾讯/美图、输入关键词、查看暂存岗位的完整描述要求、来源 SHA-256 和官方链接；结果不会绕过现有用户准入动作。
+- 前端专项测试 1 项和 `npm --workspace @ach/desktop run build` 通过。
 
 ## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — GO
 

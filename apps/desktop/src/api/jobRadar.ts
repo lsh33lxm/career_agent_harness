@@ -8,6 +8,8 @@ export interface JobStagingRecord {
   source_ref: string;
   raw_artifact_id: string;
   raw_sha256: string;
+  url_fingerprint: string;
+  content_fingerprint: string;
   normalized: {
     title: string;
     company: string;
@@ -44,6 +46,24 @@ export function listJobStaging(signal?: AbortSignal): Promise<JobStagingRecord[]
 
 export function importManualJob(request: ManualJobImportRequest): Promise<JobStagingRecord[]> {
   return apiRequest<JobStagingRecord[]>("/api/v1/jobs/import", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
+export interface OfficialSourceSearchRequest {
+  source_id: "official-cn-tencent-campus" | "official-cn-meitu-campus";
+  query?: string;
+  desired_terms?: string[];
+  excluded_terms?: string[];
+  preferred_locations?: string[];
+  minimum_salary?: number;
+}
+
+export function searchOfficialJobs(
+  request: OfficialSourceSearchRequest,
+): Promise<JobStagingRecord[]> {
+  return apiRequest<JobStagingRecord[]>("/api/v1/jobs/official-search", {
     method: "POST",
     body: JSON.stringify(request),
   });

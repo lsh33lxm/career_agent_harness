@@ -10,6 +10,7 @@ import {
 } from "../api/client";
 import { localizedApiError } from "../api/client";
 import { JobRadarPanel } from "./JobRadarPanel";
+import { OfficialSourcesPanel } from "./OfficialSourcesPanel";
 import { createCommunicationDraft, getCommunicationSummary, listCommunicationDrafts, reviewCommunicationDraft, type CommunicationDraft, type CommunicationSummary } from "../api/communications";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Section, Surface } from "../components/ui/Section";
@@ -164,6 +165,8 @@ export function OpportunitiesPage() {
       />
 
       <JobRadarPanel />
+
+      <OfficialSourcesPanel />
 
       <Surface className="surface--flow">
         <Section

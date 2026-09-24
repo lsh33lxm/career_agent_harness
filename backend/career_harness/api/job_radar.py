@@ -11,6 +11,7 @@ from career_harness.adapters.job_sources import (
     OfflineFixtureJobSource,
     PackagedJobSeedSource,
 )
+from career_harness.adapters.official_job_sources import official_source
 from career_harness.core.common import FrozenModel
 from career_harness.core.job_source import (
     JobResumeProposalSeed,
@@ -39,6 +40,10 @@ class FixtureSearchRequest(FrozenModel):
     excluded_terms: tuple[str, ...] = ()
     preferred_locations: tuple[str, ...] = ()
     minimum_salary: float | None = Field(default=None, gt=0)
+
+
+class OfficialSourceSearchRequest(FixtureSearchRequest):
+    source_id: str = Field(min_length=3, max_length=128)
 
 
 class SourcePolicyUpdateRequest(FrozenModel):
@@ -120,6 +125,24 @@ def create_job_radar_router(api: JobRadarApi) -> APIRouter:
         try:
             return api.service.collect(
                 PackagedJobSeedSource(),
+                query=request.query,
+                desired_terms=request.desired_terms,
+                excluded_terms=request.excluded_terms,
+                preferred_locations=request.preferred_locations,
+                minimum_salary=request.minimum_salary,
+            )
+        except Exception as error:
+            raise _error(error) from error
+
+    @router.post(
+        "/official-search",
+        response_model=list[JobStagingRecord],
+        status_code=status.HTTP_201_CREATED,
+    )
+    def official_search(request: OfficialSourceSearchRequest) -> tuple[JobStagingRecord, ...]:
+        try:
+            return api.service.collect(
+                official_source(request.source_id),
                 query=request.query,
                 desired_terms=request.desired_terms,
                 excluded_terms=request.excluded_terms,

@@ -1,5 +1,14 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-24 官方国内校招来源适配器首个切片
+
+- 新增腾讯校招 `join.qq.com` 与美图校招 `campus.meitu.com` 两个只读官方来源适配器，统一接入现有 Job Radar 暂存、去重、公开来源 Evidence 和用户准入流程。
+- 适配器限制官方域名白名单、12 秒超时、2 MB 响应上限和最多 3 个详情链接；不读取 Cookie、不提交表单、不绕过验证码或反检测机制。
+- 支持 JSON-LD `JobPosting` 的职位名称、公司、地点、类型、发布日期、更新时间、完整描述和来源 URL；未知字段保持为空。响应内容由现有 Evidence artifact SHA-256 留存。
+- 专项测试 `tests/unit/test_official_job_sources.py` 5 项通过；Job Radar API 与现有 fixture 回归 7 项通过；项目范围 Ruff 通过。
+- 现场只读检查（2026-09-24）：腾讯和美图主页 HTTPS 均可达，但当前页面返回前端壳，未发现可解析 `JobPosting`，现场岗位数量均为 0。该结果标记为“来源可达、线上岗位解析未验证”，不能作为真实岗位抓取成功证据；完整链路由保存的官方页面形状 fixture 验证。
+- 当前新增入口为 `POST /api/v1/jobs/official-search`，支持来源 ID、关键词、偏好地点和岗位筛选参数。后续需要针对站点实际搜索 API 或岗位详情路由补充分页快照、完整 JD 现场验收与失效追踪。
+
 ## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — GO
 
 - 当前源码生产构建上的真实 Chromium Resume Review 流程通过：逐 Patch 接受、拒绝、手动编辑、生成 ResumeRevision；基础简历保持不变，Application 保持 `preparing`；历史和知识页能追溯稳定 ID。

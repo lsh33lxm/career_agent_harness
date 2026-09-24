@@ -3,6 +3,8 @@ from pathlib import Path
 import httpx
 import pytest
 
+from career_harness.adapters.official_job_sources import TENCENT_CAMPUS, OfficialCampusJobSource
+from career_harness.api import job_radar
 from career_harness.api.runtime import create_runtime_app
 from career_harness.config import Settings
 from career_harness.platform import AppPaths
@@ -54,3 +56,39 @@ async def test_fixture_search_lists_staging_and_requires_user_admission(tmp_path
     )
     assert policies.status_code == 200
     assert policies.json()[0]["disabled"] is False
+
+
+@pytest.mark.asyncio
+async def test_official_source_search_uses_existing_staging_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = """
+    <script type="application/ld+json">
+    {"@type":"JobPosting","title":"腾讯 AI 实习生",
+     "hiringOrganization":{"name":"腾讯"},
+     "description":"参与 Agent 工程\\n- 熟悉 Python",
+     "url":"https://join.qq.com/job/fixture"}
+    </script>
+    """
+    monkeypatch.setattr(
+        job_radar,
+        "official_source",
+        lambda source_id: OfficialCampusJobSource(TENCENT_CAMPUS, fixture_html=fixture),
+    )
+    app = create_runtime_app(
+        Settings.for_test(token=TOKEN),
+        AppPaths.resolve(environment={"ACH_DATA_DIR": str(tmp_path / "data")}),
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/jobs/official-search",
+            headers=AUTH,
+            json={"source_id": TENCENT_CAMPUS.source_id, "query": "Agent"},
+        )
+
+    assert response.status_code == 201
+    payload = response.json()[0]
+    assert payload["source_id"] == TENCENT_CAMPUS.source_id
+    assert payload["normalized"]["title"] == "腾讯 AI 实习生"
+    assert payload["normalized"]["requirements"] == ["参与 Agent 工程", "熟悉 Python"]

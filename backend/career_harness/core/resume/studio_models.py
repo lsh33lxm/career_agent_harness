@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from career_harness.core.common import FrozenModel, OpaqueId, utc_now
 from career_harness.core.resume.models import RevisionRef
@@ -11,6 +11,9 @@ from career_harness.core.resume.models import RevisionRef
 
 class ResumeData(FrozenModel):
     """Validated, import-friendly resume shape; it is not a canonical fact write."""
+
+    # Preserve forward-compatible Magic Resume fields during import/export.
+    model_config = ConfigDict(extra="allow", frozen=True)
 
     name: str | None = Field(default=None, max_length=255)
     contact: str | None = Field(default=None, max_length=2048)

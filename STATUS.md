@@ -371,3 +371,6 @@
 - Tightened official JSON-LD JD extraction: explicit duty sections are excluded from candidate
   requirements, while qualification sections remain eligible and unsectioned short descriptions
   stay backward compatible. Official source regression and API tests passed (8 focused tests).
+- Extended Resume Studio import validation to preserve unknown top-level Magic Resume fields for
+  forward-compatible round trips. Existing base revisions remain immutable and patch/review gates
+  are unchanged. Resume Studio/API tests passed (7 focused backend tests plus 2 desktop tests).

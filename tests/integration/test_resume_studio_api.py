@@ -69,6 +69,18 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
                 }
             },
         )
+        future_resume = await client.post(
+            "/api/v1/resume/validate",
+            headers=AUTH,
+            json={
+                "content": {
+                    "name": "Minnn",
+                    "skills": ["Python"],
+                    "basics": {"headline": "Platform Engineer"},
+                    "custom_unknown_field": {"schemaVersion": 2, "visible": False},
+                }
+            },
+        )
         invalid_resume = await client.post(
             "/api/v1/resume/validate",
             headers=AUTH,
@@ -135,6 +147,9 @@ async def test_resume_studio_api_target_render_report_and_artifact(tmp_path: Pat
     assert templates.status_code == 200
     assert valid_resume.json()["valid"] is True
     assert valid_resume.json()["data"]["skills"] == ["Python"]
+    assert future_resume.json()["valid"] is True
+    assert future_resume.json()["data"]["basics"]["headline"] == "Platform Engineer"
+    assert future_resume.json()["data"]["custom_unknown_field"]["visible"] is False
     assert invalid_resume.json()["valid"] is False
     assert imported_text.json()["valid"] is True
     assert imported_text.json()["data"]["skills"] == ["Python", "SQLite"]

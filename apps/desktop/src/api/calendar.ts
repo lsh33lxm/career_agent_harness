@@ -17,14 +17,14 @@ function formatUtc(value: string): string {
   return date.toISOString().replaceAll("-", "").replaceAll(":", "").replace(/\.\d{3}Z$/, "Z");
 }
 
-function eventForInterview(interview: InterviewRead): string {
+function eventForInterview(interview: InterviewRead, stamp: string): string {
   const start = formatUtc(interview.scheduled_at);
   const end = new Date(new Date(interview.scheduled_at).getTime() + 60 * 60 * 1000).toISOString().replaceAll("-", "").replaceAll(":", "").replace(/\.\d{3}Z$/, "Z");
   const status = interview.status === "cancelled" ? "\r\nSTATUS:CANCELLED" : "";
   return [
     "BEGIN:VEVENT",
     `UID:${escapeText(interview.entity_id)}@career-agent-harness`,
-    `DTSTAMP:${formatUtc(interview.scheduled_at)}`,
+    `DTSTAMP:${stamp}`,
     `DTSTART:${start}`,
     `DTEND:${end}`,
     `SUMMARY:${escapeText(`观复 · ${roundLabels[interview.round]}面试`)}`,
@@ -47,7 +47,7 @@ export function buildInterviewCalendar(interviews: InterviewRead[], now = new Da
     `X-WR-CALNAME:${escapeText("观复求职面试")}`,
     `X-WR-TIMEZONE:Asia/Shanghai`,
     `X-ACH-EXPORT-DTSTAMP:${stamp}`,
-    ...interviews.slice().sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)).map(eventForInterview),
+    ...interviews.slice().sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)).map((interview) => eventForInterview(interview, stamp)),
     "END:VCALENDAR",
     "",
   ].join("\r\n");

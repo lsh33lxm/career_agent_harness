@@ -20,6 +20,7 @@ describe("buildInterviewCalendar", () => {
     expect(calendar).toContain("UID:interview_1@career-agent-harness");
     expect(calendar).toContain("DTSTART:20261002T010000Z");
     expect(calendar).toContain("DTEND:20261002T020000Z");
+    expect(calendar).toContain("DTSTAMP:20260924T000000Z");
     expect(calendar).toContain("SUMMARY:观复 · 技术面试");
     expect(calendar).toContain("X-ACH-APPLICATION-ID:application_1");
   });

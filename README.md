@@ -21,7 +21,7 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 ## Windows 构建状态
 
-当前公开仓库没有已发布且完成本次源码复验的 Windows NSIS 安装包，因此不提供未经验证的下载链接。源码生产前端的 Resume Review 浏览器子门已通过：逐条审核、生成 ResumeRevision、API 重启持久化、中文恢复提示、无外网请求和 Playwright 清理均有本地证据。仍需在本次源码提交上重新构建并安装 NSIS 包，完成离线种子、sidecar 退出和端口恢复复验后，才会创建新的 `v0.1.0-beta.N` 预发布版。
+当前公开仓库没有已发布且完成本次源码复验的 Windows NSIS 安装包，因此不提供未经验证的下载链接。本次源码已完成浏览器 Resume Review、全新 NSIS 安装、492 条离线种子加载、sidecar 退出和端口占用恢复验证；后续 Beta 发布仍需按发布 Skill 生成新的干净快照并上传安装资产。
 
 本地浏览和记录不会自动投递岗位、自动发送邮件或执行后台批量外部操作。简历修改、申请状态和每封沟通草稿都由你审核和确认。
 
@@ -29,7 +29,7 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 - 默认数据保存在本机；Demo 浏览不连接外部模型或平台。连接外部模型或邮箱需要你主动配置并触发。
 - 职位种子只发布已筛查的规范化元数据。职位来源证据不等于个人经历或技能证据。
-- **当前 Desktop Verification Gate v0.1：NO-GO（安装复验待完成）**。真实 Chromium Resume Review 点击链路、完整截图与 Playwright teardown 已通过；整体 Gate 仍等待本次源码对应的 Windows NSIS 全新安装、492 条职位离线加载、sidecar 退出和端口恢复证据。源码测试或隔离 API 验证不能替代安装复验，不把现有 Beta 安装包称为已通过本次桌面验收。
+- **当前 Desktop Verification Gate v0.1：GO（本次源码验证范围）**。真实 Chromium Resume Review 点击链路、完整截图、Playwright teardown，以及本次源码对应的 Windows NSIS 全新安装、492 条职位离线加载、sidecar 退出和端口占用恢复均有本地证据。该结论不代表已创建新的稳定版或自动投递能力。
 
 ## 本地开发
 

@@ -7,6 +7,15 @@
 - 本次证据目录：`artifacts/verification/desktop-gate-20260924-145756/`；`run-summary.json` 为 `result=passed`，生成完整流程截图和独立 Playwright 输出，脚本 finally 正常清理自己启动的 API/Vite 进程。
 - 本次验证确认浏览器子门已通过，但尚未在本次源码提交上重新安装 NSIS 包。因此整体 Desktop Verification Gate 继续为 **NO-GO**，剩余门槛是 NSIS 全新安装、492 条职位离线加载、sidecar 退出和端口恢复复验。
 
+## 2026-09-24 Desktop Verification Gate v0.1 全链路复验
+
+- 使用当前源码重建 sidecar：SHA-256 `ec2ec57f3e73f4b493a620221397b0aee0be498e5943d6a1678cff876207feb3`；Tauri NSIS 构建成功。
+- 全新安装目录：`artifacts/verification/installed-runtime-current-20260924/install`；独立数据目录：`artifacts/verification/installed-runtime-current-20260924/data`。
+- 安装后首次启动自动完成迁移，sidecar 在 30 秒内 ready，`GET /health` 返回 200；离线 `POST /api/v1/jobs/packaged-seed-search` 返回 492 条，与 manifest/种子一致。
+- 使用已占用测试端口启动时，应用放弃冲突端口并在新的回环端口 `51908` ready；关闭本轮桌面进程后，本次安装对应 sidecar 和端口均已释放。旧验证目录中的历史进程未被本轮停止。
+- 安装包 SHA-256：以 `artifacts/verification/tauri-target-20260924-current/release/bundle/nsis/Agent Career Harness_0.1.0_x64-setup.exe` 为准，验证摘要保存在 `artifacts/verification/installed-runtime-current-20260924/`。
+- 浏览器子门与安装门均通过，**Desktop Verification Gate v0.1：GO（本次源码验证范围）**。仍禁止自动投递、自动发信和正式稳定版发布。
+
 ## 2026-09-24 官方国内校招来源适配器首个切片
 
 - 新增腾讯校招 `join.qq.com` 与美图校招 `campus.meitu.com` 两个只读官方来源适配器，统一接入现有 Job Radar 暂存、去重、公开来源 Evidence 和用户准入流程。

@@ -1,5 +1,11 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-24 面试日历导出
+
+- 申请页新增“导出 .ics”，复用现有面试记录与状态，不改变申请或面试状态机。
+- 导出遵循 RFC 5545：稳定 `UID:<interview_id>@career-agent-harness`、UTC 起止时间、取消状态、申请与面试稳定 ID；事件按面试时间排序。
+- `calendar.test.ts` 与 `ApplicationsPage.test.tsx` 共 5 项通过，桌面端生产构建通过。
+
 ## 2026-09-24 已安装 Windows 窗口 Resume Review 验收
 
 - 为主窗口 capability 增加最小 `core:window:allow-close` 权限，修复安装版通过 WebView2 调用窗口关闭时的 ACL 拒绝；未扩大 shell、文件或网络权限。

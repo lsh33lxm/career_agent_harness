@@ -2,6 +2,7 @@ import { CalendarDays, ClipboardList, Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { attachResumeToApplication, cancelInterview, completeInterview, listApplications, listInterviews, rescheduleInterview, scheduleInterview, setApplicationPreparationState, submitApplication, type ApplicationRead, type InterviewRead } from "../api/history";
+import { downloadInterviewCalendar } from "../api/calendar";
 import { listResumeBases, listResumeRevisions, type ResumeRevisionRead } from "../api/projectResume";
 import { localizedApiError } from "../api/client";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -34,6 +35,15 @@ export function ApplicationsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [interviewDrafts, setInterviewDrafts] = useState<Record<string, { round: InterviewRead["round"]; scheduled_at: string }>>({});
   const [rescheduleDrafts, setRescheduleDrafts] = useState<Record<string, string>>({});
+
+  function exportCalendar() {
+    try {
+      downloadInterviewCalendar(interviews);
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "日历导出失败");
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -160,6 +170,7 @@ export function ApplicationsPage() {
         </section>
         <Surface>
           <Section title="面试日历" icon={CalendarDays} description="按本机时区显示面试轮次；完成、取消和改期都会保留新的记录版本。" meta={`${upcoming.filter((item) => item.status === "scheduled").length} 场待进行`}>
+            {upcoming.length > 0 && <div className="button-row"><button className="btn btn--secondary" type="button" onClick={exportCalendar}>导出 .ics</button></div>}
             {upcoming.length === 0 ? <p className="text-aux">暂无已安排面试。</p> : <div className="calendar-list" aria-label="已安排面试">
               {upcoming.map((item) => <article className="calendar-list__item" key={`${item.entity_id}:${item.revision}`}>
                 <CalendarDays size={17} aria-hidden="true" />

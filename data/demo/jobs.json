@@ -1,0 +1,451 @@
+[
+  {
+    "demo_id": "demo_job_002c1263fe92ccdd",
+    "title": "Agent可观测研发工程师",
+    "company": "Tencent",
+    "location": "北京",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Go/C++",
+      "Observability",
+      "Python",
+      "Distributed Systems"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_00327b97993df234",
+    "title": "LongCat - Search Agent 算法研究员",
+    "company": "Meituan",
+    "location": "北京市、上海市",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Large Language Models",
+      "Agent Memory",
+      "Model Fine-tuning"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_019d2cf7dae40cd2",
+    "title": "Keeta技术-AI配送算法工程师",
+    "company": "Meituan",
+    "location": "北京市",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Java",
+      "Large Language Models",
+      "Multi-Agent",
+      "Prompt Engineering",
+      "Python",
+      "RAG",
+      "Inference Optimization"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_01a882fd65c94ea8",
+    "title": "淘天集团-私域技术-AI应用研发工程师",
+    "company": "阿里巴巴",
+    "location": "杭州",
+    "region": "CN",
+    "skills": [
+      "Agent Evaluation/评测",
+      "Agent/智能体",
+      "Context/上下文工程",
+      "Go/C++",
+      "Memory/记忆",
+      "Planning/ReAct/Workflow",
+      "Prompt Engineering",
+      "Python"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_01ba1980e73e20be",
+    "title": "Senior Software Engineer,  Full-Stack – Scale GP",
+    "company": "Scale AI",
+    "location": "New York, NY; San Francisco, CA; Seattle, WA; New York, NY、San Francisco, CA; New York, NY",
+    "region": "OVERSEAS",
+    "skills": [
+      "distributed systems",
+      "eval",
+      "inference",
+      "kubernetes",
+      "llm",
+      "python",
+      "rag",
+      "react"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_026252f3c5114a9d",
+    "title": "Applied AI Architect, Commercial",
+    "company": "Anthropic",
+    "location": "San Francisco, CA | New York City, NY",
+    "region": "OVERSEAS",
+    "skills": [
+      "Backend API Engineering",
+      "Go/C++",
+      "Large Language Models",
+      "Python",
+      "RAG",
+      "SSE and WebSocket"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_028bd4f34a6f872c",
+    "title": "Full Stack Developer (AI Agents)",
+    "company": "Databricks",
+    "location": "Bengaluru, India",
+    "region": "OVERSEAS",
+    "skills": [],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_030d9d8188bad212",
+    "title": "通用软件开发，AI应用，AI多模态开发",
+    "company": "华为",
+    "location": "南京",
+    "region": "CN",
+    "skills": [
+      "Agent Evaluation/评测",
+      "Agent/智能体",
+      "Embedding/向量库",
+      "Go/C++",
+      "Java",
+      "LLM/大模型基础",
+      "Python",
+      "RAG/检索增强"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_03f97ac1bbc37305",
+    "title": "微信小微-大模型算法研究员-Harness合版与记忆方向",
+    "company": "Tencent",
+    "location": "北京",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Context Engineering",
+      "Agent Harness",
+      "Large Language Models",
+      "Agent Memory",
+      "RAG",
+      "Inference Optimization"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_04d7c48202107db1",
+    "title": "Sr Software Engineer, Agentic Applications",
+    "company": "Databricks",
+    "location": "Mountain View, California",
+    "region": "OVERSEAS",
+    "skills": [],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_054fd334065c14d0",
+    "title": "Software Engineer, Build Systems / CI",
+    "company": "OpenAI",
+    "location": "San Francisco、New York City、Seattle",
+    "region": "OVERSEAS",
+    "skills": [
+      "Agent Planning and Workflow",
+      "Backend API Engineering",
+      "Docker and Kubernetes",
+      "Go/C++",
+      "Observability",
+      "Python",
+      "RAG",
+      "SSE and WebSocket"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_05a34d6ee4dea531",
+    "title": "腾讯游戏-AI agent开发-数据产品方向",
+    "company": "Tencent",
+    "location": "深圳",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Context Engineering",
+      "Go/C++",
+      "Agent Harness",
+      "Agent Planning and Workflow",
+      "Prompt Engineering",
+      "RAG",
+      "Tool Calling"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_064190085ea2712b",
+    "title": "应用效率-#AI原生开发工程师#-Agent开发框架方向",
+    "company": "Tencent",
+    "location": "深圳",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Go/C++",
+      "Python"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_06934c0404e49614",
+    "title": "Applied AI Architect, Industries",
+    "company": "Anthropic",
+    "location": "Munich, Germany",
+    "region": "OVERSEAS",
+    "skills": [
+      "Backend API Engineering",
+      "Go/C++",
+      "Large Language Models",
+      "Python",
+      "RAG",
+      "SSE and WebSocket"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_06d3c7a679bc58d6",
+    "title": "Applied AI Architect",
+    "company": "OpenAI",
+    "location": "Seoul, South Korea",
+    "region": "OVERSEAS",
+    "skills": [
+      "Agent Planning and Workflow",
+      "Agent Systems",
+      "Backend API Engineering",
+      "Go/C++",
+      "Java",
+      "Large Language Models",
+      "Model Fine-tuning",
+      "Python"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_06ed63e1b5755121",
+    "title": "Applied AI Architect, Industries",
+    "company": "Anthropic",
+    "location": "London, UK",
+    "region": "OVERSEAS",
+    "skills": [
+      "Backend API Engineering",
+      "Go/C++",
+      "Large Language Models",
+      "Python",
+      "RAG",
+      "SSE and WebSocket"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_07ed9c11a524b559",
+    "title": "Senior Applied ML Engineer - ML4Sys",
+    "company": "Databricks",
+    "location": "San Francisco, California",
+    "region": "OVERSEAS",
+    "skills": [],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_0824357d46fd458a",
+    "title": "LongCat - 大模型数据工程师（AI Coding方向）-欢迎工程同学转型",
+    "company": "Meituan",
+    "location": "北京市、上海市、成都市",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Go/C++",
+      "Java",
+      "Large Language Models",
+      "Python",
+      "Backend API Engineering"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_085af5265248433a",
+    "title": "Applied AI Engineer, Startups",
+    "company": "OpenAI",
+    "location": "Tokyo, Japan",
+    "region": "OVERSEAS",
+    "skills": [
+      "Backend API Engineering",
+      "Java",
+      "Large Language Models",
+      "Python",
+      "RAG",
+      "SSE and WebSocket"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_08d898206961c9f5",
+    "title": "Keeta技术 - 高级Java开发工程师(智能客服方向)",
+    "company": "Meituan",
+    "location": "深圳市",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Go/C++",
+      "Java",
+      "Large Language Models",
+      "RAG",
+      "Database Cache and Messaging",
+      "Backend API Engineering",
+      "Inference Optimization"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_08e42004be4847da",
+    "title": "AI开发工程师",
+    "company": "Meituan",
+    "location": "北京市",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Context Engineering",
+      "Java",
+      "Large Language Models",
+      "Agent Memory",
+      "Multi-Agent",
+      "Agent Planning and Workflow",
+      "Python"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_090c33675ff25899",
+    "title": "CatPaw-Design全栈开发工程师",
+    "company": "Meituan",
+    "location": "北京市",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Go/C++",
+      "Java",
+      "Agent Planning and Workflow",
+      "Python",
+      "Tool Calling",
+      "Backend API Engineering"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_0a0a9b4cfb6ded96",
+    "title": "履约技术-AutoResearch 策略算法工程师",
+    "company": "Meituan",
+    "location": "北京市",
+    "region": "CN",
+    "skills": [
+      "Agent Systems",
+      "Context Engineering",
+      "Agent Harness",
+      "Large Language Models",
+      "Agent Memory",
+      "Inference Optimization"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  },
+  {
+    "demo_id": "demo_job_0a29798d0c36bc96",
+    "title": "Applied AI, Research Engineer",
+    "company": "Anthropic",
+    "location": "San Francisco, CA | New York City, NY",
+    "region": "OVERSEAS",
+    "skills": [
+      "Agent Planning and Workflow",
+      "Agent Systems",
+      "Go/C++",
+      "Large Language Models",
+      "RAG",
+      "SSE and WebSocket"
+    ],
+    "evidence_grade": "S",
+    "status": "演示样本 · 历史岗位",
+    "source_type": "经脱敏历史岗位样本",
+    "review_status": "demo_reviewed"
+  }
+]

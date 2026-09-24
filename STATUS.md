@@ -17,6 +17,7 @@
 - 审核写入沿用现有 `JobService` 与不可变 requirement revision；错误的并发 revision、缺失岗位版本、空理由和未经正式能力图映射的接受请求均 fail loud。
 - 集成测试 `tests/integration/test_job_requirements_api.py` 2 项通过；覆盖提议、列出、拒绝和接受缺少能力映射的安全拒绝；相关 Ruff 通过。
 - 当前仍缺岗位详情中的逐条 UI（下一切片）以及从官方完整 JD 章节提取候选；当前官方页面现场未提供可解析岗位，fixture 不能冒充线上 JD。
+- 许可审计：本地 `reference-repos` 中 CareerDesk、JobHuntBot 为 MIT；Magic Resume 仓库同时附加“仅个人非商业使用”的限制条款，不能把其代码直接嵌入公开仓库。用户点名的 `offer-harvester`、`Campus-Jobs-Scraper`、`JobHunter` 当前不在本地参考目录，本轮未复制其代码或资源。
 
 ## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — GO
 

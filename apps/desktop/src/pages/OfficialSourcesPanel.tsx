@@ -1,7 +1,8 @@
 import { ExternalLink, Globe2, Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { localizedApiError } from "../api/client";
+import { getCapabilities, listCapabilityIdentities, type CapabilityNode } from "../api/capabilities";
 import {
   admitStagedJob,
   getJobSourceDocument,
@@ -41,6 +42,27 @@ export function OfficialSourcesPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Record<string, string>>({});
   const [details, setDetails] = useState<Record<string, string>>({});
+  const [capabilityNodes, setCapabilityNodes] = useState<CapabilityNode[]>([]);
+  const [graphVersionId, setGraphVersionId] = useState<string | null>(null);
+  const [capabilityError, setCapabilityError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    listCapabilityIdentities(controller.signal)
+      .then((identities) => {
+        const candidateId = identities[0];
+        if (!candidateId) return;
+        return getCapabilities(candidateId, undefined, controller.signal).then((workspace) => {
+          if (controller.signal.aborted) return;
+          setCapabilityNodes(workspace.nodes.filter((node) => node.lifecycle_status === "active"));
+          setGraphVersionId(workspace.graph_version?.graph_version_id ?? null);
+        });
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setCapabilityError(localizedApiError(error));
+      });
+    return () => controller.abort();
+  }, []);
 
   async function search() {
     setLoading(true);
@@ -92,6 +114,8 @@ export function OfficialSourcesPanel() {
         decision,
         review_reason: decision === "accepted" ? "用户确认纳入岗位匹配" : "用户确认不纳入岗位匹配",
         final_requirement_text: requirementEdits[requirement.requirement_id]?.trim() || requirement.requirement_text,
+        capability_id: decision === "accepted" ? requirementEdits[`capability:${requirement.requirement_id}`] : undefined,
+        graph_version_id: decision === "accepted" ? graphVersionId ?? undefined : undefined,
       });
       setRequirements((current) => ({ ...current, [item.staging_id]: current[item.staging_id].map((row) => row.requirement_id === requirement.requirement_id ? result.requirement : row) }));
       setMessage(decision === "accepted" ? "接受需要能力映射；请先在能力档案中绑定后重试。" : "候选要求已拒绝并保留审核记录。");
@@ -146,6 +170,7 @@ export function OfficialSourcesPanel() {
           <Button variant="primary" loading={loading} onClick={() => void search()} icon={<Search size={15} aria-hidden="true" />}>读取官方岗位</Button>
         </div>
         {message && <InlineNotice tone={message.startsWith("已读取") ? "success" : "muted"} role="status">{message}</InlineNotice>}
+        {capabilityError && <InlineNotice tone="danger" role="alert">能力档案暂时无法读取：{capabilityError}</InlineNotice>}
         {items.length > 0 && <div className="record-list" aria-label="官方岗位结果">
           {items.map((item) => <article className="record-list__item" key={item.staging_id}>
             <div>
@@ -159,7 +184,14 @@ export function OfficialSourcesPanel() {
               {(requirements[item.staging_id] ?? []).map((requirement) => <div key={requirement.requirement_id}>
                 {requirement.status === "proposed" ? <input className="input" aria-label={`编辑候选要求 ${requirement.requirement_id}`} value={requirementEdits[requirement.requirement_id] ?? requirement.requirement_text} onChange={(event) => setRequirementEdits((current) => ({ ...current, [requirement.requirement_id]: event.target.value }))} /> : <span>{requirement.requirement_text}</span>}
                 <span> · {requirement.status}</span>
-                {requirement.status === "proposed" && <span className="button-row"><Button size="sm" variant="secondary" loading={busy === requirement.requirement_id} onClick={() => void review(item, requirement, "rejected")}>拒绝</Button><Button size="sm" variant="primary" loading={busy === requirement.requirement_id} onClick={() => void review(item, requirement, "accepted")}>接受</Button></span>}
+                {requirement.status === "proposed" && <span className="button-row">
+                  <select className="select" aria-label={`绑定能力 ${requirement.requirement_id}`} value={requirementEdits[`capability:${requirement.requirement_id}`] ?? ""} onChange={(event) => setRequirementEdits((current) => ({ ...current, [`capability:${requirement.requirement_id}`]: event.target.value }))}>
+                    <option value="">选择已确认能力</option>
+                    {capabilityNodes.map((node) => <option key={node.capability_id} value={node.capability_id}>{node.canonical_name}</option>)}
+                  </select>
+                  <Button size="sm" variant="secondary" loading={busy === requirement.requirement_id} onClick={() => void review(item, requirement, "rejected")}>拒绝</Button>
+                  <Button size="sm" variant="primary" disabled={!graphVersionId || !requirementEdits[`capability:${requirement.requirement_id}`]} loading={busy === requirement.requirement_id} onClick={() => void review(item, requirement, "accepted")}>接受</Button>
+                </span>}
                 {requirement.review_reason && <small>{requirement.review_reason}</small>}
               </div>)}
             </div>}

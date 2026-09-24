@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Minimal capability set for the primary desktop window",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "core:window:allow-close"]
 }

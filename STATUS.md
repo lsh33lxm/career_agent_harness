@@ -1,5 +1,12 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-24 已安装 Windows 窗口 Resume Review 验收
+
+- 为主窗口 capability 增加最小 `core:window:allow-close` 权限，修复安装版通过 WebView2 调用窗口关闭时的 ACL 拒绝；未扩大 shell、文件或网络权限。
+- 使用新构建的 NSIS 安装包，在独立安装目录和 `ACH_DATA_DIR` 中启动真实 `http://tauri.localhost/` 窗口；脚本 `scripts/verify_installed_window.ps1` 调用 `scripts/probe_installed_window.mjs` 完成接受、拒绝、手动编辑、生成 ResumeRevision，并保存两张安装窗口截图。
+- 证据目录：`artifacts/verification/installed-runtime-aclclose-20260924-final2/installed-window-e2e/`；截图均为 `1860x1200`。`installed-window-summary.json` 记录桌面退出码 `0`、sidecar 数量 `0`、CDP 端口进入 `TIME_WAIT`，结果为 `passed`。
+- 与源码浏览器子门、全新安装 492 条离线种子、端口恢复和 sidecar 生命周期证据合并后，**Desktop Verification Gate v0.1：GO（当前源码验证范围）**。仍不创建稳定版，不启用自动投递、自动发信或后台批量操作。
+
 ## 2026-09-24 当前 HEAD Windows 回归与安装验证
 
 - 当前源提交：`a23863bd9dc07df6cbe25fc145d181b4923c8c01`（包含腾讯官方详情 API、官方来源面板和 JD 修改后审核）。

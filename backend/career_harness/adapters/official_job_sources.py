@@ -213,6 +213,99 @@ class OfficialCampusJobSource:
         except (HTTPError, URLError, TimeoutError) as error:
             raise OfficialSourceError(f"官方来源暂时不可访问：{error}") from error
 
+    def _fetch_tencent_json(
+        self, path: str, *, payload: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        url = urljoin(self.config.landing_url, path)
+        if not _host_allowed(url, self.config.allowed_hosts):
+            raise OfficialSourceError("官方来源链接不在允许域名内")
+        body = None
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "AgentCareerHarness/0.1 (read-only campus source)",
+        }
+        method = "GET"
+        if payload is not None:
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            headers["Content-Type"] = "application/json"
+            method = "POST"
+        try:
+            with urlopen(  # noqa: S310
+                Request(url, data=body, headers=headers, method=method),
+                timeout=self.config.timeout_seconds,
+            ) as response:
+                final_url = response.geturl()
+                if not _host_allowed(final_url, self.config.allowed_hosts):
+                    raise OfficialSourceError("官方来源发生越界跳转，已拒绝读取")
+                raw = response.read(self.config.max_response_bytes + 1)
+                if len(raw) > self.config.max_response_bytes:
+                    raise OfficialSourceError("官方来源响应超过大小上限")
+                decoded = raw.decode(
+                    response.headers.get_content_charset() or "utf-8", errors="replace"
+                )
+        except (HTTPError, URLError, TimeoutError) as error:
+            raise OfficialSourceError(f"官方来源暂时不可访问：{error}") from error
+        try:
+            data = json.loads(decoded)
+        except json.JSONDecodeError as error:
+            raise OfficialSourceError("官方来源返回内容不是 JSON") from error
+        if not isinstance(data, dict) or data.get("status") != 0:
+            raise OfficialSourceError("官方来源返回了不可用的数据状态")
+        return data
+
+    def _tencent_search(self, query: str) -> tuple[RawJobRecord, ...]:
+        records: list[RawJobRecord] = []
+        seen_post_ids: set[str] = set()
+        for page in range(1, self.config.max_pages + 1):
+            data = self._fetch_tencent_json(
+                "/api/v1/position/searchPosition",
+                payload={
+                    "projectId": 1,
+                    "keyword": query.strip()[:30],
+                    "bgList": [],
+                    "workCountryType": 1,
+                    "workCityList": [],
+                    "recruitCityList": [],
+                    "positionFidList": [],
+                    "pageIndex": page,
+                    "pageSize": 1000,
+                },
+            )
+            rows = ((data.get("data") or {}).get("positionList") or [])
+            if not isinstance(rows, list):
+                raise OfficialSourceError("腾讯岗位列表字段格式异常")
+            captured_at = datetime.now(UTC)
+            for row in rows:
+                if not isinstance(row, dict) or not _clean_text(row.get("postId")):
+                    continue
+                post_id = _clean_text(row["postId"])
+                if post_id in seen_post_ids:
+                    continue
+                seen_post_ids.add(post_id)
+                payload = {
+                    "post_id": post_id,
+                    "title": _clean_text(row.get("positionTitle")),
+                    "company": "腾讯",
+                    "location": _clean_text(row.get("workCities")),
+                    "employment_type": _clean_text(row.get("projectName")),
+                    "source_url": f"https://join.qq.com/jobdesc.html?postId={post_id}",
+                    "source_platform": self.config.source_id,
+                    "project_id": row.get("projectId"),
+                    "position_id": row.get("position"),
+                    "raw_listing": row,
+                }
+                if payload["title"]:
+                    records.append(
+                        RawJobRecord(
+                            source_ref=payload["source_url"],
+                            raw_text=json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                            captured_at=captured_at,
+                        )
+                    )
+            if len(rows) < 1000:
+                break
+        return tuple(records)
+
     def _parse(self, html: str, page_url: str) -> tuple[RawJobRecord, ...]:
         captured_at = datetime.now(UTC)
         records: list[RawJobRecord] = []
@@ -279,6 +372,19 @@ class OfficialCampusJobSource:
         )
 
     def search(self, query: str) -> tuple[RawJobRecord, ...]:
+        if self.config.source_id == TENCENT_CAMPUS.source_id and self._fixture_html is None:
+            try:
+                records = self._tencent_search(query)
+                term = query.strip().casefold()
+                if term:
+                    records = tuple(item for item in records if term in item.raw_text.casefold())
+                self._last_health = JobSourceHealth(
+                    status="ok", message=f"腾讯官方接口读取成功，发现 {len(records)} 条记录"
+                )
+                return records
+            except OfficialSourceError as error:
+                self._last_health = JobSourceHealth(status="error", message=str(error))
+                raise
         html = self._fixture_html
         page_url = self.config.landing_url
         if html is None:
@@ -299,6 +405,38 @@ class OfficialCampusJobSource:
     def fetch_detail(self, ref: str) -> RawJobRecord:
         if not _host_allowed(ref, self.config.allowed_hosts):
             raise OfficialSourceError("官方来源链接不在允许域名内")
+        if self.config.source_id == TENCENT_CAMPUS.source_id and self._fixture_html is None:
+            match = re.search(r"[?&]postId=([A-Za-z0-9_-]+)$", ref)
+            if not match:
+                raise KeyError("腾讯详情链接缺少岗位 ID")
+            data = self._fetch_tencent_json(
+                f"/api/v1/jobDetails/getJobDetailsByPostId?postId={match.group(1)}",
+            )
+            detail = data.get("data")
+            if not isinstance(detail, dict) or _clean_text(detail.get("postId")) != match.group(1):
+                raise KeyError("腾讯官方来源未返回匹配的岗位详情")
+            payload = {
+                "post_id": match.group(1),
+                "title": _clean_text(detail.get("title")),
+                "company": "腾讯",
+                "location": _clean_text(", ".join(detail.get("workCityList") or [])),
+                "employment_type": _clean_text(detail.get("projectName")),
+                "description": _clean_text(detail.get("desc")),
+                "request": (
+                    unescape(str(detail.get("request"))).strip()
+                    if detail.get("request") is not None
+                    else None
+                ),
+                "source_url": ref,
+                "source_platform": self.config.source_id,
+                "raw_detail": detail,
+            }
+            if not payload["title"]:
+                raise KeyError("腾讯官方来源岗位详情缺少职位名称")
+            return RawJobRecord(
+                source_ref=ref,
+                raw_text=json.dumps(payload, ensure_ascii=False, sort_keys=True),
+            )
         if self._fixture_html is not None:
             html, page_url = self._fixture_html, ref
         else:
@@ -326,7 +464,9 @@ class OfficialCampusJobSource:
             company=_clean_text(data.get("company")) or self.config.company,
             location=_clean_text(data.get("location")),
             published_at=published_at,
-            requirements=_requirements(data.get("description")),
+            requirements=tuple(data.get("requirements") or ())
+            or _requirements(data.get("request"))
+            or _requirements(data.get("description")),
             source_url=_clean_text(data.get("source_url")) or raw.source_ref,
         )
 

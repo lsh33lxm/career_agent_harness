@@ -7,6 +7,13 @@
 - 详情路由现场返回“岗位信息不存在”，因此完整 JD 尚未宣称已验证；当前来源可用于真实列表发现，详情待站点接口可公开读取后再接入。
 - 新增 SSR 字段变化、类型过滤和关键词查询回归测试；专项测试 8 项通过，Ruff 通过。
 
+## 2026-09-24 腾讯官方岗位 API 与完整 JD 适配
+
+- 现场确认 `join.qq.com` 的公开只读接口：`POST /api/v1/position/searchPosition` 返回真实岗位列表，`GET /api/v1/jobDetails/getJobDetailsByPostId?postId=...` 返回完整职责、任职要求、地点和岗位元数据。
+- 适配器已接入现有 Job Radar 暂存流程，限制分页、请求体和官方域名；详情必须精确匹配 `postId`，不会把首页或其他岗位当成详情。现场关键词 `AI` 返回 526 条记录，首条详情包含 6 条任职要求。
+- 增加本地关键词过滤，避免官方接口宽松匹配导致无关岗位混入；未知字段保持为空，不提交表单、不读取 Cookie。
+- 腾讯官方来源专项测试 10 项通过，Ruff 通过；美图详情仍未验证完整 JD。
+
 ## 2026-09-24 Desktop Verification Gate 浏览器子门复验
 
 - 运行 `powershell -ExecutionPolicy Bypass -File .\scripts\verify_desktop_gate.ps1` 成功，生产前端构建通过。

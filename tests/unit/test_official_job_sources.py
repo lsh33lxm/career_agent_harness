@@ -104,3 +104,47 @@ def test_meitu_detail_does_not_promote_homepage_first_record() -> None:
     source = OfficialCampusJobSource(MEITU_CAMPUS, fixture_html=MEITU_NEXT_HTML)
     with pytest.raises(KeyError, match="岗位详情"):
         source.fetch_detail("https://campus.meitu.com/jobIntern/not-in-list")
+
+
+def test_tencent_public_api_search_and_detail_preserve_full_jd(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = OfficialCampusJobSource(TENCENT_CAMPUS)
+    def fake_fetch(path: str, *, payload: dict[str, object] | None = None) -> dict[str, object]:
+        if path.startswith("/api/v1/position/searchPosition"):
+            return {"status": 0, "data": {"positionList": [{
+                "postId": "post-1", "positionTitle": "AI工程师", "workCities": "深圳",
+                "projectName": "应届毕业生", "projectId": 1, "position": 783,
+            }]}}
+        return {"status": 0, "data": {"postId": "post-1", "title": "AI工程师",
+            "workCityList": ["深圳"], "desc": "负责AI系统开发", "request": "熟悉 Python\n了解 RAG"}}
+    monkeypatch.setattr(source, "_fetch_tencent_json", fake_fetch)
+    raw = source.search("AI")[0]
+    assert raw.source_ref.endswith("postId=post-1")
+    detail = source.fetch_detail(raw.source_ref)
+    normalized = source.normalize(detail)
+    assert normalized.title == "AI工程师"
+    assert normalized.requirements == ("熟悉 Python", "了解 RAG")
+    assert source.search("不存在的岗位") == ()
+
+
+def test_tencent_api_search_deduplicates_post_ids_and_marks_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = OfficialCampusJobSource(TENCENT_CAMPUS)
+    calls = 0
+
+    def fake_fetch(path: str, *, payload: dict[str, object] | None = None) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            row = {"postId": "same", "positionTitle": "AI工程师", "workCities": "深圳"}
+            return {"status": 0, "data": {"positionList": [row, row]}}
+        raise OfficialSourceError("模拟网络失败")
+
+    monkeypatch.setattr(source, "_fetch_tencent_json", fake_fetch)
+    assert len(source.search("AI")) == 1
+    assert source.health().status == "ok"
+    with pytest.raises(OfficialSourceError, match="模拟网络失败"):
+        source.search("AI")
+    assert source.health().status == "error"

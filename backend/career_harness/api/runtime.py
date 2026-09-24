@@ -14,6 +14,7 @@ from career_harness.api.evidence import EvidenceApi
 from career_harness.api.github_projects import GitHubProjectApi
 from career_harness.api.interview_prep import InterviewPrepApi
 from career_harness.api.job_radar import JobRadarApi
+from career_harness.api.job_requirements import JobRequirementApi
 from career_harness.api.knowledge import KnowledgeApi
 from career_harness.api.legacy_import import LegacyImportApi
 from career_harness.api.mailbox import MailboxApi
@@ -44,6 +45,7 @@ from career_harness.db.communication_repository import CommunicationRepository
 from career_harness.db.evidence_repository import EvidenceRepository
 from career_harness.db.interview_repository import InterviewRepository
 from career_harness.db.interview_session_repository import InterviewSessionRepository
+from career_harness.db.job_repository import JobRepository
 from career_harness.db.knowledge_repository import KnowledgeRepository
 from career_harness.db.mailbox_repository import MailboxRepository
 from career_harness.db.memory_repository import MemoryRepository
@@ -64,6 +66,7 @@ from career_harness.services.capability_workspace_service import CapabilityWorks
 from career_harness.services.command_service import CommandService
 from career_harness.services.github_project_service import GitHubProjectService
 from career_harness.services.interview_prep_service import InterviewPrepService
+from career_harness.services.job_service import JobService
 from career_harness.services.legacy_import_service import LegacyImportService
 from career_harness.services.mailbox_service import MailboxService
 from career_harness.services.model_provider_service import ModelProviderService
@@ -100,6 +103,9 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
     opportunity_radar_service = OpportunityRadarService(
         engine, ArtifactStore(active_paths.artifacts)
     )
+    command_service = CommandService(engine)
+    job_repository = JobRepository(engine)
+    job_service = JobService(command_service, job_repository)
     offline_career_loop_service = OfflineCareerLoopService(
         opportunity_radar_service,
         resume_studio_service,
@@ -227,6 +233,9 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         knowledge_api=KnowledgeApi(knowledge_repository),
         resume_studio_api=ResumeStudioApi(resume_studio_service),
         job_radar_api=JobRadarApi(opportunity_radar_service),
+        job_requirement_api=JobRequirementApi(
+            repository=job_repository, service=job_service, commands=command_service
+        ),
         offline_career_loop_api=OfflineCareerLoopApi(
             offline_career_loop_service,
             demo_mode=settings.environment == "demo",

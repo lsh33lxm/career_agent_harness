@@ -11,6 +11,13 @@
 - 机会页已接入“国内官方校招来源”面板：可选择腾讯/美图、输入关键词、查看暂存岗位的完整描述要求、来源 SHA-256 和官方链接；结果不会绕过现有用户准入动作。
 - 前端专项测试 1 项和 `npm --workspace @ach/desktop run build` 通过。
 
+## 2026-09-24 JD 候选要求审核 API
+
+- 新增岗位要求 API：按精确 Job revision 列出最新候选、创建带 Evidence 引用的 `proposed` 要求，并以用户命令逐条接受/拒绝/标记 superseded。
+- 审核写入沿用现有 `JobService` 与不可变 requirement revision；错误的并发 revision、缺失岗位版本、空理由和未经正式能力图映射的接受请求均 fail loud。
+- 集成测试 `tests/integration/test_job_requirements_api.py` 2 项通过；覆盖提议、列出、拒绝和接受缺少能力映射的安全拒绝；相关 Ruff 通过。
+- 当前仍缺岗位详情中的逐条 UI（下一切片）以及从官方完整 JD 章节提取候选；当前官方页面现场未提供可解析岗位，fixture 不能冒充线上 JD。
+
 ## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — GO
 
 - 当前源码生产构建上的真实 Chromium Resume Review 流程通过：逐 Patch 接受、拒绝、手动编辑、生成 ResumeRevision；基础简历保持不变，Application 保持 `preparing`；历史和知识页能追溯稳定 ID。

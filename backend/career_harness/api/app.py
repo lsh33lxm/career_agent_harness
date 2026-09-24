@@ -16,6 +16,7 @@ from career_harness.api.evidence import EvidenceApi, create_evidence_router
 from career_harness.api.github_projects import GitHubProjectApi, create_github_project_router
 from career_harness.api.interview_prep import InterviewPrepApi, create_interview_prep_router
 from career_harness.api.job_radar import JobRadarApi, create_job_radar_router
+from career_harness.api.job_requirements import JobRequirementApi, create_job_requirement_router
 from career_harness.api.knowledge import KnowledgeApi, create_knowledge_router
 from career_harness.api.legacy_import import LegacyImportApi, create_legacy_import_router
 from career_harness.api.mailbox import MailboxApi, create_mailbox_router
@@ -63,6 +64,7 @@ def create_app(
     knowledge_api: KnowledgeApi | None = None,
     resume_studio_api: ResumeStudioApi | None = None,
     job_radar_api: JobRadarApi | None = None,
+    job_requirement_api: JobRequirementApi | None = None,
     legacy_import_api: LegacyImportApi | None = None,
     model_provider_api: ModelProviderApi | None = None,
     github_project_api: GitHubProjectApi | None = None,
@@ -136,6 +138,8 @@ def create_app(
         app.include_router(create_resume_studio_router(resume_studio_api))
     if job_radar_api is not None:
         app.include_router(create_job_radar_router(job_radar_api))
+    if job_requirement_api is not None:
+        app.include_router(create_job_requirement_router(job_requirement_api))
     if legacy_import_api is not None:
         app.include_router(create_legacy_import_router(legacy_import_api))
     if model_provider_api is not None:

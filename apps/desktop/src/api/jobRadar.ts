@@ -74,3 +74,61 @@ export function admitStagedJob(stagingId: string): Promise<unknown> {
     method: "POST",
   });
 }
+
+export interface JobRequirement {
+  requirement_id: string;
+  revision: number;
+  job: { job_id: string; revision: number };
+  requirement_text: string;
+  importance: "required" | "preferred";
+  required_scopes: string[];
+  source_evidence_refs: string[];
+  status: "proposed" | "accepted" | "rejected" | "superseded";
+  capability_id: string | null;
+  graph_version_id: string | null;
+  review_reason: string | null;
+  reviewed_at: string | null;
+}
+
+export interface JobRequirementProposal {
+  requirement_id: string;
+  requirement_text: string;
+  importance?: "required" | "preferred";
+  source_evidence_refs: string[];
+}
+
+export function listJobRequirements(
+  jobId: string,
+  jobRevision: number,
+): Promise<JobRequirement[]> {
+  return apiRequest<JobRequirement[]>(
+    `/api/v1/jobs/${encodeURIComponent(jobId)}/revisions/${jobRevision}/requirements`,
+  );
+}
+
+export function proposeJobRequirement(
+  jobId: string,
+  jobRevision: number,
+  request: JobRequirementProposal,
+): Promise<{ requirement: JobRequirement }> {
+  return apiRequest(`/api/v1/jobs/${encodeURIComponent(jobId)}/revisions/${jobRevision}/requirements`, {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
+export function reviewJobRequirement(
+  requirementId: string,
+  revision: number,
+  request: {
+    decision: "accepted" | "rejected" | "superseded";
+    review_reason: string;
+    capability_id?: string;
+    graph_version_id?: string;
+  },
+): Promise<{ requirement: JobRequirement }> {
+  return apiRequest(`/api/v1/jobs/requirements/${encodeURIComponent(requirementId)}/revisions/${revision}/review`, {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}

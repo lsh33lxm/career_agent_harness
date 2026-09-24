@@ -19,7 +19,13 @@
 - 当前仍缺岗位详情中的逐条 UI（下一切片）以及从官方完整 JD 章节提取候选；当前官方页面现场未提供可解析岗位，fixture 不能冒充线上 JD。
 - 许可审计：本地 `reference-repos` 中 CareerDesk、JobHuntBot 为 MIT；Magic Resume 仓库同时附加“仅个人非商业使用”的限制条款，不能把其代码直接嵌入公开仓库。用户点名的 `offer-harvester`、`Campus-Jobs-Scraper`、`JobHunter` 当前不在本地参考目录，本轮未复制其代码或资源。
 
-## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — GO
+## 2026-09-24 官方来源岗位的 JD 逐条审核桌面链路
+
+- 官方来源面板现在支持用户点击“加入并审核 JD”：先调用现有 staging admission，再按岗位 Evidence 和稳定 ID 幂等创建候选要求。
+- 每条候选要求显示原文文本和状态，用户可逐条拒绝或接受；拒绝保留审核理由，接受继续由后端要求正式能力映射，不能绕过领域状态机。
+- 前端专项测试通过，`npm run build`（`apps/desktop`）通过。当前官方站点现场仍返回前端壳、未解析出线上岗位，因此该链路由保存的 fixture 和后端集成测试验证，不能冒充线上抓取成功。
+
+## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — NO-GO
 
 - 当前源码生产构建上的真实 Chromium Resume Review 流程通过：逐 Patch 接受、拒绝、手动编辑、生成 ResumeRevision；基础简历保持不变，Application 保持 `preparing`；历史和知识页能追溯稳定 ID。
 - API 重启持久化、API 不可用时 Demo 浏览与中文恢复提示均通过；首屏在 30 秒内显示，浏览器没有外网请求。

@@ -1,5 +1,14 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-24 当前 HEAD Windows 回归与安装验证
+
+- 当前源提交：`a23863bd9dc07df6cbe25fc145d181b4923c8c01`（包含腾讯官方详情 API、官方来源面板和 JD 修改后审核）。
+- 浏览器子门：`scripts/verify_desktop_gate.ps1` 通过，3 个 Playwright 用例全部通过，证据目录为 `artifacts/verification/desktop-gate-20260924-221259/`，包含流程截图、重启持久化和 teardown 结果。
+- 当前 HEAD sidecar 已重建，SHA-256：`bcde0ee96f64e8a04b07054dcb3baacbfec74607a3a9e049f49256478099833d`；NSIS 安装包已重建，SHA-256：`764f321eda53135754d31f5d1dd2f5c4486f81bffb33aa6430d3d57deed6cc16`。
+- 全新安装验证目录：`artifacts/verification/installed-runtime-head-20260924-221910/`。安装退出码 0；被占用端口 `57281` 后恢复到 `56677`；`/health=200`，环境为 `demo`；离线 packaged seed 返回 492 条；应用退出码 0，未留下本轮桌面端或 sidecar 进程。
+- 全量后端 `747 passed, 5 skipped`；前端 `29 个测试文件 / 79 passed`；Cargo check 通过。5 项跳过均为 Windows symlink 创建权限限制。Ruff 全仓仍有 22 个既有格式/行长问题，未将其混入本轮改动。
+- 整体 Desktop Verification Gate 仍不改判为 GO：当前已有源构建浏览器证据和安装生命周期证据，但尚未在安装后桌面窗口中完成同一套真实 Resume Review 点击链路；不得据此创建新的 prerelease。
+
 ## 2026-09-24 美图官方 SSR 岗位列表适配
 
 - `campus.meitu.com` 现场页面为 Next.js SSR，公开 `initJobList` 当前解析出 190 条岗位，其中校园招聘/实习生招聘 77 条；适配器仅保留这两类，社会招聘不混入。

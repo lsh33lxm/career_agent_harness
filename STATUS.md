@@ -368,3 +368,6 @@
   last_seen_at; one missing item becomes pending_verification; two consecutive complete non-empty
   snapshot misses become inactive. Empty snapshots and failed or blocked collections do not advance
   missing counts. API: GET /api/v1/jobs/listing-lifecycle.
+- Tightened official JSON-LD JD extraction: explicit duty sections are excluded from candidate
+  requirements, while qualification sections remain eligible and unsectioned short descriptions
+  stay backward compatible. Official source regression and API tests passed (8 focused tests).

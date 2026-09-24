@@ -76,6 +76,61 @@ def _jsonld_objects(html: str) -> tuple[dict[str, Any], ...]:
     return tuple(objects)
 
 
+def _meitu_next_jobs(html: str, page_url: str) -> tuple[dict[str, Any], ...]:
+    """Parse the public SSR job list emitted by Meitu's Next.js page."""
+    marker = r'"initJobList":'
+    start = html.find(marker)
+    if start < 0:
+        marker = r'\"initJobList\":'
+        start = html.find(marker)
+    if start < 0:
+        return ()
+    start += len(marker)
+    total_marker = html.find("initTotal", start)
+    end = html.rfind("]", start, total_marker) + 1 if total_marker >= 0 else -1
+    if end < 0:
+        return ()
+    encoded = html[start:end].strip()
+    if not encoded.startswith("["):
+        return ()
+    decoded = encoded.replace(r'\"', '"').replace(r"\u0026", "&")
+    try:
+        values = json.loads(decoded)
+    except json.JSONDecodeError:
+        return ()
+    if not isinstance(values, list):
+        return ()
+    records: list[dict[str, Any]] = []
+    for value in values:
+        if not isinstance(value, dict):
+            continue
+        job_id = _clean_text(value.get("jobId"))
+        title = _clean_text(value.get("title"))
+        site_id = _clean_text(value.get("siteId"))
+        if not job_id or not title or not site_id:
+            continue
+        mode = _clean_text(value.get("modeName"))
+        if mode not in {"校园招聘", "实习生招聘"}:
+            continue
+        route = {"54138": "jobCampus", "141055": "jobIntern"}.get(site_id)
+        if route is None:
+            continue
+        records.append(
+            {
+                "job_id": job_id,
+                "title": title,
+                "company": "美图",
+                "department": _clean_text(value.get("departmentName")),
+                "location": _clean_text(value.get("locations")),
+                "published_at": _clean_text(value.get("publishedAt")),
+                "mode": mode,
+                "site_id": site_id,
+                "source_url": urljoin(page_url, f"/{route}/{job_id}"),
+            }
+        )
+    return tuple(records)
+
+
 def _html_links(html: str, base_url: str, allowed_hosts: frozenset[str]) -> tuple[str, ...]:
     links: list[str] = []
     for href in re.findall(r"<a[^>]+href=[\"']([^\"']+)[\"']", html, flags=re.IGNORECASE):
@@ -161,6 +216,17 @@ class OfficialCampusJobSource:
     def _parse(self, html: str, page_url: str) -> tuple[RawJobRecord, ...]:
         captured_at = datetime.now(UTC)
         records: list[RawJobRecord] = []
+        if self.config.source_id == MEITU_CAMPUS.source_id:
+            for item in _meitu_next_jobs(html, page_url):
+                records.append(
+                    RawJobRecord(
+                        source_ref=item["source_url"],
+                        raw_text=json.dumps(item, ensure_ascii=False, sort_keys=True),
+                        captured_at=captured_at,
+                    )
+                )
+            if records:
+                return tuple(records)
         for item in _jsonld_objects(html):
             title = _clean_text(item.get("title"))
             if not title:

@@ -1,5 +1,12 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-24 美图官方 SSR 岗位列表适配
+
+- `campus.meitu.com` 现场页面为 Next.js SSR，公开 `initJobList` 当前解析出 190 条岗位，其中校园招聘/实习生招聘 77 条；适配器仅保留这两类，社会招聘不混入。
+- 每条保留职位 ID、标题、部门、地点、站点标识、公开发布日期和稳定详情 URL（`/jobCampus/{id}` 或 `/jobIntern/{id}`）；未知字段不补造。
+- 详情路由现场返回“岗位信息不存在”，因此完整 JD 尚未宣称已验证；当前来源可用于真实列表发现，详情待站点接口可公开读取后再接入。
+- 新增 SSR 字段变化、类型过滤和关键词查询回归测试；专项测试 8 项通过，Ruff 通过。
+
 ## 2026-09-24 Desktop Verification Gate 浏览器子门复验
 
 - 运行 `powershell -ExecutionPolicy Bypass -File .\scripts\verify_desktop_gate.ps1` 成功，生产前端构建通过。

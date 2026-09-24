@@ -22,6 +22,12 @@ HTML = """
 </body></html>
 """
 
+MEITU_NEXT_HTML = '''<script>{"initJobList":[
+{"jobId":"campus-1","title":"AI产品实习生","departmentName":"研发团队","locations":"北京市",
+"publishedAt":"2026-09-24","modeName":"实习生招聘","siteId":"141055"},
+{"jobId":"social-1","title":"社会招聘岗位","departmentName":"研发团队","locations":"北京市",
+"publishedAt":"2026-09-24","modeName":"社会招聘","siteId":"54137"}],"initTotal":2}</script>'''
+
 
 def test_tencent_fixture_search_normalizes_full_description_and_provenance() -> None:
     source = OfficialCampusJobSource(TENCENT_CAMPUS, fixture_html=HTML)
@@ -74,3 +80,21 @@ def test_missing_jobposting_is_not_promoted_to_a_job() -> None:
     raw = source.search("")[0]
     with pytest.raises(OfficialSourceError, match="缺少职位名称|不是可识别"):
         source.normalize(raw)
+
+
+def test_meitu_ssr_list_parses_only_campus_and_intern_jobs() -> None:
+    source = OfficialCampusJobSource(MEITU_CAMPUS, fixture_html=MEITU_NEXT_HTML)
+    records = source.search("")
+    assert len(records) == 1
+    normalized = source.normalize(records[0])
+    assert normalized.title == "AI产品实习生"
+    assert normalized.company == "美图"
+    assert normalized.location == "北京市"
+    assert normalized.source_url == "https://campus.meitu.com/jobIntern/campus-1"
+    assert normalized.published_at is not None
+
+
+def test_meitu_ssr_list_query_filters_public_fields() -> None:
+    source = OfficialCampusJobSource(MEITU_CAMPUS, fixture_html=MEITU_NEXT_HTML)
+    assert len(source.search("研发团队")) == 1
+    assert source.search("社会招聘") == ()

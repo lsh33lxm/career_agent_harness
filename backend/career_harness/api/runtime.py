@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from career_harness.api.app import create_app
+from career_harness.api.application_commands import ApplicationCommandApi
 from career_harness.api.capabilities import CapabilityApi
 from career_harness.api.capability_inbox import CapabilityInboxApi
 from career_harness.api.career_reads import CareerReadApi
@@ -64,6 +65,8 @@ from career_harness.platform.secure_store import WindowsCredentialSecretStore
 from career_harness.services.capability_review_service import CapabilityReviewService
 from career_harness.services.capability_workspace_service import CapabilityWorkspaceService
 from career_harness.services.command_service import CommandService
+from career_harness.services.application_service import ApplicationService
+from career_harness.services.interview_service import InterviewService
 from career_harness.services.github_project_service import GitHubProjectService
 from career_harness.services.interview_prep_service import InterviewPrepService
 from career_harness.services.job_service import JobService
@@ -104,6 +107,8 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         engine, ArtifactStore(active_paths.artifacts)
     )
     command_service = CommandService(engine)
+    application_service = ApplicationService(command_service)
+    interview_service = InterviewService(command_service)
     job_repository = JobRepository(engine)
     job_service = JobService(command_service, job_repository)
     offline_career_loop_service = OfflineCareerLoopService(
@@ -236,6 +241,7 @@ def create_runtime_app(settings: Settings, paths: AppPaths | None = None) -> Fas
         job_requirement_api=JobRequirementApi(
             repository=job_repository, service=job_service, commands=command_service
         ),
+        application_command_api=ApplicationCommandApi(application_service, interview_service),
         offline_career_loop_api=OfflineCareerLoopApi(
             offline_career_loop_service,
             demo_mode=settings.environment == "demo",

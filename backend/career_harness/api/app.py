@@ -11,6 +11,7 @@ from career_harness import __version__
 from career_harness.api.capabilities import CapabilityApi, create_capability_router
 from career_harness.api.capability_inbox import CapabilityInboxApi, create_capability_inbox_router
 from career_harness.api.career_reads import CareerReadApi, create_career_read_router
+from career_harness.api.application_commands import ApplicationCommandApi, create_application_command_router
 from career_harness.api.communication import CommunicationApi, create_communication_router
 from career_harness.api.evidence import EvidenceApi, create_evidence_router
 from career_harness.api.github_projects import GitHubProjectApi, create_github_project_router
@@ -57,6 +58,7 @@ def create_app(
     evidence_api: EvidenceApi | None = None,
     project_read_api: ProjectReadApi | None = None,
     career_read_api: CareerReadApi | None = None,
+    application_command_api: ApplicationCommandApi | None = None,
     today_api: TodayApi | None = None,
     capability_api: CapabilityApi | None = None,
     capability_inbox_api: CapabilityInboxApi | None = None,
@@ -117,6 +119,8 @@ def create_app(
         app.include_router(create_opportunity_router(opportunity_api))
     if career_read_api is not None:
         app.include_router(create_career_read_router(career_read_api))
+    if application_command_api is not None:
+        app.include_router(create_application_command_router(application_command_api))
     if today_api is not None:
         app.include_router(create_today_router(today_api))
     if capability_api is not None:

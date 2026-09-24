@@ -304,8 +304,9 @@ class OfficialCampusJobSource:
         else:
             html, page_url = self._fetch(ref)
         records = self._parse(html, page_url)
-        if records:
-            return records[0]
+        for record in records:
+            if record.source_ref == ref:
+                return record
         raise KeyError("官方来源未返回可识别的岗位详情")
 
     def normalize(self, raw: RawJobRecord) -> NormalizedJobRecord:

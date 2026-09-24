@@ -98,3 +98,9 @@ def test_meitu_ssr_list_query_filters_public_fields() -> None:
     source = OfficialCampusJobSource(MEITU_CAMPUS, fixture_html=MEITU_NEXT_HTML)
     assert len(source.search("研发团队")) == 1
     assert source.search("社会招聘") == ()
+
+
+def test_meitu_detail_does_not_promote_homepage_first_record() -> None:
+    source = OfficialCampusJobSource(MEITU_CAMPUS, fixture_html=MEITU_NEXT_HTML)
+    with pytest.raises(KeyError, match="岗位详情"):
+        source.fetch_detail("https://campus.meitu.com/jobIntern/not-in-list")

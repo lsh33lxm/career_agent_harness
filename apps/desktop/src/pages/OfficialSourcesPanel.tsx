@@ -170,7 +170,7 @@ export function OfficialSourcesPanel() {
           <Button variant="primary" loading={loading} onClick={() => void search()} icon={<Search size={15} aria-hidden="true" />}>读取官方岗位</Button>
         </div>
         {message && <InlineNotice tone={message.startsWith("已读取") ? "success" : "muted"} role="status">{message}</InlineNotice>}
-        {capabilityError && <InlineNotice tone="danger" role="alert">能力档案暂时无法读取：{capabilityError}</InlineNotice>}
+        {capabilityError && <InlineNotice tone="danger" role="status">能力档案暂时无法读取：{capabilityError}</InlineNotice>}
         {items.length > 0 && <div className="record-list" aria-label="官方岗位结果">
           {items.map((item) => <article className="record-list__item" key={item.staging_id}>
             <div>

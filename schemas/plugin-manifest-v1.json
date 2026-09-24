@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-career-harness.local/schemas/plugin-manifest-v1.json",
+  "title": "Agent Career Harness Plugin Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "version", "api_version", "type", "source", "capabilities", "permissions", "data_contracts", "healthcheck", "replacement", "dependencies", "core_compatibility", "config_schema", "data_migration_version", "cost_limits", "user_visible_description", "security_url", "terms_url"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,63}$"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 160},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$"},
+    "api_version": {"const": "1"},
+    "type": {"enum": ["builtin_adapter", "worker_plugin", "mcp_plugin", "cli_skill", "projection_plugin"]},
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repo", "ref", "commit", "license"],
+      "properties": {
+        "repo": {"type": "string", "minLength": 1, "maxLength": 2048},
+        "ref": {"type": "string", "minLength": 1, "maxLength": 256},
+        "commit": {"type": "string", "minLength": 7, "maxLength": 128},
+        "license": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "capabilities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,127}$"}},
+    "permissions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["network", "filesystem", "secrets", "external_write", "scope"],
+      "properties": {
+        "network": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "filesystem": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "secrets": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "external_write": {"type": "boolean"},
+        "scope": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "data_contracts": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "healthcheck": {
+      "type": "object", "additionalProperties": false, "required": ["command", "timeout_ms"],
+      "properties": {"command": {"type": "string", "minLength": 1}, "timeout_ms": {"type": "integer", "minimum": 100, "maximum": 120000}}
+    },
+    "replacement": {
+      "type": "object", "additionalProperties": false, "required": ["compatible_capabilities"],
+      "properties": {"compatible_capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}
+    },
+    "dependencies": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "core_compatibility": {
+      "type": "object", "additionalProperties": false, "required": ["min_version", "max_version"],
+      "properties": {"min_version": {"type": "string", "minLength": 1}, "max_version": {"type": "string", "minLength": 1}}
+    },
+    "config_schema": {"type": "object"},
+    "data_migration_version": {"type": "integer", "minimum": 0},
+    "cost_limits": {
+      "type": "object", "additionalProperties": false, "required": ["max_runtime_ms", "max_output_bytes"],
+      "properties": {"max_runtime_ms": {"type": "integer", "minimum": 100, "maximum": 300000}, "max_output_bytes": {"type": "integer", "minimum": 1, "maximum": 10000000}}
+    },
+    "user_visible_description": {"type": "string", "minLength": 1, "maxLength": 4000},
+    "security_url": {"type": "string", "minLength": 1, "maxLength": 2048},
+    "terms_url": {"type": "string", "minLength": 1, "maxLength": 2048}
+  }
+}

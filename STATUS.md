@@ -1,5 +1,15 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-24 Desktop Verification Gate v0.1 浏览器验收 — GO
+
+- 当前源码生产构建上的真实 Chromium Resume Review 流程通过：逐 Patch 接受、拒绝、手动编辑、生成 ResumeRevision；基础简历保持不变，Application 保持 `preparing`；历史和知识页能追溯稳定 ID。
+- API 重启持久化、API 不可用时 Demo 浏览与中文恢复提示均通过；首屏在 30 秒内显示，浏览器没有外网请求。
+- Playwright：3 项 E2E 全部通过；runner 正常退出。脚本确认初始 API、重启 API 与生产预览进程均已退出，动态端口已释放。
+- 12 张全页/多视口/恢复状态截图保存在 `artifacts/verification/desktop-gate-20260924-090053/`；本次独立数据目录在验收后回收。
+- 验收脚本现在先构建前端并使用生产预览，Playwright runner 文件位于独立 `playwright-output/`，不会清理运行数据或日志。修复 Demo API 岗位 ID 不匹配时详情空白，以及 E2E 的旧区域名/模糊按钮定位。
+- 验证：桌面全量组件测试 `27 files / 76 passed`；`npm --workspace @ach/desktop run build` 通过；本地 `git diff --check` 对本轮文件通过。
+- GO 范围是当前源码生产前端与隔离 Demo API 的浏览器验收。`v0.1.0-beta.3` NSIS 安装包没有因本次修复重建，未创建新 Release，也没有 GitHub 写入。
+
 ## 2026-09-24 492 条职位种子安装强验证
 
 - 当前 NSIS 安装包 SHA-256：`EC8D4BFCCEFE49344B6062D585E7DB9D8AE8E62D132214451A53B1777BFCA6BC`。

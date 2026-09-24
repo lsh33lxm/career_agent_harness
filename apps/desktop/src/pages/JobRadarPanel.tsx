@@ -258,8 +258,8 @@ export function JobRadarPanel() {
     setError("");
     try {
       if (demoMode) {
-        const demo = getDemoJob(job.staging_id);
-        setSelected(demo ? { job: demo, jd_text: "演示数据包未公开完整 JD；仅展示结构化岗位摘要与技能标签。", raw_record: {}, transform: {}, batch_id: "demo-v1", related_interviews: [] } : null);
+        const demo = getDemoJob(job.staging_id) ?? job;
+        setSelected({ job: demo, jd_text: "演示数据包未公开完整 JD；仅展示结构化岗位摘要与技能标签。", raw_record: {}, transform: {}, batch_id: "demo-v1", related_interviews: [] });
       } else {
         setSelected(await getLegacyJob(job.staging_id));
       }

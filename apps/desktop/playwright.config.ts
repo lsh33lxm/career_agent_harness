@@ -10,7 +10,7 @@ export default defineConfig({
   retries: 0,
   timeout: 90_000,
   expect: { timeout: 12_000 },
-  outputDir: process.env.ACH_VERIFY_ARTIFACT_DIR ?? "../../artifacts/verification/playwright-output",
+  outputDir: process.env.ACH_VERIFY_PLAYWRIGHT_OUTPUT_DIR ?? "../../artifacts/verification/playwright-output",
   reporter: "list",
   use: {
     baseURL: `http://127.0.0.1:${port}`,

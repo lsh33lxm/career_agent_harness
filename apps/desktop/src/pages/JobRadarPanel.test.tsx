@@ -105,6 +105,17 @@ describe("JobRadarPanel", () => {
     expect(screen.getByText(/负责 Agent Harness 平台开发/)).toBeTruthy();
   });
 
+  it("演示模式下可查看 API 返回岗位的脱敏摘要详情", async () => {
+    window.__ACH_CONFIG__ = { apiBaseUrl: "http://127.0.0.1:8765", launchToken: "demo", demoMode: true };
+    render(<MemoryRouter><JobRadarPanel /></MemoryRouter>);
+
+    fireEvent.click(await screen.findByRole("button", { name: "查看详情" }));
+    const detail = await screen.findByRole("complementary", { name: "岗位详情" });
+    expect(within(detail).getByRole("heading", { name: "Agent Harness 工程师" })).toBeTruthy();
+    expect(within(detail).getByText(/演示数据包未公开完整 JD/)).toBeTruthy();
+    expect(getLegacyJob).not.toHaveBeenCalled();
+  });
+
   it("由用户触发可审计导入并明确加入求职流程", async () => {
     render(<MemoryRouter><JobRadarPanel /></MemoryRouter>);
     await screen.findByRole("heading", { name: "Agent Harness 工程师" });

@@ -78,7 +78,7 @@ test("Resume Review Gate full UI flow persists through refresh", async ({ page, 
   expect(acceptedPatchId && rejectedPatchId && editedPatchId).toBeTruthy();
   expect(await review.getByRole("button", { name: "生成目标 ResumeRevision" }).count()).toBe(0);
 
-  await acceptedCard.getByRole("button", { name: "接受" }).click();
+  await acceptedCard.getByRole("button", { name: "接受", exact: true }).click();
   await expect(acceptedCard).toContainText("已接受");
   await expect(review.getByRole("button", { name: "生成目标 ResumeRevision" })).toHaveCount(0);
   await rejectedCard.getByRole("button", { name: "拒绝" }).click();
@@ -133,7 +133,7 @@ test("Resume Review Gate full UI flow persists through refresh", async ({ page, 
   await page.screenshot({ path: join(artifactDir, "05-history-trace.png"), fullPage: true });
 
   await page.getByRole("navigation", { name: "主导航" }).getByRole("link", { name: "知识" }).click();
-  const knowledgeStory = page.getByRole("region", { name: "演示闭环关联" });
+  const knowledgeStory = page.getByRole("region", { name: "演示闭环追溯" });
   await expect(knowledgeStory).toContainText(acceptedPatchId!);
   await expect(knowledgeStory).toContainText(rejectedPatchId!);
   await expect(knowledgeStory).toContainText(editedPatchId!);
@@ -142,8 +142,8 @@ test("Resume Review Gate full UI flow persists through refresh", async ({ page, 
   await page.screenshot({ path: join(artifactDir, "06-knowledge-trace.png"), fullPage: true });
 
   await page.reload();
-  await expect(page.getByRole("region", { name: "演示闭环关联" })).toContainText(revisionId);
-  await expect(page.getByRole("region", { name: "演示闭环关联" })).toContainText(applicationId);
+  await expect(page.getByRole("region", { name: "演示闭环追溯" })).toContainText(revisionId);
+  await expect(page.getByRole("region", { name: "演示闭环追溯" })).toContainText(applicationId);
   for (const [width, name] of [[1280, "07-layout-1280.png"], [1440, "08-layout-1440.png"], [720, "09-layout-720.png"]] as const) {
     await verifyLayout(page, width, name);
   }
@@ -197,10 +197,12 @@ test("API unavailable keeps Demo Mode usable and reports Chinese recovery text",
   });
   await page.goto("/opportunities");
   await expect(page.getByText("演示模式 · 仅展示脱敏样例，不连接真实模型或外部平台")).toBeVisible();
-  await expect(page.getByRole("alert")).toContainText("本地职业核心尚未连接");
+  await expect(page.getByRole("alert").filter({ hasText: "本地职业核心尚未连接" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Agent可观测研发工程师" })).toBeVisible();
+  await page.screenshot({ path: join(artifactDir, "11-api-unavailable-demo-browser.png"), fullPage: true });
   await page.getByRole("button", { name: "开始演示闭环" }).click();
-  await expect(page.getByRole("status")).toContainText("本地职业核心暂不可用");
+  await expect(page.getByRole("status").filter({ hasText: "本地职业核心暂不可用" })).toBeVisible();
+  await page.screenshot({ path: join(artifactDir, "12-api-unavailable-review-action.png"), fullPage: true });
   const body = await page.locator("body").innerText();
   expect(body).not.toContain("Local API");
   expect(body).not.toContain("launch token");

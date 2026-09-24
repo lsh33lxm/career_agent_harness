@@ -71,15 +71,24 @@ function Wait-Http([string]$Url, [int]$TimeoutSeconds, [string]$Name) {
 
 function Invoke-E2E([string]$Grep) {
     $playwrightCli = Join-Path $repoRoot "node_modules\@playwright\test\cli.js"
-    Write-Output "RUN: node $playwrightCli test --config playwright.config.ts --reporter=line --grep `"$Grep`""
+    Write-Output "RUN: node $playwrightCli test --config playwright.config.ts --reporter=list --grep `"$Grep`""
     Push-Location (Join-Path $repoRoot "apps\desktop")
-    try { & (Get-Command node.exe).Source $playwrightCli test --config playwright.config.ts --reporter=line --grep $Grep --global-timeout=120000 }
+    try { & (Get-Command node.exe).Source $playwrightCli test --config playwright.config.ts --reporter=list --grep $Grep --global-timeout=120000 }
     finally { Pop-Location }
     if ($LASTEXITCODE -ne 0) { throw "Playwright failed for: $Grep (exit $LASTEXITCODE)" }
 }
 
 $apiPort = Get-FreeLoopbackPort
 do { $webPort = Get-FreeLoopbackPort } while ($webPort -eq $apiPort)
+$npm = (Get-Command npm.cmd).Source
+Write-Output "BUILD: npm --workspace @ach/desktop run build"
+Push-Location $repoRoot
+try {
+    & $npm --workspace @ach/desktop run build
+    if ($LASTEXITCODE -ne 0) { throw "Desktop production build failed (exit $LASTEXITCODE)" }
+}
+finally { Pop-Location }
+
 $env:ACH_ENV = "demo"
 $env:PYTHONPATH = Join-Path $repoRoot "backend"
 $env:ACH_DATA_DIR = $dataRoot
@@ -89,6 +98,7 @@ $env:ACH_ALLOWED_ORIGIN = "http://127.0.0.1:$webPort"
 $env:ACH_VERIFY_API_PORT = "$apiPort"
 $env:ACH_VERIFY_WEB_PORT = "$webPort"
 $env:ACH_VERIFY_ARTIFACT_DIR = $artifactRoot
+$env:ACH_VERIFY_PLAYWRIGHT_OUTPUT_DIR = Join-Path $artifactRoot "playwright-output"
 $cachedChromium = Join-Path $env:LOCALAPPDATA "ms-playwright\chromium-1234\chrome-win64\chrome.exe"
 if (Test-Path -LiteralPath $cachedChromium) { $env:ACH_VERIFY_CHROMIUM_PATH = $cachedChromium }
 
@@ -100,8 +110,8 @@ try {
     $desktopRoot = Join-Path $repoRoot "apps\desktop"
     $viteScript = Join-Path $repoRoot "node_modules\vite\bin\vite.js"
     $webProcess = Start-TrackedProcess (Get-Command node.exe).Source `
-        "`"$viteScript`" --host 127.0.0.1 --port $webPort --strictPort" "vite" $desktopRoot
-    Wait-Http "http://127.0.0.1:$webPort/" 30 "Vite"
+        "`"$viteScript`" preview --host 127.0.0.1 --port $webPort --strictPort" "web-preview" $desktopRoot
+    Wait-Http "http://127.0.0.1:$webPort/" 30 "Desktop production preview"
 
     Write-Output "VERIFY: full visible UI flow; API=$apiPort, Web=$webPort, ACH_DATA_DIR=$dataRoot"
     Invoke-E2E "Resume Review Gate full UI flow persists through refresh"
@@ -131,5 +141,6 @@ finally {
     foreach ($process in $ownedProcesses) { Stop-TrackedProcess $process }
     if (Test-Path -LiteralPath $dataRoot) { Remove-Item -LiteralPath $dataRoot -Recurse -Force }
     Remove-Item Env:\ACH_ENV, Env:\ACH_DATA_DIR, Env:\ACH_HOST, Env:\ACH_PORT, Env:\ACH_ALLOWED_ORIGIN, Env:\PYTHONPATH, `
-        Env:\ACH_VERIFY_API_PORT, Env:\ACH_VERIFY_WEB_PORT, Env:\ACH_VERIFY_ARTIFACT_DIR, Env:\ACH_VERIFY_CHROMIUM_PATH -ErrorAction SilentlyContinue
+        Env:\ACH_VERIFY_API_PORT, Env:\ACH_VERIFY_WEB_PORT, Env:\ACH_VERIFY_ARTIFACT_DIR, Env:\ACH_VERIFY_PLAYWRIGHT_OUTPUT_DIR, `
+        Env:\ACH_VERIFY_CHROMIUM_PATH -ErrorAction SilentlyContinue
 }

@@ -115,6 +115,60 @@ def test_source_failure_does_not_create_staging_records(tmp_path: Path) -> None:
     assert service.repository.list() == ()
 
 
+def test_listing_lifecycle_requires_two_successful_non_empty_misses(tmp_path: Path) -> None:
+    class SequencedSource(ManualJobSource):
+        source_id = "job-source-sequenced"
+
+        def __init__(self) -> None:
+            super().__init__(
+                (
+                    RawJobRecord(
+                        source_ref="https://example.com/jobs/one",
+                        raw_text='{"title":"One","company":"Example"}',
+                    ),
+                )
+            )
+            self.alternate = False
+
+        def search(self, query: str) -> tuple[RawJobRecord, ...]:
+            if not self.alternate:
+                return self.records
+            return (
+                RawJobRecord(
+                    source_ref="https://example.com/jobs/two",
+                    raw_text='{"title":"Two","company":"Example"}',
+                ),
+            )
+
+    service = _service(tmp_path)
+    source = SequencedSource()
+    service.collect(source, query="intern")
+    observation = service.lifecycle_observations()[0]
+    assert observation.consecutive_missing == 0
+    assert observation.status.value == "active"
+
+    source.alternate = True
+    service.collect(source, query="intern")
+    observation = {
+        item.source_ref: item for item in service.lifecycle_observations()
+    }["https://example.com/jobs/one"]
+    assert observation.consecutive_missing == 1
+    assert observation.status.value == "pending_verification"
+
+    service.collect(source, query="intern")
+    observation = {
+        item.source_ref: item for item in service.lifecycle_observations()
+    }["https://example.com/jobs/one"]
+    assert observation.consecutive_missing == 2
+    assert observation.status.value == "inactive"
+
+    source.alternate = False
+    service.collect(source, query="intern")
+    observation = {
+        item.source_ref: item for item in service.lifecycle_observations()
+    }["https://example.com/jobs/one"]
+    assert observation.consecutive_missing == 0
+    assert observation.status.value == "active"
 def test_source_policy_retries_then_resets_failure_count(tmp_path: Path) -> None:
     class FlakySource(OfflineFixtureJobSource):
         calls = 0

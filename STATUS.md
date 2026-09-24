@@ -364,3 +364,7 @@
   conflict/error feedback. Focused backend verification passed `11` tests; desktop page test and
   production build passed. Desktop Verification Gate remains NO-GO pending real Windows browser
   Resume Review clicks, complete screenshots, and Playwright teardown evidence.
+- Added source-compatible listing lifecycle observations: successful non-empty snapshots update
+  last_seen_at; one missing item becomes pending_verification; two consecutive complete non-empty
+  snapshot misses become inactive. Empty snapshots and failed or blocked collections do not advance
+  missing counts. API: GET /api/v1/jobs/listing-lifecycle.

@@ -45,6 +45,7 @@ async def test_fixture_search_lists_staging_and_requires_user_admission(tmp_path
         )
         opportunities = await client.get("/api/v1/opportunities", headers=AUTH)
         policies = await client.get("/api/v1/jobs/source-policies", headers=AUTH)
+        lifecycle = await client.get("/api/v1/jobs/listing-lifecycle", headers=AUTH)
 
     assert unauthorized.status_code == 401
     assert collected.status_code == 201
@@ -63,6 +64,8 @@ async def test_fixture_search_lists_staging_and_requires_user_admission(tmp_path
     )
     assert policies.status_code == 200
     assert policies.json()[0]["disabled"] is False
+    assert lifecycle.status_code == 200
+    assert lifecycle.json()[0]["status"] == "active"
 
 
 @pytest.mark.asyncio

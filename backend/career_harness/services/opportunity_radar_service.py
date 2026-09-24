@@ -24,6 +24,7 @@ from career_harness.core.job_source import (
     RawJobRecord,
 )
 from career_harness.core.opportunity import JobRef
+from career_harness.db.job_lifecycle_repository import JobLifecycleRepository
 from career_harness.db.job_repository import JobRepository
 from career_harness.db.job_staging_repository import JobStagingRepository, _json
 from career_harness.services.command_service import CommandService
@@ -52,6 +53,7 @@ class OpportunityRadarService:
         self.engine = engine
         self.artifact_store = artifact_store
         self.repository = JobStagingRepository(engine)
+        self.lifecycle = JobLifecycleRepository(engine)
         commands = CommandService(engine)
         self.jobs = JobService(commands, JobRepository(engine))
         self.opportunities = OpportunityService(commands)
@@ -155,6 +157,14 @@ class OpportunityRadarService:
                             connection=connection,
                         )
                     )
+                self._record_lifecycle(
+                    connection,
+                    source_id=source.source_id,
+                    query=query,
+                    run_id=run_id,
+                    records=normalized_records,
+                    checked_at=now,
+                )
             return tuple(results)
         except Exception:
             with self.engine.begin() as connection:
@@ -182,6 +192,78 @@ class OpportunityRadarService:
                     },
                 )
             raise
+
+    def lifecycle_observations(self, *, source_id: str | None = None):
+        return self.lifecycle.list(source_id=source_id)
+
+    def _record_lifecycle(
+        self,
+        connection: Connection,
+        *,
+        source_id: str,
+        query: str,
+        run_id: str,
+        records: tuple[tuple[RawJobRecord, NormalizedJobRecord], ...],
+        checked_at: datetime,
+    ) -> None:
+        if not records:
+            return
+        seen: set[str] = set()
+        for raw, normalized in records:
+            source_ref = normalized.source_url or raw.source_ref
+            url_fingerprint = _digest(_slug_url(source_ref))
+            seen.add(url_fingerprint)
+            observation_id = (
+                f"listing_observation_{_digest(source_id + query + url_fingerprint)[:32]}"
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO job_listing_observation "
+                    "(observation_id, source_id, query, source_ref, url_fingerprint, "
+                    "first_seen_at, last_seen_at, last_checked_at, consecutive_missing, "
+                    "status, last_success_run_id) VALUES "
+                    "(:id, :source_id, :query, :source_ref, :url, :now, :now, :now, "
+                    "0, 'active', :run_id) "
+                    "ON CONFLICT(source_id, query, url_fingerprint) DO UPDATE SET "
+                    "source_ref=excluded.source_ref, last_seen_at=excluded.last_seen_at, "
+                    "last_checked_at=excluded.last_checked_at, consecutive_missing=0, "
+                    "status='active', last_success_run_id=excluded.last_success_run_id"
+                ),
+                {
+                    "id": observation_id,
+                    "source_id": source_id,
+                    "query": query,
+                    "source_ref": source_ref,
+                    "url": url_fingerprint,
+                    "now": checked_at,
+                    "run_id": run_id,
+                },
+            )
+        rows = connection.execute(
+            text(
+                "SELECT observation_id, url_fingerprint, consecutive_missing "
+                "FROM job_listing_observation WHERE source_id=:source_id AND query=:query"
+            ),
+            {"source_id": source_id, "query": query},
+        ).mappings().all()
+        for row in rows:
+            if row["url_fingerprint"] in seen:
+                continue
+            missing = int(row["consecutive_missing"]) + 1
+            status = "inactive" if missing >= 2 else "pending_verification"
+            connection.execute(
+                text(
+                    "UPDATE job_listing_observation SET last_checked_at=:now, "
+                    "consecutive_missing=:missing, status=:status "
+                    "WHERE observation_id=:id"
+                ),
+                {
+                    "now": checked_at,
+                    "missing": missing,
+                    "status": status,
+                    "id": row["observation_id"],
+                },
+            )
 
     @staticmethod
     def _ranking_inputs(

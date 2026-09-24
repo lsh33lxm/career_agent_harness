@@ -13,6 +13,7 @@ from career_harness.adapters.job_sources import (
 )
 from career_harness.adapters.official_job_sources import official_source
 from career_harness.core.common import FrozenModel
+from career_harness.core.job_lifecycle import JobListingObservation
 from career_harness.core.job_source import (
     JobResumeProposalSeed,
     JobSourcePolicy,
@@ -155,6 +156,12 @@ def create_job_radar_router(api: JobRadarApi) -> APIRouter:
     @router.get("/source-policies", response_model=list[JobSourcePolicy])
     def source_policies() -> tuple[JobSourcePolicy, ...]:
         return api.service.source_policies()
+
+    @router.get("/listing-lifecycle", response_model=list[JobListingObservation])
+    def listing_lifecycle(
+        source_id: str | None = Query(default=None, min_length=3, max_length=128),
+    ) -> tuple[JobListingObservation, ...]:
+        return api.service.lifecycle_observations(source_id=source_id)
 
     @router.post("/source-policies/{source_id}", response_model=JobSourcePolicy)
     def update_source_policy(

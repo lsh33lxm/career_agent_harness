@@ -279,7 +279,7 @@ test("API unavailable keeps Demo Mode usable and reports Chinese recovery text",
   await expect(page.getByRole("heading", { name: "Agent可观测研发工程师" })).toBeVisible();
   await page.screenshot({ path: join(artifactDir, "11-api-unavailable-demo-browser.png"), fullPage: true });
   await page.getByRole("button", { name: "开始演示闭环" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "本地职业核心暂不可用" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "本地职业核心暂不可用" }).first()).toBeVisible();
   await page.screenshot({ path: join(artifactDir, "12-api-unavailable-review-action.png"), fullPage: true });
   const body = await page.locator("body").innerText();
   expect(body).not.toContain("Local API");

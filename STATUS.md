@@ -530,3 +530,8 @@
   and Playwright teardown. Evidence is retained outside Git under the local verification artifact
   directory; this does not change Desktop Verification Gate, which remains NO-GO for the separate
   real browser Resume Review click-chain requirement.
+- Re-ran the source production browser gate on 2026-09-25 after tightening the recovery-message
+  assertion to tolerate two simultaneously visible Chinese status projections. Build completed and
+  all three Playwright cases passed: Resume Review full UI flow, API restart persistence, and API
+  unavailable Demo Mode recovery. Evidence is local under
+  `artifacts/verification/desktop-gate-20260925-153822/`.

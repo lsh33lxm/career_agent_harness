@@ -5,6 +5,7 @@
 - 简历工作室可读取现有基础简历并选择已审核修订，不再要求用户手动抄写简历与修订 ID；选择简历时为新目标岗位档案生成稳定格式的本地 ID，仍可手工调整。
 - 复用既有 `/api/v1/resumes` 与 `/api/v1/resumes/{id}/revisions` 读取接口，不增加简历状态或新的持久化模型。
 - `ResumeStudioPanel.test.tsx` 专项测试 2 项通过；桌面全量回归 30 个测试文件、85 项通过；`npm run build --workspace @ach/desktop` 通过（Vite 提示主 bundle 超过 500 kB）。
+- 尚未针对本次源码提交重建并安装 NSIS 包，故本提交对应的 Desktop Verification Gate v0.1 为 **NO-GO**；既有安装证据只代表此前验证的源码。
 
 ## 2026-09-25 安装版官方来源状态与 Resume Review 全链路
 

@@ -34,6 +34,12 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
         description: "Isolated", status: "disabled", created_at: "now",
       },
     ]))
+    .mockResolvedValueOnce(response([
+      { resume_id: "resume_001", revision: 2, candidate_id: "candidate_1", sections: {}, created_at: "now", created_by: "user" },
+    ]))
+    .mockResolvedValueOnce(response([
+      { revision_id: "resume_revision_001", resume_id: "resume_001", base_revision: 2, content: { summary: "经历" }, content_sha256: "c".repeat(64), accepted_patch_refs: [], created_at: "now", created_by: "user" },
+    ]))
     .mockResolvedValueOnce(response({
       target_profile_id: "target_profile_001", resume_id: "resume_001",
       title: "Platform Engineer", company: null, opportunity_id: null,
@@ -70,8 +76,12 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
   render(<ResumeStudioPanel />);
   fireEvent.focus(screen.getByLabelText("渲染模板"));
   expect(await screen.findByRole("option", { name: /Typst A4/ })).toBeTruthy();
-  fireEvent.change(screen.getByLabelText("基础简历精确引用"), { target: { value: "resume_001" } });
-  fireEvent.change(screen.getByLabelText("生成修订精确引用"), { target: { value: "resume_revision_001" } });
+  fireEvent.focus(screen.getByLabelText("基础简历"));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+  fireEvent.change(screen.getByLabelText("基础简历"), { target: { value: "resume_001" } });
+  expect(await screen.findByRole("option", { name: /resume_revision_001/ })).toBeTruthy();
+  expect((screen.getByLabelText("目标岗位档案精确引用") as HTMLInputElement).value).toMatch(/^target_profile_/);
+  fireEvent.change(screen.getByLabelText("已审核修订"), { target: { value: "resume_revision_001" } });
   fireEvent.change(screen.getByLabelText("目标岗位档案精确引用"), { target: { value: "target_profile_001" } });
   fireEvent.change(screen.getByLabelText("目标岗位"), { target: { value: "Platform Engineer" } });
   fireEvent.click(screen.getByRole("button", { name: "保存目标岗位" }));
@@ -84,7 +94,7 @@ it("creates a user target profile, renders preview, shows ATS gaps and authentic
   fireEvent.change(screen.getByLabelText("审核理由"), { target: { value: "已核对内容与版式" } });
   fireEvent.click(screen.getByRole("button", { name: "批准" }));
   expect(await screen.findByText(/已由用户已批准/)).toBeTruthy();
-  expect(fetcher.mock.calls[4][1].headers.get("Authorization")).toBe("Bearer resume-ui-token");
+  expect(fetcher.mock.calls[6][1].headers.get("Authorization")).toBe("Bearer resume-ui-token");
   expect(createObjectURL).toHaveBeenCalled();
   expect(window.localStorage.getItem("ach.resume-studio.draft.v1")).toContain("resume_001");
 });

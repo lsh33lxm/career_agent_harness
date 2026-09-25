@@ -1,5 +1,11 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-25 简历工作室档案选择
+
+- 简历工作室可读取现有基础简历并选择已审核修订，不再要求用户手动抄写简历与修订 ID；选择简历时为新目标岗位档案生成稳定格式的本地 ID，仍可手工调整。
+- 复用既有 `/api/v1/resumes` 与 `/api/v1/resumes/{id}/revisions` 读取接口，不增加简历状态或新的持久化模型。
+- `ResumeStudioPanel.test.tsx` 专项测试 2 项通过；桌面全量回归 30 个测试文件、85 项通过；`npm run build --workspace @ach/desktop` 通过（Vite 提示主 bundle 超过 500 kB）。
+
 ## 2026-09-25 安装版官方来源状态与 Resume Review 全链路
 
 - 从提交 `2d68a40` 重建 sidecar 与 NSIS 安装包。安装包 SHA-256：`ebba94132e468012ed9492f78c3c76c78ea2eb8f3553c93743abf3c8b8162861`；sidecar SHA-256：`37d493057baeb8576dace228cf91cd669f6e73b75524df53e3243346cff92af8`。

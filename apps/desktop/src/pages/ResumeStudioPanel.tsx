@@ -17,8 +17,8 @@ import {
   type ResumeRenderReview,
   type ResumeTemplate,
 } from "../api/resumeStudio";
-import { getResumeRevision } from "../api/projectResume";
-import type { ResumeRevisionRead } from "../api/projectResume";
+import { getResumeRevision, listResumeBases, listResumeRevisions } from "../api/projectResume";
+import type { ResumeBaseRead, ResumeRevisionRead } from "../api/projectResume";
 import { atsStatusLabels, decisionLabels, displayLabel, rendererLabels } from "../app/displayLabels";
 import { Button } from "../components/ui/Button";
 import { Field } from "../components/ui/Field";
@@ -51,6 +51,8 @@ function templateDisplayName(name: string): string {
 export function ResumeStudioPanel() {
   const [resumeId, setResumeId] = useState("");
   const [revisionId, setRevisionId] = useState("");
+  const [resumeBases, setResumeBases] = useState<ResumeBaseRead[]>([]);
+  const [resumeRevisions, setResumeRevisions] = useState<ResumeRevisionRead[]>([]);
   const [profileId, setProfileId] = useState("");
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
@@ -105,6 +107,32 @@ export function ResumeStudioPanel() {
       setTemplates(await listResumeTemplates());
     } catch (error) {
       setMessage("模板目录读取失败：" + (error as Error).message);
+    }
+  }
+
+  async function loadResumeChoices() {
+    try {
+      const bases = await listResumeBases();
+      setResumeBases(bases);
+      setMessage(bases.length ? "已读取本地简历档案。" : "还没有基础简历，请先导入或创建简历。");
+    } catch {
+      setMessage("简历列表读取失败，请检查本地服务后重试。");
+    }
+  }
+
+  async function selectResume(id: string) {
+    setResumeId(id);
+    setRevisionId("");
+    setResumeRevisions([]);
+    if (!id) return;
+    setProfileId((current) => current || localId("target_profile"));
+    try {
+      const revisions = await listResumeRevisions(id);
+      setResumeRevisions(revisions);
+      if (revisions[0]) setRevisionId(revisions[0].revision_id);
+      setMessage(revisions.length ? "已载入该简历的修订版本。" : "此简历尚无已审核修订。");
+    } catch {
+      setMessage("简历修订列表读取失败，请重试。");
     }
   }
 
@@ -335,8 +363,8 @@ export function ResumeStudioPanel() {
         <span className="badge"><Palette size={12} aria-hidden="true" />观复模板</span>
       </div>
       <div className="resume-studio-grid">
-        <Field label="基础简历精确引用"><input className="input" value={resumeId} onChange={(event) => setResumeId(event.target.value)} placeholder="输入高级引用" /></Field>
-        <Field label="生成修订精确引用"><input className="input" value={revisionId} onChange={(event) => setRevisionId(event.target.value)} placeholder="输入高级引用" /></Field>
+        <Field label="基础简历"><select className="select" aria-label="基础简历" value={resumeId} onFocus={() => void loadResumeChoices()} onChange={(event) => void selectResume(event.target.value)}><option value="">请选择简历</option>{resumeBases.map((base, index) => <option key={base.resume_id} value={base.resume_id}>我的简历 {index + 1} · 第 {base.revision} 版</option>)}</select></Field>
+        <Field label="已审核修订"><select className="select" aria-label="已审核修订" value={revisionId} onChange={(event) => setRevisionId(event.target.value)}><option value="">请选择修订</option>{resumeRevisions.map((revision) => <option key={revision.revision_id} value={revision.revision_id}>{revision.revision_id} · 第 {revision.base_revision} 版基础简历</option>)}</select></Field>
         <Field label="目标岗位档案精确引用"><input className="input" value={profileId} onChange={(event) => setProfileId(event.target.value)} placeholder="输入高级引用" /></Field>
         <Field label="目标岗位"><input className="input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：平台工程师" /></Field>
         <Field label="公司（可选）"><input className="input" value={company} onChange={(event) => setCompany(event.target.value)} placeholder="例如：目标公司" /></Field>

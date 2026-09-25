@@ -12,6 +12,7 @@
 - **项目与证据：** 将项目材料、经历和能力线索关联起来；岗位要求不会被当作个人经历事实。
 - **简历审核：** 导入 TXT、Markdown 或 PDF 后先预览；逐条接受、拒绝或手动编辑建议，再生成独立简历版本，不覆盖基础简历。
 - **简历工作室：** 可编辑基础简历的标量字段和结构化数组条目；编辑对象条目时保留未展示字段，并继续通过 Patch Review 和本人确认生成不可变版本。
+- **岗位定制简历：** 简历工作室可选择已有机会的精确岗位版本，并只引用该岗位版本下已审核通过的要求；保存时保留机会版本、岗位版本和要求稳定 ID，避免把未审核候选带入定制简历。
 - **AI 工作台：** 结合当前岗位、简历、申请和已确认记忆整理建议与沟通草稿；内容先进入待确认队列。
 - **求职沟通邮箱：** 手动测试连接、读取指定文件夹并关联邮件摘要；审核后的单封草稿可交给系统邮件客户端处理。
 - **历史与知识：** 追踪岗位、证据、Patch、简历版本和申请之间的稳定 ID。
@@ -19,7 +20,7 @@
 
 ## 离线 Demo 与职位数据
 
-Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位记录**。全部记录包含职位名称、公司、地点、岗位链接、来源类别和技能标签；其中 385 条有采集时间，263 条有发布日期。当前种子没有可验证的岗位摘要、结构化要求、薪资或工作方式值，因此它是历史岗位元数据，不是实时职位订阅或完整 JD 库；缺失信息不会补造。
+Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位记录**。全部记录包含职位名称、公司、地点、岗位链接、来源类别和技能标签；其中 385 条有采集时间，263 条有发布日期。`data/jobs/jobs.json` 的 SHA-256 为 `2f99952eb8103a5b420261d04e1365517581cd928ddaa61b5598818a2402c7a3`，与 `data/jobs/manifest.json` 一致。当前种子没有可验证的岗位摘要、结构化要求、薪资或工作方式值，因此它是历史岗位元数据，不是实时职位订阅或完整 JD 库；缺失信息不会补造。
 
 种子来自经只读迁移和隐私筛查的历史岗位资料。据项目维护者确认，来源台账中的记录均有再分发许可、授权或所有权依据。发布包只包含规范化岗位元数据，不含截图、网页快照、抓取原文、个人资料或运行数据库。Demo Mode 浏览这些岗位不需要 API Key 或外网连接。
 
@@ -27,7 +28,7 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 仓库已有 Windows 预发布版 [`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)，其中包含安装包、数据 manifest 和 SHA-256 校验文件。它对应此前的干净发布快照；当前源码分支在此之后又增加了官方来源、简历工作室和面试复盘改动，因此不要把 Beta.4 当作当前源码的构建产物。
 
-当前源码生产浏览器子门通过 3/3；同构建 NSIS 安装、隔离数据、492 条离线查询、sidecar 健康和退出也已有局部证据。最新安装版探针在 `artifacts/verification/installed-manual-nsis-20260925/` 保存了官方来源面板、Resume Studio、申请/面试日历截图；本次真实安装版复验在 `artifacts/verification/manual-real-debug-7/` 使用 `use_fixture=false`，完成机会页导航、真实本地 sidecar `demo-start/demo-story`、Resume Review 接受/拒绝/手动编辑后接受、ResumeRevision 生成、三张完整截图和 Playwright teardown，退出码为 0、sidecar 数量为 0。根据当前发布候选的验收规则，**Desktop Verification Gate v0.1：NO-GO**；这些局部证据仍需绑定到当前干净发布快照并完成最终候选复核，不能直接替代 Gate 结论。稳定版仍禁止，不得把本地 Demo 证据扩展为线上来源或自动投递能力。
+当前源码生产浏览器子门通过 3/3；同构建 NSIS 安装、隔离数据、492 条离线查询、sidecar 健康和退出也已有局部证据。最新安装版探针在 `artifacts/verification/installed-manual-nsis-20260925/` 保存了官方来源面板、Resume Studio、申请/面试日历截图；本次真实安装版复验在 `artifacts/verification/manual-real-debug-7/` 使用 `use_fixture=false`，完成机会页导航、真实本地 sidecar `demo-start/demo-story`、Resume Review 接受/拒绝/手动编辑后接受、ResumeRevision 生成、三张完整截图和 Playwright teardown，退出码为 0、sidecar 数量为 0。当前源码提交 `629220a` 已将岗位定制简历绑定到精确 Opportunity、Job revision，并只提交该岗位版本下已审核通过的要求引用。根据当前发布候选的验收规则，**Desktop Verification Gate v0.1：NO-GO**；这些局部证据仍需绑定到当前干净发布快照并完成最终候选复核，不能直接替代 Gate 结论。稳定版仍禁止，不得把本地 Demo 证据扩展为线上来源或自动投递能力。
 
 安装版验收的关键摘要为 `installed-window-summary.json`：`desktop_exit_code=0`、`sidecar_count=0`、`result=passed`。复现需要使用全新的安装目录、独立 `ACH_DATA_DIR` 和专用 WebView2 CDP 端口：
 

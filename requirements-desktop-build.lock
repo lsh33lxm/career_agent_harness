@@ -1,0 +1,3 @@
+# Desktop packaging only. Runtime dependencies remain pinned in requirements.lock.
+pyinstaller==6.16.0
+pyinstaller-hooks-contrib==2026.7

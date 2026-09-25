@@ -541,3 +541,8 @@
   directory after the prior installation was removed. This is an installer-environment blocker;
   it is not counted as an installed-package pass, and the overall Desktop Verification Gate remains
   NO-GO until the same-build installation and sidecar lifecycle are verified.
+- Rechecked the existing installed directory on 2026-09-25 with the full Resume Studio and
+  Application/Interview probe: the packaged WebView completed the fixture-backed flow, exited
+  cleanly, and Playwright teardown passed. This confirms the existing install remains usable, but
+  it does not close the same-build NSIS installation blocker above because its executable predates
+  the `8634797` rebuild.

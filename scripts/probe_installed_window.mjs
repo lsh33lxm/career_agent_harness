@@ -48,12 +48,35 @@ const resumeRevision = {
   revision_id: "resume_revision_installed_e2e",
   resume_id: resumeBase.resume_id,
   base_revision: 1,
-  content: resumeBase.sections,
+  content: { name: "安装验收候选人", summary: "原始本地简历摘要" },
   content_sha256: "d".repeat(64),
   accepted_patch_refs: [],
   created_at: "2026-09-25T00:00:00Z",
   created_by: "user",
 };
+let studioRevision = resumeRevision;
+let renderRun = null;
+const demoPatchState = [
+  { patch_id: "patch_installed_accept", review_status: "proposed", operations: [{ before: "原摘要", after: "平台工程经历", reason: "与岗位要求关联", requirement_ids: ["requirement_installed_1"], evidence_ids: ["evidence_installed_1"] }] },
+  { patch_id: "patch_installed_reject", review_status: "proposed", operations: [{ before: "旧技能", after: "未经证实技能", reason: "待人工判断", requirement_ids: ["requirement_installed_2"], evidence_ids: [] }] },
+  { patch_id: "patch_installed_edit", review_status: "proposed", operations: [{ before: "原项目", after: "项目经历建议", reason: "岗位匹配建议", requirement_ids: ["requirement_installed_3"], evidence_ids: ["evidence_installed_2"] }] },
+];
+let demoRevisionId = null;
+function demoStory() {
+  return {
+    available: true,
+    staging_id: "staging_installed_demo",
+    opportunity_id: "opportunity_installed_demo",
+    application_id: "application_installed_demo",
+    resume_revision_id: demoRevisionId,
+    application_state: "preparing",
+    application_revision: 1,
+    evidence_ref_id: "evidence_installed_1",
+    requirements: [{ requirement_id: "requirement_installed_1", requirement_text: "熟悉 Python", status: "accepted" }],
+    resume_patches: demoPatchState,
+    steps: [], events: [], links: [],
+  };
+}
 const fulfillJson = (route, body, status = 200) => route.fulfill({
   status,
   contentType: "application/json",
@@ -63,12 +86,45 @@ await page.route("**/api/v1/applications", async (route) => {
   if (route.request().method() === "GET") return fulfillJson(route, [application]);
   return route.continue();
 });
+await page.route("**/api/v1/career-loop/demo-start", async (route) => fulfillJson(route, { staging_id: "staging_installed_demo", opportunity_id: "opportunity_installed_demo", application_id: "application_installed_demo", application_state: "preparing", patch_id: demoPatchState[0].patch_id, resume_revision_id: "", interview_id: null, interview_revision: null, interview_prep_proposal_id: null, interview_feedback_proposal_id: null }, 201));
+await page.route("**/api/v1/career-loop/demo-story", async (route) => fulfillJson(route, demoStory()));
+await page.route("**/api/v1/career-loop/demo-approve-resume", async (route) => {
+  const body = JSON.parse(route.request().postData() ?? "{}");
+  const patch = demoPatchState.find((item) => item.patch_id === body.patch_id);
+  if (patch) patch.review_status = body.decision;
+  return fulfillJson(route, { patch_id: body.patch_id, review_status: body.decision, reviewed_at: "2026-09-25T00:00:00Z", review_source: "user", review_note: "安装版 fixture 用户决定", evidence_ids: [] });
+});
+await page.route("**/api/v1/career-loop/demo-resume-revision", async (route) => {
+  demoRevisionId = "resume_revision_installed_demo";
+  return fulfillJson(route, { resume_revision_id: demoRevisionId, application_id: "application_installed_demo" }, 201);
+});
 await page.route("**/api/v1/applications/application_installed_e2e/interviews", async (route) => fulfillJson(route, interview ? [interview] : []));
 await page.route("**/api/v1/resumes", async (route) => {
   if (route.request().method() === "GET") return fulfillJson(route, [resumeBase]);
   return route.continue();
 });
 await page.route("**/api/v1/resumes/resume_base_installed_e2e/revisions", async (route) => fulfillJson(route, [resumeRevision]));
+await page.route("**/api/v1/resume/revisions/resume_revision_installed_e2e", async (route) => fulfillJson(route, studioRevision));
+await page.route("**/api/v1/resume-revisions/resume_revision_installed_e2e", async (route) => fulfillJson(route, studioRevision));
+await page.route("**/api/v1/resume/revisions/resume_revision_installed_e2e_v2", async (route) => fulfillJson(route, studioRevision));
+await page.route("**/api/v1/resume/templates", async (route) => fulfillJson(route, [{ template_id: "resume-render-html", name: "观复简历 / 暖纸", version: "1.0.0", renderer: "html_css", content_sha256: "e".repeat(64), description: "内置本地渲染器", status: "active", created_at: "2026-09-25T00:00:00Z" }]));
+await page.route("**/api/v1/resume/target-profiles", async (route) => fulfillJson(route, { target_profile_id: "target_profile_installed_e2e", resume_id: resumeBase.resume_id, title: "平台工程实习生", company: "腾讯", opportunity_id: null, opportunity_revision: null, requirement_refs: [], keyword_gaps: [], status: "active", created_by: "user", created_at: "2026-09-25T00:00:00Z" }, 201));
+await page.route("**/api/v1/resume/patch-proposals", async (route) => fulfillJson(route, { patch_id: "resume_patch_installed_e2e", revision: 1, status: "proposed" }, 201));
+await page.route("**/api/v1/resume/patches/*/review", async (route) => {
+  const patchId = route.request().url().split("/patches/")[1].split("/")[0];
+  return fulfillJson(route, { patch_id: patchId, revision: 2, status: "accepted" });
+});
+await page.route("**/api/v1/resume/revisions", async (route) => {
+  studioRevision = { ...studioRevision, revision_id: "resume_revision_installed_e2e_v2", content: { ...studioRevision.content, summary: "已由用户确认的平台工程实习经历" }, accepted_patch_refs: [{ entity_id: "resume_patch_installed_e2e", revision: 2 }] };
+  return fulfillJson(route, { revision_id: studioRevision.revision_id, accepted_patch_refs: studioRevision.accepted_patch_refs }, 201);
+});
+await page.route("**/api/v1/resume/render", async (route) => {
+  renderRun = { render_run_id: "render_installed_e2e", resume_revision_id: studioRevision.revision_id, target_profile_id: "target_profile_installed_e2e", template_id: "resume-render-html", template_version: "1.0.0", renderer: "html_css", renderer_plugin_id: "resume-render-html-builtin", renderer_plugin_version: "1.0.0", input_sha256: "f".repeat(64), status: "completed", output_artifact_id: "artifact_render_installed_e2e", output_sha256: "1".repeat(64), output_media_type: "application/pdf", page_count: 1, preview_html: "<article><h1>平台工程实习生</h1><p>已由用户确认的本地简历预览</p></article>", checks: { pdf_generated: true }, created_by: "user", created_at: "2026-09-25T00:00:00Z" };
+  return fulfillJson(route, renderRun, 201);
+});
+await page.route("**/api/v1/resume/render-runs/render_installed_e2e/ats-report", async (route) => fulfillJson(route, { render_run_id: "render_installed_e2e", status: "ready", page_count: 1, checks: { pdf_generated: true }, keyword_gaps: [], created_at: "2026-09-25T00:00:00Z" }));
+await page.route("**/api/v1/resume/render-runs/render_installed_e2e/artifact", async (route) => route.fulfill({ status: 200, contentType: "application/pdf", body: Buffer.from("%PDF-1.4 installed-e2e") }));
+await page.route("**/api/v1/resume/render-runs/render_installed_e2e/review", async (route) => fulfillJson(route, { render_run_id: "render_installed_e2e", decision: "approved", reviewer: "user", reason: "安装版人工核对通过", reviewed_at: "2026-09-25T00:00:00Z" }));
 await page.route("**/api/v1/applications/application_installed_e2e/resume", async (route) => {
   application = { ...application, revision: application.revision + 1, resume_revision_id: resumeRevision.revision_id };
   return fulfillJson(route, application);
@@ -186,6 +242,56 @@ await edited.getByRole("button", { name: "保存手动编辑并接受" }).click(
 await page.screenshot({ path: join(artifactDir, "installed-resume-review-decisions.png"), fullPage: true });
 await review.getByRole("button", { name: "生成目标 ResumeRevision" }).click();
 await page.screenshot({ path: join(artifactDir, "installed-resume-review-generated.png"), fullPage: true });
+
+await page.getByRole("link", { name: "简历", exact: true }).click();
+await page.getByText("高级修订工具", { exact: true }).waitFor();
+const studioDisclosure = page.locator("details").filter({ hasText: "高级修订工具" });
+console.log(`resume-studio disclosures=${await studioDisclosure.count()}`);
+if ((await studioDisclosure.count()) !== 1) throw new Error("Expected one Resume Studio disclosure");
+const studioSummary = studioDisclosure.locator("summary");
+await studioSummary.scrollIntoViewIfNeeded();
+if ((await studioDisclosure.getAttribute("open")) === null) await studioSummary.click({ force: true });
+if ((await studioDisclosure.getAttribute("open")) === null) throw new Error("Resume Studio disclosure did not open");
+const studioBase = page.locator('select[aria-label="基础简历"]');
+await studioBase.focus();
+await studioBase.locator(`option[value="${resumeBase.resume_id}"]`).waitFor({ state: "attached" });
+await studioBase.selectOption(resumeBase.resume_id);
+console.log("resume-studio base-selected");
+await page.locator('input[placeholder="输入高级引用"]').fill("target_profile_installed_e2e");
+await page.locator('input[placeholder="例如：平台工程师"]').fill("平台工程实习生");
+const studioRevisionSelect = page.locator('select[aria-label="已审核修订"]');
+await studioRevisionSelect.locator(`option[value="${resumeRevision.revision_id}"]`).waitFor({ state: "attached" });
+await studioRevisionSelect.selectOption(resumeRevision.revision_id);
+console.log("resume-studio revision-selected");
+await page.getByRole("button", { name: "加载到本地草稿" }).click();
+console.log("resume-studio draft-loaded");
+const studioDraft = page.locator('textarea[aria-label="简历建议草稿"]');
+console.log(`resume-studio draft-count=${await studioDraft.count()}`);
+if ((await studioDraft.count()) !== 1) throw new Error("Expected one Resume Studio draft textarea");
+await studioDraft.waitFor();
+await studioDraft.fill(JSON.stringify({ name: "安装验收候选人", summary: "已由用户确认的平台工程实习经历" }, null, 2));
+console.log("resume-studio draft-filled");
+const studioEvidence = page.getByLabel("草稿证据精确引用");
+console.log(`resume-studio evidence-count=${await studioEvidence.count()}`);
+await studioEvidence.fill("evidence_installed_resume_1");
+console.log("resume-studio evidence-filled");
+const promoteButton = page.getByRole("button", { name: "审核草稿并创建新修订" });
+console.log(`resume-studio promote-disabled=${await promoteButton.isDisabled()}`);
+await promoteButton.click();
+console.log("resume-studio promotion-clicked");
+await page.waitForTimeout(500);
+console.log(`resume-studio status=${(await page.locator('[role="status"]').allTextContents()).join(" | ")}`);
+await page.getByText("草稿已由用户审核并生成新的不可变简历修订；现在可正式渲染。", { exact: true }).waitFor();
+await page.getByRole("button", { name: "生成预览与 PDF" }).click();
+await page.getByText("已由用户确认的本地简历预览", { exact: true }).waitFor();
+const pdfDownload = page.waitForEvent("download");
+await page.getByRole("button", { name: "下载 PDF" }).click();
+const pdf = await pdfDownload;
+await pdf.saveAs(join(artifactDir, "installed-resume-studio.pdf"));
+await page.getByLabel("审核理由").fill("安装版人工核对通过");
+await page.getByRole("button", { name: "批准" }).click();
+await page.getByText(/已由用户/, { exact: false }).last().waitFor();
+await page.screenshot({ path: join(artifactDir, "installed-resume-studio-render.png"), fullPage: true });
 
 await page.getByRole("link", { name: "申请与面试" }).click();
 await page.getByText("application_installed_e2e", { exact: true }).waitFor();

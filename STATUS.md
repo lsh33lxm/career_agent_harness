@@ -524,3 +524,9 @@
 - Extended Resume Studio import validation to preserve unknown top-level Magic Resume fields for
   forward-compatible round trips. Existing base revisions remain immutable and patch/review gates
   are unchanged. Resume Studio/API tests passed (7 focused backend tests plus 2 desktop tests).
+- Installed Windows Resume Studio verification passed on 2026-09-25: local draft load, evidence
+  reference, user-reviewed Patch proposal, immutable ResumeRevision creation, HTML/PDF render,
+  PDF download, render approval, screenshot capture, desktop exit code 0, zero sidecar residue,
+  and Playwright teardown. Evidence is retained outside Git under the local verification artifact
+  directory; this does not change Desktop Verification Gate, which remains NO-GO for the separate
+  real browser Resume Review click-chain requirement.

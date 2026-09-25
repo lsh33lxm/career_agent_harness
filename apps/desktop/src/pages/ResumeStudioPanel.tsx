@@ -178,6 +178,21 @@ export function ResumeStudioPanel() {
     });
   }
 
+  function updateTopLevelField(key: string, next: string) {
+    if (!parsedDraft) return;
+    const current = parsedDraft[key];
+    let value: unknown = next;
+    if (typeof current === "number") {
+      const parsed = Number(next);
+      value = Number.isFinite(parsed) ? parsed : next;
+    } else if (typeof current === "boolean") {
+      value = next === "true";
+    } else if (current === null) {
+      value = next || null;
+    }
+    updateDraftContent(JSON.stringify({ ...parsedDraft, [key]: value }, null, 2));
+  }
+
   function undoDraft() {
     setDraftHistory((history) => {
       const previous = history.at(-1);
@@ -379,7 +394,7 @@ export function ResumeStudioPanel() {
       </div>
       <p className="text-aux" role="status">{message}</p>
       <div className="resume-draft-workspace">
-        <div><Field label="建议草稿（JSON，本地自动保存）"><textarea className="textarea resume-studio__editor" aria-label="简历建议草稿" value={draftContent} onChange={(event) => updateDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></Field><div className="button-row"><button className="btn btn--secondary" type="button" onClick={undoDraft} disabled={draftHistory.length === 0}>撤销</button><button className="btn btn--secondary" type="button" onClick={redoDraft} disabled={draftFuture.length === 0}>重做</button><button className="btn btn--secondary" type="button" onClick={() => void validateDraft()} disabled={!parsedDraft}>校验简历结构</button><button className="btn btn--primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新修订</button></div>{validationMessage && <p role="status">{validationMessage}</p>}<Field label="证据精确引用"><input className="input" aria-label="草稿证据精确引用" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="输入证据引用" /></Field></div>
+        <div>{parsedDraft && <div className="resume-field-editor" aria-label="简历字段编辑"><strong>字段编辑</strong>{Object.entries(parsedDraft).filter(([, value]) => value === null || ["string", "number", "boolean"].includes(typeof value)).map(([key, value]) => <Field key={key} label={key}><input className="input" aria-label={`简历字段 ${key}`} value={value === null ? "" : String(value)} onChange={(event) => updateTopLevelField(key, event.target.value)} /></Field>)}</div>}<Field label="建议草稿（JSON，本地自动保存）"><textarea className="textarea resume-studio__editor" aria-label="简历建议草稿" value={draftContent} onChange={(event) => updateDraftContent(event.target.value)} placeholder={'{\n  "summary": "…"\n}'} /></Field><div className="button-row"><button className="btn btn--secondary" type="button" onClick={undoDraft} disabled={draftHistory.length === 0}>撤销</button><button className="btn btn--secondary" type="button" onClick={redoDraft} disabled={draftFuture.length === 0}>重做</button><button className="btn btn--secondary" type="button" onClick={() => void validateDraft()} disabled={!parsedDraft}>校验简历结构</button><button className="btn btn--primary" type="button" onClick={promoteDraft} disabled={!loadedRevision || !parsedDraft || !profileId || !evidenceRef.trim()}>审核草稿并创建新修订</button></div>{validationMessage && <p role="status">{validationMessage}</p>}<Field label="证据精确引用"><input className="input" aria-label="草稿证据精确引用" value={evidenceRef} onChange={(event) => setEvidenceRef(event.target.value)} placeholder="输入证据引用" /></Field></div>
         <div>
           <Field label="预览主题"><select className="select" aria-label="预览主题" value={previewTheme} onChange={(event) => setPreviewTheme(event.target.value)}><option value="warm-paper">暖纸</option><option value="compact-ink">紧凑墨色</option></select></Field>
           <article className={`resume-draft-preview ${previewTheme}`} aria-label="草稿实时预览">

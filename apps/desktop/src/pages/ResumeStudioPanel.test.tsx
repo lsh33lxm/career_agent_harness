@@ -111,3 +111,14 @@ it("supports local draft undo and redo without changing Career Core", () => {
   fireEvent.click(screen.getByRole("button", { name: "重做" }));
   expect((editor as HTMLTextAreaElement).value).toBe('{"summary":"第二版"}');
 });
+
+it("edits scalar resume fields while preserving the JSON round trip", () => {
+  window.__ACH_CONFIG__ = { apiBaseUrl: "http://127.0.0.1:8765", launchToken: "resume-ui-token" };
+  vi.stubGlobal("fetch", vi.fn());
+  render(<ResumeStudioPanel />);
+  const editor = screen.getByLabelText("简历建议草稿");
+  fireEvent.change(editor, { target: { value: '{"summary":"原始摘要","unknownField":{"keep":true}}' } });
+  fireEvent.change(screen.getByLabelText("简历字段 summary"), { target: { value: "更新后的摘要" } });
+  expect((screen.getByLabelText("简历建议草稿") as HTMLTextAreaElement).value).toContain("更新后的摘要");
+  expect((screen.getByLabelText("简历建议草稿") as HTMLTextAreaElement).value).toContain("unknownField");
+});

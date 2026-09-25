@@ -535,3 +535,9 @@
   all three Playwright cases passed: Resume Review full UI flow, API restart persistence, and API
   unavailable Demo Mode recovery. Evidence is local under
   `artifacts/verification/desktop-gate-20260925-153822/`.
+- Rebuilt the NSIS installer from source commit `8634797` on 2026-09-25; build completed and the
+  installer SHA-256 was `D3FC8210C89E34AFF779D79ABC58C021A0BCFE67E4024CE60515821AA7A78989`.
+  A silent install returned exit code 0 but did not place the executable in the requested disposable
+  directory after the prior installation was removed. This is an installer-environment blocker;
+  it is not counted as an installed-package pass, and the overall Desktop Verification Gate remains
+  NO-GO until the same-build installation and sidecar lifecycle are verified.

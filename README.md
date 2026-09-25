@@ -7,7 +7,7 @@
 ## 核心能力
 
 - **岗位机会：** 搜索和浏览职位名称、公司、地点、来源与技能标签；由你决定是否加入求职流程。
-- **官方校招来源：** 只读接入腾讯 `join.qq.com` 的公开岗位列表与完整 JD；美图 `campus.meitu.com` 的校园/实习列表已验证，公开详情页当前仍待站点提供可核验的完整 JD。
+- **官方校招来源：** 只读接入腾讯 `join.qq.com` 的公开岗位列表与完整 JD；美图 `campus.meitu.com` / `hr.meitu.com` 的校园/实习列表与公开详情页均已验证。
 - **JD 逐条审核：** 在岗位来源面板查看原文快照，逐条接受、拒绝或修改候选要求；接受时绑定已确认能力节点，保留证据和不可变修订历史。
 - **项目与证据：** 将项目材料、经历和能力线索关联起来；岗位要求不会被当作个人经历事实。
 - **简历审核：** 导入 TXT、Markdown 或 PDF 后先预览；逐条接受、拒绝或手动编辑建议，再生成独立简历版本，不覆盖基础简历。
@@ -25,7 +25,7 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 仓库已有 Windows 预发布版 [`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)，其中包含安装包、数据 manifest 和 SHA-256 校验文件。它对应此前已验证的发布快照；当前源码分支的后续修改尚未生成新的安装包，因此不要把 Beta.4 当作当前源码的构建产物。
 
-当前源码已重建并安装 NSIS 包；安装窗口中完成官方来源状态面板点击、Resume Review 接受/拒绝/手动编辑后接受、生成 ResumeRevision、3 张截图、原生关闭和 Playwright teardown，桌面与 sidecar 均正常退出。**Desktop Verification Gate v0.1 仍为 NO-GO**：本次安装尚未在同一构建上复测 492 条离线种子查询、端口冲突恢复和跨重启持久性。完成这些检查后再重新评估，不据此创建新 Beta。这不启用自动投递、自动发信或后台批量外部操作。
+当前源码 `c77ac63` 已重建并安装 NSIS 包。全新安装窗口完成官方来源状态面板点击、Resume Review 接受/拒绝/手动编辑后接受、生成 ResumeRevision、3 张 `1860x1200` 截图、原生关闭和 Playwright teardown；安装退出码为 `0`，sidecar 残留为 `0`。同一安装包在隔离 `ACH_DATA_DIR` 下验证了 `/health=200`、离线种子查询 `492` 条、占用 `49123` 端口后自动切换到新端口，以及关闭后重启仍可读取 `492` 条。当前 **Desktop Verification Gate v0.1：GO（本次源码与验证范围）**。这不启用自动投递、自动发信或后台批量外部操作。
 
 申请页提供按 Career Core 状态分列的申请看板、面试安排/改期/完成/取消和 RFC 5545 `.ics` 日历导出。导出的事件使用稳定面试 ID、UTC 时间和申请关联字段，便于导入本地日历。
 
@@ -39,7 +39,7 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 - 默认数据保存在本机；Demo 浏览不连接外部模型或平台。连接外部模型或邮箱需要你主动配置并触发。
 - 职位种子只发布已筛查的规范化元数据。职位来源证据不等于个人经历或技能证据。
-- **当前 Desktop Verification Gate v0.1：NO-GO（本次安装版 Resume Review 已通过；同一构建的离线种子、端口恢复与重启持久性尚未复验）**。截图和安装证据保存在本地验证目录，不进入 GitHub 快照；稳定版仍需单独的稳定性决策。
+- **当前 Desktop Verification Gate v0.1：GO（本次源码与验证范围）**。本次安装证据保存在本地 `artifacts/verification/installed-runtime-c77ac63/`，不进入 GitHub 快照；稳定版仍需单独的稳定性决策。安装包 SHA-256：`56207c89e3600e79660430d34b666642ce5302827fed0ec8b8d8ea2d89c4d3fd`；sidecar SHA-256：`e5ac4368c2061160853d306ad05f34f6f5a1652c8e2920ff8a10a99b9f68177a`。
 
 ## 本地开发
 

@@ -1,5 +1,13 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-25 c77ac63 Windows 安装与 Desktop Verification Gate 复验
+
+- 从当前源码 `c77ac63` 重建 sidecar 与 NSIS。sidecar SHA-256：`e5ac4368c2061160853d306ad05f34f6f5a1652c8e2920ff8a10a99b9f68177a`；NSIS 安装包 SHA-256：`56207c89e3600e79660430d34b666642ce5302827fed0ec8b8d8ea2d89c4d3fd`。
+- 全新安装目录 `C:\Temp\ach-c77ac63-install`、隔离数据目录和 CDP 端口 `9287` 下，真实安装 WebView 完成官方来源状态 fixture、Resume Review 接受/拒绝/手动编辑后接受、ResumeRevision、三张 `1860x1200` 截图、原生关闭及 Playwright teardown；桌面退出码 `0`，sidecar 残留 `0`。
+- 独立运行时复验：固定占用 `49123` 后应用切换到 `59794`；安装包 `/health` 返回 `200`、`environment=demo`；`POST /api/v1/jobs/packaged-seed-search` 返回 `492` 条；同一 `ACH_DATA_DIR` 重启后再次返回 `492`；结束后 sidecar 残留 `0`。
+- 证据目录：`artifacts/verification/installed-runtime-c77ac63/`。截图、日志和运行库均为本地验证材料，不进入发布快照。
+- 基于浏览器子门、当前安装窗口和离线/端口/重启结果，**Desktop Verification Gate v0.1：GO（本次源码与验证范围）**。仍不创建稳定版，不启用自动投递、自动发信或后台批量操作。
+
 ## 2026-09-25 美图官方完整 JD 适配
 
 - 修复 `campus.meitu.com` 列表对应 `hr.meitu.com/jobCampus|jobIntern/{jobId}` 详情的 SSR HTML 解析；严格限制在美图允许域名和详情路由，不把首页或第一条列表记录冒充详情。

@@ -1,0 +1,80 @@
+/* 观复 Career Harness — design tokens. Single source for color, type, space, motion. */
+:root {
+  /* Warm quiet palette */
+  --paper: #f3eee2;
+  --surface: #fbf8f0;
+  --surface-raised: #fffdf8;
+  --surface-sunken: #f0eadd;
+  --ink: #17332e;
+  --muted: #68736c;
+  --faint: #8a9284;
+
+  /* Brand */
+  --green: #0a514d;
+  --green-deep: #093f3d;
+  --green-hover: #0d5f5a;
+  --green-soft: #e3ece6;
+  --on-green: #f7f4e9;
+  --gold: #c9982f;
+  --gold-strong: #a97e21;
+  --gold-text: #77571c;
+  --gold-soft: #f5e7c4;
+  --danger: #9a4a3e;
+  --danger-deep: #7e3a30;
+  --danger-soft: #f7e7e2;
+  --info-soft: #e8efe9;
+
+  /* Lines */
+  --border: #ded7c6;
+  --border-strong: #c8bfa9;
+  --hairline: #e7e1d2;
+
+  /* Type */
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-brand: "STKaiti", "KaiTi", "Songti SC", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  --fs-eyebrow: 12px;
+  --fs-aux: 13px;
+  --fs-body: 15px;
+  --fs-section: 16px;
+  --fs-title: 36px;
+
+  /* 4/8pt spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Controls */
+  --control-h: 40px;
+  --control-h-lg: 44px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-1: 0 1px 2px rgb(23 51 46 / 5%);
+  --shadow-2: 0 8px 24px rgb(23 51 46 / 10%);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--gold) 42%, transparent);
+
+  /* Motion */
+  --dur-fast: 160ms;
+  --dur: 200ms;
+  --ease: cubic-bezier(0.25, 0.6, 0.3, 1);
+
+  /* Layout */
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 64px;
+  --topbar-h: 60px;
+  --content-max: 1160px;
+
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}

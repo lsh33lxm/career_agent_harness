@@ -1,0 +1,19 @@
+{
+  "schema_version": "demo-v1",
+  "generated_by": "scripts/build_demo_dataset.py",
+  "source_sha256": "477ed75bb81dd2a66a1b06f91c8af5bfb5997704b6a4c0d7bf19b9482eef60cd",
+  "source_row_count": 492,
+  "candidate_count": 492,
+  "selected_count": 24,
+  "seed": "ach-demo-v1",
+  "excluded_fields": [
+    "original_url",
+    "responsibilities_raw",
+    "requirements_raw",
+    "preferred_raw",
+    "original_archive_path",
+    "source_table",
+    "source_id"
+  ],
+  "disclaimer": "历史岗位脱敏样本，不代表实时职位，不应直接用于投递决策。"
+}

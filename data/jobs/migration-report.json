@@ -1,0 +1,20 @@
+{
+  "migration_version": "legacy-jobs-v2",
+  "generated_at": "2026-09-23T19:29:05Z",
+  "authorization_policy": "user-attested-source-ledger-authorization",
+  "source_file_sha256": {
+    "jobs_csv": "477ed75bb81dd2a66a1b06f91c8af5bfb5997704b6a4c0d7bf19b9482eef60cd",
+    "source_ledger_csv": "164d4715b7bbe39f649654bf506e5c1462e0dc7f478668c200c62e7155090fa5"
+  },
+  "record_count": 492,
+  "classification_summary": {
+    "release-eligible": 492,
+    "local-only": 0,
+    "excluded": 0
+  },
+  "skipped_count": 0,
+  "skipped_reasons": {
+    "no_redistribution_evidence": 0
+  },
+  "idempotency_key": "333e3edab8013d21ac450a51c2f91ba5f55d717b5c702fb17dbcea9a7f772a16"
+}

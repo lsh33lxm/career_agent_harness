@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { admitStagedJob, listJobRequirements, proposeJobRequirement, reviewJobRequirement, searchOfficialJobs } from "../api/jobRadar";
+import { admitStagedJob, listJobListingLifecycle, listJobRequirements, listJobSourcePolicies, proposeJobRequirement, reviewJobRequirement, searchOfficialJobs } from "../api/jobRadar";
 import { getCapabilities, listCapabilityIdentities } from "../api/capabilities";
 import { OfficialSourcesPanel } from "./OfficialSourcesPanel";
 
@@ -12,6 +12,8 @@ vi.mock("../api/jobRadar", () => ({
   proposeJobRequirement: vi.fn(),
   reviewJobRequirement: vi.fn(),
   searchOfficialJobs: vi.fn(),
+  listJobListingLifecycle: vi.fn(),
+  listJobSourcePolicies: vi.fn(),
 }));
 vi.mock("../api/capabilities", () => ({
   getCapabilities: vi.fn(),
@@ -20,6 +22,24 @@ vi.mock("../api/capabilities", () => ({
 
 describe("OfficialSourcesPanel", () => {
   afterEach(() => cleanup());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(listCapabilityIdentities).mockResolvedValue([]);
+  });
+
+  it("shows listing lifecycle and source failure state after a search", async () => {
+    vi.mocked(searchOfficialJobs).mockResolvedValue([]);
+    vi.mocked(listJobListingLifecycle).mockResolvedValue([{
+      observation_id: "observation_1", source_id: "official-cn-tencent-campus", query: "AI", source_ref: "https://join.qq.com/job/1", url_fingerprint: "a".repeat(64),
+      first_seen_at: "2026-09-25T08:00:00Z", last_seen_at: "2026-09-25T08:00:00Z", last_checked_at: "2026-09-25T09:00:00Z", consecutive_missing: 1, status: "pending_verification", last_success_run_id: "run_1",
+    }]);
+    vi.mocked(listJobSourcePolicies).mockResolvedValue([{ source_id: "official-cn-tencent-campus", rate_limit_ms: 1000, max_retries: 2, failure_threshold: 3, failure_count: 1, disabled: false, last_error: "上次响应超时", updated_at: "2026-09-25T09:00:00Z" }]);
+    render(<OfficialSourcesPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "读取官方岗位" }));
+    expect(await screen.findByText(/岗位观察：有效 0 · 待核验 1 · 已失效 0/)).toBeTruthy();
+    expect(screen.getByText(/连续失败 1\/3/)).toBeTruthy();
+    expect(screen.getByText(/上次响应超时/)).toBeTruthy();
+  });
 
   it("binds an active capability before accepting a JD requirement", async () => {
     vi.mocked(listCapabilityIdentities).mockResolvedValue(["candidate_1"]);

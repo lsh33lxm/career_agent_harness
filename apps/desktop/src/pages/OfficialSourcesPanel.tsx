@@ -7,10 +7,14 @@ import {
   admitStagedJob,
   getJobSourceDocument,
   getOfficialJobDetail,
+  listJobListingLifecycle,
+  listJobSourcePolicies,
   listJobRequirements,
   proposeJobRequirement,
   reviewJobRequirement,
   type JobRequirement,
+  type JobListingObservation,
+  type JobSourcePolicy,
   searchOfficialJobs,
   type JobStagingRecord,
   type OfficialSourceSearchRequest,
@@ -45,6 +49,25 @@ export function OfficialSourcesPanel() {
   const [capabilityNodes, setCapabilityNodes] = useState<CapabilityNode[]>([]);
   const [graphVersionId, setGraphVersionId] = useState<string | null>(null);
   const [capabilityError, setCapabilityError] = useState("");
+  const [lifecycle, setLifecycle] = useState<JobListingObservation[]>([]);
+  const [sourcePolicy, setSourcePolicy] = useState<JobSourcePolicy | null>(null);
+  const [lifecycleError, setLifecycleError] = useState("");
+
+  async function refreshSourceState(nextSourceId: string) {
+    setLifecycleError("");
+    const [observationsResult, policiesResult] = await Promise.allSettled([
+      Promise.resolve(listJobListingLifecycle(nextSourceId)),
+      Promise.resolve(listJobSourcePolicies()),
+    ]);
+    if (observationsResult.status === "fulfilled" && Array.isArray(observationsResult.value)) {
+      setLifecycle(observationsResult.value);
+    } else {
+      setLifecycleError("来源状态暂时无法读取");
+    }
+    if (policiesResult.status === "fulfilled" && Array.isArray(policiesResult.value)) {
+      setSourcePolicy(policiesResult.value.find((policy) => policy.source_id === nextSourceId) ?? null);
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -70,6 +93,7 @@ export function OfficialSourcesPanel() {
     try {
       const next = await searchOfficialJobs({ source_id: sourceId, query: query.trim() });
       setItems(next);
+      await refreshSourceState(sourceId);
       setMessage(next.length > 0 ? `已读取 ${next.length} 条官方岗位，均需你逐条确认。` : "官方页面暂未返回可解析岗位；这不代表来源失效。请稍后手动重试。 ");
     } catch (error) {
       setMessage(localizedApiError(error));
@@ -171,6 +195,15 @@ export function OfficialSourcesPanel() {
         </div>
         {message && <InlineNotice tone={message.startsWith("已读取") ? "success" : "muted"} role="status">{message}</InlineNotice>}
         {capabilityError && <InlineNotice tone="danger" role="status">能力档案暂时无法读取：{capabilityError}</InlineNotice>}
+        <div className="source-health" aria-label="官方来源状态">
+          <strong>来源状态</strong>
+          <span>{sourcePolicy ? (sourcePolicy.disabled ? "已停用" : "已启用") : "尚未读取"}</span>
+          {sourcePolicy && <span>连续失败 {sourcePolicy.failure_count}/{sourcePolicy.failure_threshold}</span>}
+          {sourcePolicy?.last_error && <span>最近错误：{sourcePolicy.last_error}</span>}
+          {lifecycle.length > 0 && <span>岗位观察：有效 {lifecycle.filter((row) => row.status === "active").length} · 待核验 {lifecycle.filter((row) => row.status === "pending_verification").length} · 已失效 {lifecycle.filter((row) => row.status === "inactive").length}</span>}
+          {lifecycle.length > 0 && <span>最近检查：{new Date(Math.max(...lifecycle.map((row) => Date.parse(row.last_checked_at)))).toLocaleString()}</span>}
+        </div>
+        {lifecycleError && <InlineNotice tone="muted" role="status">{lifecycleError}，不影响岗位搜索。</InlineNotice>}
         {items.length > 0 && <div className="record-list" aria-label="官方岗位结果">
           {items.map((item) => <article className="record-list__item" key={item.staging_id}>
             <div>

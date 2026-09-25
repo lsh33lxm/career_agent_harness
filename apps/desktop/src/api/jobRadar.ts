@@ -2,6 +2,33 @@ import { apiRequest } from "./client";
 
 export type JobStagingStatus = "staged" | "duplicate" | "admitted" | "rejected";
 
+export type JobListingLifecycleStatus = "active" | "pending_verification" | "inactive";
+
+export interface JobListingObservation {
+  observation_id: string;
+  source_id: string;
+  query: string;
+  source_ref: string;
+  url_fingerprint: string;
+  first_seen_at: string;
+  last_seen_at: string;
+  last_checked_at: string;
+  consecutive_missing: number;
+  status: JobListingLifecycleStatus;
+  last_success_run_id: string;
+}
+
+export interface JobSourcePolicy {
+  source_id: string;
+  rate_limit_ms: number;
+  max_retries: number;
+  failure_threshold: number;
+  failure_count: number;
+  disabled: boolean;
+  last_error: string | null;
+  updated_at: string;
+}
+
 export interface JobStagingRecord {
   staging_id: string;
   source_id: string;
@@ -49,6 +76,15 @@ export function importManualJob(request: ManualJobImportRequest): Promise<JobSta
     method: "POST",
     body: JSON.stringify(request),
   });
+}
+
+export function listJobListingLifecycle(sourceId?: string): Promise<JobListingObservation[]> {
+  const query = sourceId ? `?source_id=${encodeURIComponent(sourceId)}` : "";
+  return apiRequest<JobListingObservation[]>(`/api/v1/jobs/listing-lifecycle${query}`);
+}
+
+export function listJobSourcePolicies(): Promise<JobSourcePolicy[]> {
+  return apiRequest<JobSourcePolicy[]>("/api/v1/jobs/source-policies");
 }
 
 export interface OfficialSourceSearchRequest {

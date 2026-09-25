@@ -546,3 +546,12 @@
   cleanly, and Playwright teardown passed. This confirms the existing install remains usable, but
   it does not close the same-build NSIS installation blocker above because its executable predates
   the `8634797` rebuild.
+- Root cause and same-build fix verified on 2026-09-25: Tauri CLI's generated NSIS output retained
+  a stale payload. After `cargo clean`, rebuilding, and invoking the bundled Tauri `makensis.exe`
+  directly on the generated `installer.nsi`, the installed executable SHA matched the current
+  release executable (`99E8DDF4C150D31CAA2268EFA7919C50565B067093A4638A6408F71449CE4E24`).
+  The manually rebuilt installer SHA was `62457AC8D2A6A46968DB12A7DCD312A26137DBEC08689ADAD4BAB0A2D0392BB9`.
+  A fresh install from that package passed the installed Resume Studio/Application probe, sidecar
+  health, and offline packaged-seed search with 492 records; the manually started sidecar exited
+  with zero remaining processes. This closes the same-build installation blocker for this tested
+  package, while the project still requires a new clean publication snapshot before any Beta review.

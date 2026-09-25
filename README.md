@@ -25,9 +25,18 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 ## Windows 构建状态
 
-仓库已有 Windows 预发布版 [`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)，其中包含安装包、数据 manifest 和 SHA-256 校验文件。它对应此前已验证的发布快照；当前源码分支的后续修改尚未生成新的安装包，因此不要把 Beta.4 当作当前源码的构建产物。
+仓库已有 Windows 预发布版 [`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)，其中包含安装包、数据 manifest 和 SHA-256 校验文件。它对应此前的干净发布快照；当前源码分支在此之后又增加了官方来源、简历工作室和面试复盘改动，因此不要把 Beta.4 当作当前源码的构建产物。
 
-当前源码生产浏览器子门通过 3/3；同构建 NSIS 安装、隔离数据、492 条离线查询、sidecar 健康和退出也已验证。安装版探针覆盖 Resume Studio、申请与面试流程，并保留截图和 Playwright teardown 证据，但这些接口使用本地 fixture；因此它不能替代当前发布候选所要求的安装版真实 Resume Review 点击链路。当前 **Desktop Verification Gate v0.1：NO-GO**，不得把 fixture 验收写成真实线上全链路。
+当前源码生产浏览器子门通过 3/3；同构建 NSIS 安装、隔离数据、492 条离线查询、sidecar 健康和退出也已验证。最新安装版探针在 `artifacts/verification/installed-manual-nsis-20260925/` 保存了官方来源面板、Resume Review 三种人工决定、Resume Studio、申请/面试日历截图，以及退出码 0、sidecar 数量 0 和 Playwright teardown 结果。该安装版探针对 API 使用本地 fixture 响应，用于验证打包 WebView 的点击和退出行为；它不等同于真实后端或线上来源链路。因此当前 **Desktop Verification Gate v0.1：NO-GO**，不得把 fixture 验收写成真实线上全链路。
+
+安装版验收的关键摘要为 `installed-window-summary.json`：`desktop_exit_code=0`、`sidecar_count=0`、`result=passed`。复现需要使用全新的安装目录、独立 `ACH_DATA_DIR` 和专用 WebView2 CDP 端口：
+
+```powershell
+pwsh -File scripts/verify_installed_window.ps1 `
+  -InstallRoot <安装目录> `
+  -CdpPort 9245 `
+  -ArtifactRoot artifacts/verification/installed-window-current
+```
 
 申请页提供按 Career Core 状态分列的申请看板、面试安排/改期/完成/取消和 RFC 5545 `.ics` 日历导出。导出的事件使用稳定面试 ID、UTC 时间和申请关联字段，便于导入本地日历。
 
@@ -43,7 +52,9 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 - 默认数据保存在本机；Demo 浏览不连接外部模型或平台。连接外部模型或邮箱需要你主动配置并触发。
 - 职位种子只发布已筛查的规范化元数据。职位来源证据不等于个人经历或技能证据。
-- **当前 Desktop Verification Gate v0.1：NO-GO**。阻塞项是发布候选安装版的真实 Resume Review 浏览器点击链路及其完整截图、Playwright teardown 证据尚未闭环。当前安装探针中的 Resume Studio 与 Application/Interview 使用本地 fixture，不能替代此门槛。稳定版发布仍禁止；本地证据保存在 `artifacts/verification/` 且不进入 GitHub 快照。
+- **当前 Desktop Verification Gate v0.1：NO-GO**。当前安装版已经有真实 WebView2 点击、完整截图、退出和 Playwright teardown 证据，但 Resume Review 请求仍由本地 fixture 拦截；发布候选还缺少同一安装构建连接真实本地服务/真实 Resume Review 数据的完整点击链路。稳定版发布仍禁止；本地证据保存在 `artifacts/verification/` 且不进入 GitHub 快照。
+
+NO-GO 不影响离线 Demo 的使用：岗位浏览、搜索、筛选、简历草稿审核、申请看板和面试日历均可在本机运行。它只表示当前候选尚未满足“真实 Resume Review 安装版链路”的发布验收条件。
 
 ## 本地开发
 

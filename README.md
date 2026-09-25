@@ -25,7 +25,7 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 仓库已有 Windows 预发布版 [`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)，其中包含安装包、数据 manifest 和 SHA-256 校验文件。它对应此前已验证的发布快照；当前源码分支的后续修改尚未生成新的安装包，因此不要把 Beta.4 当作当前源码的构建产物。
 
-当前源码 `c77ac63` 已重建并安装 NSIS 包。全新安装窗口完成官方来源状态面板点击、Resume Review 接受/拒绝/手动编辑后接受、生成 ResumeRevision、3 张 `1860x1200` 截图、原生关闭和 Playwright teardown；安装退出码为 `0`，sidecar 残留为 `0`。同一安装包在隔离 `ACH_DATA_DIR` 下验证了 `/health=200`、离线种子查询 `492` 条、占用 `49123` 端口后自动切换到新端口，以及关闭后重启仍可读取 `492` 条。当前 **Desktop Verification Gate v0.1：GO（本次源码与验证范围）**。这不启用自动投递、自动发信或后台批量外部操作。
+最近一次完整 GO 证据对应较早的 `c77ac63` 构建，不能代表当前源码。当前分支 `98cf8fc` 的生产浏览器子门通过 3/3；当前同构建 NSIS 安装与隔离数据、492 条离线查询、sidecar 健康和退出也已验证。安装版 Resume Studio 与申请/面试探针使用本地 fixture，真实 Resume Review 浏览器点击链路、完整截图和 Playwright teardown 尚未在该链路完成。因此当前 **Desktop Verification Gate v0.1：NO-GO**；不得将 fixture 验收描述为真实线上全链路。
 
 申请页提供按 Career Core 状态分列的申请看板、面试安排/改期/完成/取消和 RFC 5545 `.ics` 日历导出。导出的事件使用稳定面试 ID、UTC 时间和申请关联字段，便于导入本地日历。
 
@@ -33,13 +33,13 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 本地浏览和记录不会自动投递岗位、自动发送邮件或执行后台批量外部操作。简历修改、申请状态和每封沟通草稿都由你审核和确认。
 
-已发布 Windows 预发布版：[`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)。安装包 SHA-256：`5c40a3bf730a9fcf508cef02462a4d351d3324bc305dd8e817ac3780b042201f`。这是预发布版本，请先在隔离环境试用。
+已发布 Windows 预发布版：[`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)。它对应历史发布快照，不包含当前源码的全部后续修改。当前提交尚未作为新的安装包发布；请勿把 Beta.4 当作当前源码构建产物。
 
 ## 隐私、数据与验收状态
 
 - 默认数据保存在本机；Demo 浏览不连接外部模型或平台。连接外部模型或邮箱需要你主动配置并触发。
 - 职位种子只发布已筛查的规范化元数据。职位来源证据不等于个人经历或技能证据。
-- **当前 Desktop Verification Gate v0.1：GO（本次源码与验证范围）**。本次安装证据保存在本地 `artifacts/verification/installed-runtime-c77ac63/`，不进入 GitHub 快照；稳定版仍需单独的稳定性决策。安装包 SHA-256：`56207c89e3600e79660430d34b666642ce5302827fed0ec8b8d8ea2d89c4d3fd`；sidecar SHA-256：`e5ac4368c2061160853d306ad05f34f6f5a1652c8e2920ff8a10a99b9f68177a`。
+- **当前 Desktop Verification Gate v0.1：NO-GO**。阻塞项是真实 Resume Review 浏览器点击链路、该链路的完整截图和 Playwright teardown 尚未完成。当前安装探针中的 Resume Studio 与 Application/Interview 使用本地 fixture，不能替代此门槛。稳定版发布仍禁止；本地证据保存在 `artifacts/verification/` 且不进入 GitHub 快照。
 
 ## 本地开发
 

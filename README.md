@@ -27,7 +27,7 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 仓库已有 Windows 预发布版 [`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)，其中包含安装包、数据 manifest 和 SHA-256 校验文件。它对应此前的干净发布快照；当前源码分支在此之后又增加了官方来源、简历工作室和面试复盘改动，因此不要把 Beta.4 当作当前源码的构建产物。
 
-当前源码生产浏览器子门通过 3/3；同构建 NSIS 安装、隔离数据、492 条离线查询、sidecar 健康和退出也已验证。最新安装版探针在 `artifacts/verification/installed-manual-nsis-20260925/` 保存了官方来源面板、Resume Studio、申请/面试日历截图；本次真实安装版复验在 `artifacts/verification/manual-real-debug-7/` 使用 `use_fixture=false`，完成机会页导航、真实本地 sidecar `demo-start/demo-story`、Resume Review 接受/拒绝/手动编辑后接受、ResumeRevision 生成、三张完整截图和 Playwright teardown，退出码为 0、sidecar 数量为 0。基于该安装构建与验证范围，**Desktop Verification Gate v0.1：GO（本次安装构建与验证范围）**。该结论不自动延伸到未来重建包；重建安装包必须重新执行同样的验证。稳定版仍禁止，不得把本地 Demo 证据扩展为线上来源或自动投递能力。
+当前源码生产浏览器子门通过 3/3；同构建 NSIS 安装、隔离数据、492 条离线查询、sidecar 健康和退出也已有局部证据。最新安装版探针在 `artifacts/verification/installed-manual-nsis-20260925/` 保存了官方来源面板、Resume Studio、申请/面试日历截图；本次真实安装版复验在 `artifacts/verification/manual-real-debug-7/` 使用 `use_fixture=false`，完成机会页导航、真实本地 sidecar `demo-start/demo-story`、Resume Review 接受/拒绝/手动编辑后接受、ResumeRevision 生成、三张完整截图和 Playwright teardown，退出码为 0、sidecar 数量为 0。根据当前发布候选的验收规则，**Desktop Verification Gate v0.1：NO-GO**；这些局部证据仍需绑定到当前干净发布快照并完成最终候选复核，不能直接替代 Gate 结论。稳定版仍禁止，不得把本地 Demo 证据扩展为线上来源或自动投递能力。
 
 安装版验收的关键摘要为 `installed-window-summary.json`：`desktop_exit_code=0`、`sidecar_count=0`、`result=passed`。复现需要使用全新的安装目录、独立 `ACH_DATA_DIR` 和专用 WebView2 CDP 端口：
 
@@ -54,7 +54,7 @@ pwsh -File scripts/verify_installed_window.ps1 `
 
 - 默认数据保存在本机；Demo 浏览不连接外部模型或平台。连接外部模型或邮箱需要你主动配置并触发。
 - 职位种子只发布已筛查的规范化元数据。职位来源证据不等于个人经历或技能证据。
-- **当前 Desktop Verification Gate v0.1：GO（本次安装构建与验证范围）**。`manual-real-debug-7` 已完成真实安装版机会页、真实本地 sidecar、Resume Review 三种人工决定、完整截图、原生关闭和 Playwright teardown；摘要记录 `desktop_exit_code=0`、`sidecar_count=0`、`result=passed`。未来重建包仍需重新验证；稳定版发布仍禁止，本地证据保存在 `artifacts/verification/` 且不进入 GitHub 快照。
+- **当前 Desktop Verification Gate v0.1：NO-GO**。`manual-real-debug-7` 已完成一次真实安装版机会页、真实本地 sidecar、Resume Review 三种人工决定、完整截图、原生关闭和 Playwright teardown；摘要记录 `desktop_exit_code=0`、`sidecar_count=0`、`result=passed`。这属于候选安装证据，尚未完成当前干净发布快照的最终 Gate 复核；本地证据保存在 `artifacts/verification/` 且不进入 GitHub 快照。
 
 该安装版 Gate 结论不影响离线 Demo 的使用：岗位浏览、搜索、筛选、简历草稿审核、申请看板和面试日历均可在本机运行。Gate 结论仅覆盖已记录的安装构建与验证范围，后续构建需重新验收。
 

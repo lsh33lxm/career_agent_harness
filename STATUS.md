@@ -1,5 +1,11 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-25 安装版官方来源状态与 Resume Review 全链路
+
+- 从提交 `2d68a40` 重建 sidecar 与 NSIS 安装包。安装包 SHA-256：`ebba94132e468012ed9492f78c3c76c78ea2eb8f3553c93743abf3c8b8162861`；sidecar SHA-256：`37d493057baeb8576dace228cf91cd669f6e73b75524df53e3243346cff92af8`。
+- 使用全新安装目录、隔离数据目录和 CDP 端口 `9261`，安装窗口先完成官方来源状态 fixture 点击（岗位、待核验计数、连续失败、最近错误），再完成 Resume Review 接受/拒绝/手动编辑后接受、生成 ResumeRevision、三张截图、原生窗口关闭和 Playwright teardown。
+- 证据目录：`artifacts/verification/installed-runtime-source-lifecycle-20250925/evidence/`；摘要记录安装窗口退出码 `0`、sidecar 数量 `0`、结果 `passed`。fixture 仅验证安装 UI 接线，不代表官方线上数据。
+
 ## 2026-09-25 安装窗口官方来源状态验收探针
 
 - `scripts/probe_installed_window.mjs` 现在先在真实安装 WebView 中打开机会页，使用本地拦截的官方来源响应形状 fixture 点击“读取官方岗位”，验证岗位标题、待核验数量、连续失败次数和最近错误，再继续 Resume Review 与原生窗口关闭流程。

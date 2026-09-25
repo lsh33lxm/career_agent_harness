@@ -1,0 +1,95 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+docs/
+reference-repos/
+STATUS.md
+artifacts/
+data/jobs/migration-report.json
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Node and frontend
+node_modules/
+apps/desktop/dist/
+apps/desktop/.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+# Rust and Tauri
+target/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/binaries/*.exe
+
+# Runtime data and generated artifacts
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.db-journal
+*.log
+logs/
+cache/
+backups/
+data/raw/
+data/exports/
+data/demo-generated/
+**/job*.db
+**/jobs*.db
+<JOB_DB_PATH>
+artifacts/
+runtime/
+generated/
+reports/generated/
+LEGACY_IMPORT_MANIFEST.json
+LEGACY_RECONCILIATION_REPORT.md
+
+# Sensitive personal materials and browser state
+private/
+personal/
+resumes/private/
+offers/
+browser-profile/
+browser_profiles/
+cookies/
+*.har
+
+# Large source material and office autosaves
+legacy-data/
+raw-data/
+*.xlsx
+*.xls
+*.docx
+*.pdf
+~$*
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Nested workspace lockfile; dependencies are locked at the repository root.
+apps/desktop/package-lock.json

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-career-harness.local/schemas/legacy_import_manifest.schema.json",
+  "title": "Legacy Agent Radar Candidate Import Manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "manifest_status",
+    "source_workspace",
+    "source_files",
+    "source_hashes",
+    "snapshot_candidates",
+    "legacy_keys",
+    "identity_mapping",
+    "approved_entities",
+    "importer_version",
+    "generated_at"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "manifest_status": { "const": "candidate_unapproved" },
+    "source_workspace": { "type": "string" },
+    "source_files": { "type": "array", "items": { "$ref": "#/$defs/sourceFile" } },
+    "source_hashes": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+    },
+    "snapshot_candidates": { "type": "array", "items": { "type": "string" } },
+    "snapshot_sources": { "type": "array", "items": { "type": "string" } },
+    "legacy_keys": { "type": "array", "items": { "type": "string" } },
+    "identity_mapping": {
+      "type": "object",
+      "additionalProperties": { "type": ["string", "null"] }
+    },
+    "approved_entities": { "type": "array", "maxItems": 0 },
+    "excluded_entities": { "type": "array", "items": { "type": "string" } },
+    "deferred_mismatches": { "type": "array", "items": { "type": "string" } },
+    "skipped_entries": { "type": "array", "items": { "type": "object" } },
+    "importer_version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "sourceFile": {
+      "type": "object",
+      "required": [
+        "relative_path",
+        "source_group",
+        "size",
+        "modified_at",
+        "sha256",
+        "category",
+        "legacy_key"
+      ],
+      "properties": {
+        "relative_path": { "type": "string" },
+        "source_group": { "type": "string" },
+        "size": { "type": "integer", "minimum": 0 },
+        "modified_at": { "type": "string", "format": "date-time" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "category": { "type": "string" },
+        "legacy_key": { "type": "string" },
+        "workbook_metadata": { "type": ["object", "null"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

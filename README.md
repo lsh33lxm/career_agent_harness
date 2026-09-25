@@ -25,7 +25,7 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 仓库已有 Windows 预发布版 [`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)，其中包含安装包、数据 manifest 和 SHA-256 校验文件。它对应此前已验证的发布快照；当前源码分支的后续修改尚未生成新的安装包，因此不要把 Beta.4 当作当前源码的构建产物。
 
-最近一次完整 GO 证据对应较早的 `c77ac63` 构建，不能代表当前源码。当前分支 `98cf8fc` 的生产浏览器子门通过 3/3；当前同构建 NSIS 安装与隔离数据、492 条离线查询、sidecar 健康和退出也已验证。安装版 Resume Studio 与申请/面试探针使用本地 fixture，真实 Resume Review 浏览器点击链路、完整截图和 Playwright teardown 尚未在该链路完成。因此当前 **Desktop Verification Gate v0.1：NO-GO**；不得将 fixture 验收描述为真实线上全链路。
+当前源码生产浏览器子门通过 3/3；同构建 NSIS 安装、隔离数据、492 条离线查询、sidecar 健康和退出也已验证。安装版探针覆盖 Resume Studio、申请与面试流程，并保留截图和 Playwright teardown 证据，但这些接口使用本地 fixture；因此它不能替代当前发布候选所要求的安装版真实 Resume Review 点击链路。当前 **Desktop Verification Gate v0.1：NO-GO**，不得把 fixture 验收写成真实线上全链路。
 
 申请页提供按 Career Core 状态分列的申请看板、面试安排/改期/完成/取消和 RFC 5545 `.ics` 日历导出。导出的事件使用稳定面试 ID、UTC 时间和申请关联字段，便于导入本地日历。
 
@@ -33,13 +33,13 @@ Windows Beta 内置 `legacy-jobs-v2` 职位种子，共 **492 条规范化岗位
 
 本地浏览和记录不会自动投递岗位、自动发送邮件或执行后台批量外部操作。简历修改、申请状态和每封沟通草稿都由你审核和确认。
 
-已发布 Windows 预发布版：[`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)。它对应历史发布快照，不包含当前源码的全部后续修改。当前提交尚未作为新的安装包发布；请勿把 Beta.4 当作当前源码构建产物。
+已发布 Windows 预发布版：[`v0.1.0-beta.4`](https://github.com/lsh33lxm/career_agent_harness/releases/tag/v0.1.0-beta.4)。它对应历史发布快照，不包含当前源码的全部后续修改；当前提交也尚未作为新的安装包发布。
 
 ## 隐私、数据与验收状态
 
 - 默认数据保存在本机；Demo 浏览不连接外部模型或平台。连接外部模型或邮箱需要你主动配置并触发。
 - 职位种子只发布已筛查的规范化元数据。职位来源证据不等于个人经历或技能证据。
-- **当前 Desktop Verification Gate v0.1：NO-GO**。阻塞项是真实 Resume Review 浏览器点击链路、该链路的完整截图和 Playwright teardown 尚未完成。当前安装探针中的 Resume Studio 与 Application/Interview 使用本地 fixture，不能替代此门槛。稳定版发布仍禁止；本地证据保存在 `artifacts/verification/` 且不进入 GitHub 快照。
+- **当前 Desktop Verification Gate v0.1：NO-GO**。阻塞项是发布候选安装版的真实 Resume Review 浏览器点击链路及其完整截图、Playwright teardown 证据尚未闭环。当前安装探针中的 Resume Studio 与 Application/Interview 使用本地 fixture，不能替代此门槛。稳定版发布仍禁止；本地证据保存在 `artifacts/verification/` 且不进入 GitHub 快照。
 
 ## 本地开发
 

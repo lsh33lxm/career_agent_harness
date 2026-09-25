@@ -2617,6 +2617,69 @@
   flex: 1;
 }
 
+.calendar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.calendar-month {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.calendar-month__weekdays,
+.calendar-month__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+}
+
+.calendar-month__weekdays span {
+  padding: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.calendar-day {
+  min-height: 78px;
+  padding: 6px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+.calendar-day--outside {
+  color: var(--faint);
+  background: color-mix(in srgb, var(--surface-sunken) 60%, var(--surface));
+}
+
+.calendar-day time {
+  display: block;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.calendar-day__event {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 4px 5px;
+  overflow: hidden;
+  color: var(--green-deep);
+  font-size: 11px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--green-soft);
+  border: 1px solid color-mix(in srgb, var(--green) 25%, var(--border));
+  border-radius: 3px;
+  cursor: pointer;
+}
+
 @media (max-width: 900px) {
   .kanban-board { grid-template-columns: repeat(2, minmax(240px, 1fr)); }
 }

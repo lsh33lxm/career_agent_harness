@@ -74,6 +74,10 @@ export function setApplicationPreparationState(applicationId: string, input: { c
   return apiRequest<ApplicationRead>(`/api/v1/applications/${encodeURIComponent(applicationId)}/preparation-state`, { method: "POST", body: JSON.stringify(input) });
 }
 
+export function advanceApplicationState(applicationId: string, input: { command_id: string; expected_revision: number; state: Exclude<ApplicationState, "preparing" | "ready_for_review"> }): Promise<ApplicationRead> {
+  return apiRequest<ApplicationRead>(`/api/v1/applications/${encodeURIComponent(applicationId)}/state`, { method: "POST", body: JSON.stringify(input) });
+}
+
 export function submitApplication(applicationId: string, input: { command_id: string; expected_revision: number; resume_revision_id: string }): Promise<ApplicationRead> {
   return apiRequest<ApplicationRead>(`/api/v1/applications/${encodeURIComponent(applicationId)}/submit`, { method: "POST", body: JSON.stringify(input) });
 }

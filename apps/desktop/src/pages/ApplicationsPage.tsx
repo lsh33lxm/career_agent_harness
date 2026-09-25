@@ -1,7 +1,7 @@
 import { CalendarDays, ClipboardList, Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { attachResumeToApplication, cancelInterview, completeInterview, listApplications, listInterviews, rescheduleInterview, scheduleInterview, setApplicationPreparationState, submitApplication, type ApplicationRead, type InterviewRead } from "../api/history";
+import { advanceApplicationState, attachResumeToApplication, cancelInterview, completeInterview, listApplications, listInterviews, rescheduleInterview, scheduleInterview, setApplicationPreparationState, submitApplication, type ApplicationRead, type ApplicationState, type InterviewRead } from "../api/history";
 import { downloadInterviewCalendar } from "../api/calendar";
 import { listResumeBases, listResumeRevisions, type ResumeRevisionRead } from "../api/projectResume";
 import { localizedApiError } from "../api/client";
@@ -24,6 +24,10 @@ function dateLabel(value: string): string {
   return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
+function dayKey(value: Date): string {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
 export function ApplicationsPage() {
   const [applications, setApplications] = useState<ApplicationRead[]>([]);
   const [interviews, setInterviews] = useState<InterviewRead[]>([]);
@@ -35,6 +39,9 @@ export function ApplicationsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [interviewDrafts, setInterviewDrafts] = useState<Record<string, { round: InterviewRead["round"]; scheduled_at: string }>>({});
   const [rescheduleDrafts, setRescheduleDrafts] = useState<Record<string, string>>({});
+  const [draggedApplicationId, setDraggedApplicationId] = useState<string | null>(null);
+  const [calendarMode, setCalendarMode] = useState<"agenda" | "month">("agenda");
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
   function exportCalendar() {
     try {
@@ -68,6 +75,17 @@ export function ApplicationsPage() {
     [interviews],
   );
 
+  const monthCells = useMemo(() => {
+    const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+    const start = new Date(first);
+    start.setDate(first.getDate() - first.getDay());
+    return Array.from({ length: 42 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return date;
+    });
+  }, [calendarMonth]);
+
   function updateApplication(updated: ApplicationRead) {
     setApplications((current) => current.map((item) => item.entity_id === updated.entity_id ? updated : item));
   }
@@ -100,6 +118,23 @@ export function ApplicationsPage() {
       setActionMessage((current) => ({ ...current, [item.entity_id]: "已记录本人确认投递；系统未替你发送或提交外部表单。" }));
     } catch (caught) { setActionMessage((current) => ({ ...current, [item.entity_id]: localizedApiError(caught) })); }
     finally { setBusy(null); }
+  }
+
+  async function moveApplication(item: ApplicationRead, target: ApplicationState) {
+    if (item.state === target) return;
+    setBusy(`move:${item.entity_id}`);
+    try {
+      const updated = item.state === "preparing" || item.state === "ready_for_review"
+        ? await setApplicationPreparationState(item.entity_id, { command_id: `command_drag_${item.entity_id}_${item.revision}`, expected_revision: item.revision, state: target as "preparing" | "ready_for_review" })
+        : await advanceApplicationState(item.entity_id, { command_id: `command_drag_${item.entity_id}_${item.revision}`, expected_revision: item.revision, state: target as Exclude<ApplicationState, "preparing" | "ready_for_review"> });
+      updateApplication(updated);
+      setActionMessage((current) => ({ ...current, [item.entity_id]: `已将申请移到“${columns.find((column) => column.state === target)?.label ?? target}”。` }));
+    } catch (caught) {
+      setActionMessage((current) => ({ ...current, [item.entity_id]: localizedApiError(caught) }));
+    } finally {
+      setBusy(null);
+      setDraggedApplicationId(null);
+    }
   }
 
   async function createInterview(item: ApplicationRead) {
@@ -153,9 +188,9 @@ export function ApplicationsPage() {
         <section className="kanban-board" aria-label="申请状态看板">
           {columns.map((column) => {
             const items = applications.filter((item) => item.state === column.state);
-            return <section className="kanban-column" key={column.state} aria-label={column.label}>
+            return <section className="kanban-column" key={column.state} aria-label={column.label} onDragOver={(event) => { event.preventDefault(); }} onDrop={(event) => { event.preventDefault(); const application = applications.find((candidate) => candidate.entity_id === (event.dataTransfer.getData("text/plain") || draggedApplicationId)); if (application) void moveApplication(application, column.state); }}>
               <header><strong>{column.label}</strong><span>{items.length}</span></header>
-              {items.length === 0 ? <p className="text-aux">暂无申请</p> : items.map((item) => <article className="kanban-card" key={`${item.entity_id}:${item.revision}`}>
+              {items.length === 0 ? <p className="text-aux">暂无申请</p> : items.map((item) => <article className="kanban-card" draggable={item.state !== "offer" && item.state !== "rejected"} onDragStart={(event) => { setDraggedApplicationId(item.entity_id); event.dataTransfer.setData("text/plain", item.entity_id); }} key={`${item.entity_id}:${item.revision}`}>
                 <strong>{item.entity_id}</strong>
                 <p>机会：{item.opportunity_id}</p>
                 <p>简历：{item.resume_revision_id ?? "尚未关联"}</p>
@@ -170,9 +205,9 @@ export function ApplicationsPage() {
         </section>
         <Surface>
           <Section title="面试日历" icon={CalendarDays} description="按本机时区显示面试轮次；完成、取消和改期都会保留新的记录版本。" meta={`${upcoming.filter((item) => item.status === "scheduled").length} 场待进行`}>
-            {upcoming.length > 0 && <div className="button-row"><button className="btn btn--secondary" type="button" onClick={exportCalendar}>导出 .ics</button></div>}
+            {upcoming.length > 0 && <div className="calendar-controls"><div className="button-row"><button className={`btn ${calendarMode === "agenda" ? "btn--primary" : "btn--secondary"}`} type="button" onClick={() => setCalendarMode("agenda")}>列表</button><button className={`btn ${calendarMode === "month" ? "btn--primary" : "btn--secondary"}`} type="button" onClick={() => setCalendarMode("month")}>月视图</button><button className="btn btn--secondary" type="button" onClick={exportCalendar}>导出 .ics</button></div>{calendarMode === "month" && <div className="button-row"><button className="btn btn--secondary" type="button" aria-label="上个月" onClick={() => setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>上个月</button><strong aria-live="polite">{calendarMonth.getFullYear()} 年 {calendarMonth.getMonth() + 1} 月</strong><button className="btn btn--secondary" type="button" aria-label="下个月" onClick={() => setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>下个月</button></div>}</div>}
             {upcoming.length === 0 ? <p className="text-aux">暂无已安排面试。</p> : <div className="calendar-list" aria-label="已安排面试">
-              {upcoming.map((item) => <article className="calendar-list__item" key={`${item.entity_id}:${item.revision}`}>
+              {calendarMode === "month" ? <div className="calendar-month" aria-label="面试月视图"><div className="calendar-month__weekdays">{["日", "一", "二", "三", "四", "五", "六"].map((day) => <span key={day}>{day}</span>)}</div><div className="calendar-month__grid">{monthCells.map((date) => { const key = dayKey(date); const events = upcoming.filter((item) => dayKey(new Date(item.scheduled_at)) === key); return <div className={`calendar-day ${date.getMonth() === calendarMonth.getMonth() ? "" : "calendar-day--outside"}`} key={key}><time dateTime={key}>{date.getDate()}</time>{events.map((item) => <button className="calendar-day__event" type="button" key={`${item.entity_id}:${item.revision}`} onClick={() => setCalendarMode("agenda")}>{item.round} · {new Date(item.scheduled_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</button>)}</div>; })}</div></div> : upcoming.map((item) => <article className="calendar-list__item" key={`${item.entity_id}:${item.revision}`}>
                 <CalendarDays size={17} aria-hidden="true" />
                 <div><strong>{dateLabel(item.scheduled_at)}</strong><p>{item.round} · 申请 {item.application_id} · 申请版本 {item.application_revision}</p>{item.status === "scheduled" && <div className="application-actions"><input className="input" type="datetime-local" aria-label={`改期 ${item.entity_id}`} value={rescheduleDrafts[item.entity_id] ?? ""} onChange={(event) => setRescheduleDrafts((current) => ({ ...current, [item.entity_id]: event.target.value }))} /><button className="btn btn--secondary" type="button" disabled={!rescheduleDrafts[item.entity_id] || busy === `interview-action:${item.entity_id}`} onClick={() => void reschedule(item)}>改期</button><button className="btn btn--secondary" type="button" disabled={busy === `interview-action:${item.entity_id}`} onClick={() => void transitionInterview(item, "complete")}>完成</button><button className="btn btn--secondary" type="button" disabled={busy === `interview-action:${item.entity_id}`} onClick={() => void transitionInterview(item, "cancel")}>取消</button></div>}</div>
                 <span className="badge"><Clock3 size={13} aria-hidden="true" />{item.status === "scheduled" ? "已安排" : item.status === "completed" ? "已完成" : "已取消"}</span>

@@ -1,5 +1,11 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-25 安装版申请与面试全链路验收
+
+- `scripts/probe_installed_window.mjs` 扩展真实安装 WebView 验收：在本地拦截的响应形状 fixture 下完成 ResumeRevision 关联、申请进入待本人确认、本人确认投递、安排技术面试、月视图、`.ics` 下载、改期和完成。
+- 新 NSIS 安装包安装于 `C:\Temp\ach-app-e2e-install`，CDP 端口 `9294`；证据目录 `artifacts/verification/installed-runtime-app-e2e/`，包含申请/面试截图和 `installed-interviews.ics`。桌面退出码 `0`，sidecar 残留 `0`，Playwright teardown 通过。
+- 该 fixture 只验证安装版 UI 对既有 Application/Interview API 的调用、状态投影和 RFC 5545 下载，不代表真实外部投递或线上岗位；自动投递、自动发信仍禁用。
+
 ## 2026-09-25 c77ac63 Windows 安装与 Desktop Verification Gate 复验
 
 - 从当前源码 `c77ac63` 重建 sidecar 与 NSIS。sidecar SHA-256：`e5ac4368c2061160853d306ad05f34f6f5a1652c8e2920ff8a10a99b9f68177a`；NSIS 安装包 SHA-256：`56207c89e3600e79660430d34b666642ce5302827fed0ec8b8d8ea2d89c4d3fd`。

@@ -20,6 +20,83 @@ const internals = await page.evaluate(() => ({
   body: document.body.innerText.slice(0, 160),
 }));
 console.log(JSON.stringify(internals, null, 2));
+
+// Exercise the installed Applications and Interview workspace with deterministic
+// local responses. Domain transition rules are covered by backend tests; this
+// fixture proves the packaged WebView invokes those commands and renders their
+// projections without sending an external submission.
+let application = {
+  entity_id: "application_installed_e2e",
+  revision: 1,
+  state: "preparing",
+  opportunity_id: "opportunity_installed_e2e",
+  opportunity_revision: 1,
+  resume_revision_id: null,
+  submitted_at: null,
+  submission_authority: null,
+};
+let interview = null;
+const resumeBase = {
+  resume_id: "resume_base_installed_e2e",
+  revision: 1,
+  candidate_id: "candidate_installed_e2e",
+  sections: { basics: { name: "安装验收候选人" } },
+  created_at: "2026-09-25T00:00:00Z",
+  created_by: "user",
+};
+const resumeRevision = {
+  revision_id: "resume_revision_installed_e2e",
+  resume_id: resumeBase.resume_id,
+  base_revision: 1,
+  content: resumeBase.sections,
+  content_sha256: "d".repeat(64),
+  accepted_patch_refs: [],
+  created_at: "2026-09-25T00:00:00Z",
+  created_by: "user",
+};
+const fulfillJson = (route, body, status = 200) => route.fulfill({
+  status,
+  contentType: "application/json",
+  body: JSON.stringify(body),
+});
+await page.route("**/api/v1/applications", async (route) => {
+  if (route.request().method() === "GET") return fulfillJson(route, [application]);
+  return route.continue();
+});
+await page.route("**/api/v1/applications/application_installed_e2e/interviews", async (route) => fulfillJson(route, interview ? [interview] : []));
+await page.route("**/api/v1/resumes", async (route) => {
+  if (route.request().method() === "GET") return fulfillJson(route, [resumeBase]);
+  return route.continue();
+});
+await page.route("**/api/v1/resumes/resume_base_installed_e2e/revisions", async (route) => fulfillJson(route, [resumeRevision]));
+await page.route("**/api/v1/applications/application_installed_e2e/resume", async (route) => {
+  application = { ...application, revision: application.revision + 1, resume_revision_id: resumeRevision.revision_id };
+  return fulfillJson(route, application);
+});
+await page.route("**/api/v1/applications/application_installed_e2e/preparation-state", async (route) => {
+  const body = JSON.parse(route.request().postData() ?? "{}");
+  application = { ...application, revision: application.revision + 1, state: body.state };
+  return fulfillJson(route, application);
+});
+await page.route("**/api/v1/applications/application_installed_e2e/submit", async (route) => {
+  application = { ...application, revision: application.revision + 1, state: "submitted_by_user", submitted_at: "2026-09-25T09:00:00Z", submission_authority: "user_confirmed" };
+  return fulfillJson(route, application);
+});
+await page.route("**/api/v1/interviews", async (route) => {
+  if (route.request().method() !== "POST") return route.continue();
+  const body = JSON.parse(route.request().postData() ?? "{}");
+  interview = { entity_id: body.interview_id, revision: 1, application_id: application.entity_id, application_revision: application.revision, round: body.round, scheduled_at: body.scheduled_at, status: "scheduled", evidence_refs: [] };
+  return fulfillJson(route, interview, 201);
+});
+await page.route("**/api/v1/interviews/*/reschedule", async (route) => {
+  const body = JSON.parse(route.request().postData() ?? "{}");
+  interview = { ...interview, revision: interview.revision + 1, scheduled_at: body.scheduled_at };
+  return fulfillJson(route, interview);
+});
+await page.route("**/api/v1/interviews/*/complete", async (route) => {
+  interview = { ...interview, revision: interview.revision + 1, status: "completed" };
+  return fulfillJson(route, interview);
+});
 await page.getByRole("link", { name: "机会" }).click();
 
 // Exercise the installed WebView against deterministic, locally intercepted
@@ -109,6 +186,35 @@ await edited.getByRole("button", { name: "保存手动编辑并接受" }).click(
 await page.screenshot({ path: join(artifactDir, "installed-resume-review-decisions.png"), fullPage: true });
 await review.getByRole("button", { name: "生成目标 ResumeRevision" }).click();
 await page.screenshot({ path: join(artifactDir, "installed-resume-review-generated.png"), fullPage: true });
+
+await page.getByRole("link", { name: "申请与面试" }).click();
+await page.getByText("application_installed_e2e", { exact: true }).waitFor();
+const applicationCard = page.locator("article.kanban-card").filter({ hasText: "application_installed_e2e" });
+await applicationCard.getByLabel("选择 application_installed_e2e 的简历版本").selectOption(resumeRevision.revision_id);
+await applicationCard.getByRole("button", { name: "关联简历" }).click();
+await applicationCard.getByRole("button", { name: "进入待本人确认" }).click();
+await applicationCard.getByRole("button", { name: "本人确认投递" }).click();
+const interviewInput = applicationCard.getByLabel("填写 application_installed_e2e 的面试时间");
+const localTomorrow = new Date();
+localTomorrow.setDate(localTomorrow.getDate() + 1);
+const pad = (value) => String(value).padStart(2, "0");
+const localDateTime = `${localTomorrow.getFullYear()}-${pad(localTomorrow.getMonth() + 1)}-${pad(localTomorrow.getDate())}T10:00`;
+await interviewInput.fill(localDateTime);
+await applicationCard.getByRole("button", { name: "安排面试" }).click();
+await page.getByText("面试轮次已安排并写入本地日历。", { exact: true }).waitFor();
+await page.getByRole("button", { name: "月视图" }).click();
+const downloadPromise = page.waitForEvent("download");
+await page.getByRole("button", { name: "导出 .ics" }).click();
+const calendarDownload = await downloadPromise;
+await calendarDownload.saveAs(join(artifactDir, "installed-interviews.ics"));
+if (calendarDownload.suggestedFilename() !== "guanfu-interviews.ics") throw new Error("Unexpected calendar download name");
+const interviewRow = page.locator("article.calendar-list__item").first();
+await page.getByRole("button", { name: "列表" }).click();
+const rescheduleInput = interviewRow.getByLabel(/改期 /);
+await rescheduleInput.fill(localDateTime);
+await interviewRow.getByRole("button", { name: "改期" }).click();
+await interviewRow.getByRole("button", { name: "完成" }).click();
+await page.screenshot({ path: join(artifactDir, "installed-application-interview-calendar.png"), fullPage: true });
 let closeResult = { invoked: false };
 try {
   closeResult = await page.evaluate(() => {

@@ -144,6 +144,63 @@ def _html_links(html: str, base_url: str, allowed_hosts: frozenset[str]) -> tupl
     return tuple(links)
 
 
+def _html_text(fragment: str) -> str:
+    """Turn a bounded rendered HTML fragment into readable source text."""
+    text = re.sub(r"<\s*br\s*/?\s*>", "\n", fragment, flags=re.IGNORECASE)
+    text = re.sub(r"</\s*(p|div|li|h[1-6])\s*>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    decoded = unescape(text).replace("\xa0", " ")
+    return "\n".join(line.strip() for line in decoded.splitlines() if line.strip())
+
+
+def _meitu_detail(html: str, page_url: str) -> dict[str, Any] | None:
+    """Parse the server-rendered detail page at hr.meitu.com."""
+    if not re.search(r"https?://(?:hr\.)?meitu\.com/(?:jobCampus|jobIntern)/", page_url):
+        return None
+    title_match = re.search(
+        r'class="banner_jobTitle_[^"]+">(.*?)</div>', html, flags=re.IGNORECASE | re.DOTALL
+    )
+    title = _html_text(title_match.group(1)) if title_match else ""
+    if not title:
+        return None
+    metadata: dict[str, str] = {}
+    for label, value in re.findall(
+        r'class="banner_metaLabel_[^"]+">(.*?)</span>\s*'
+        r'<span class="banner_metaValue_[^"]+">(.*?)</span>',
+        html,
+        flags=re.IGNORECASE | re.DOTALL,
+    ):
+        metadata[_html_text(label).rstrip(":")] = _html_text(value)
+    description_match = re.search(
+        r'<div class="content_sectionTitle_[^"]+">职位描述</div>\s*'
+        r'<div class="content_sectionContent_[^"]+">(.*?)</div>\s*</div>\s*'
+        r'<div class="content_sectionTitle_',
+        html,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if not description_match:
+        description_match = re.search(
+            r'<div class="content_sectionTitle_[^"]+">职位描述</div>\s*'
+            r'<div class="content_sectionContent_[^"]+">(.*?)</div>\s*</div>',
+            html,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+    description = _html_text(description_match.group(1)) if description_match else ""
+    if not description:
+        return None
+    return {
+        "title": title,
+        "company": "美图",
+        "location": metadata.get("工作地点"),
+        "employment_type": metadata.get("招聘类型"),
+        "published_at": metadata.get("发布日期"),
+        "department": metadata.get("所属部门"),
+        "description": description,
+        "source_url": page_url,
+        "source_platform": MEITU_CAMPUS.source_id,
+    }
+
+
 def _requirements(description: str | None) -> tuple[str, ...]:
     if not description:
         return ()
@@ -441,6 +498,13 @@ class OfficialCampusJobSource:
             html, page_url = self._fixture_html, ref
         else:
             html, page_url = self._fetch(ref)
+        if self.config.source_id == MEITU_CAMPUS.source_id:
+            detail = _meitu_detail(html, page_url)
+            if detail is not None:
+                return RawJobRecord(
+                    source_ref=ref,
+                    raw_text=json.dumps(detail, ensure_ascii=False, sort_keys=True),
+                )
         records = self._parse(html, page_url)
         for record in records:
             if record.source_ref == ref:

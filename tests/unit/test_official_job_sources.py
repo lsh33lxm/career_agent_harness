@@ -106,6 +106,30 @@ def test_meitu_detail_does_not_promote_homepage_first_record() -> None:
         source.fetch_detail("https://campus.meitu.com/jobIntern/not-in-list")
 
 
+def test_meitu_ssr_detail_preserves_rendered_jd_and_metadata() -> None:
+    detail_html = '''
+    <div class="banner_jobTitle__x">海外市场运营实习生</div>
+    <span class="banner_metaLabel__x">招聘类型<!-- -->:</span>
+    <span class="banner_metaValue__x">校园招聘</span>
+    <span class="banner_metaLabel__x">工作地点<!-- -->:</span>
+    <span class="banner_metaValue__x">广东深圳市</span>
+    <span class="banner_metaLabel__x">发布日期<!-- -->:</span>
+    <span class="banner_metaValue__x">2026-08-12</span>
+    <div class="content_sectionTitle__x">职位描述</div>
+    <div class="content_sectionContent__x"><div>
+      <p>【岗位职责】</p><p>1.参与活动策划</p>
+      <p>【任职要求】</p><p>2.熟悉日语</p>
+    </div></div>
+    '''
+    source = OfficialCampusJobSource(MEITU_CAMPUS, fixture_html=detail_html)
+    raw = source.fetch_detail("https://hr.meitu.com/jobCampus/detail-1")
+    normalized = source.normalize(raw)
+    assert normalized.title == "海外市场运营实习生"
+    assert normalized.location == "广东深圳市"
+    assert normalized.published_at is not None
+    assert normalized.requirements == ("2.熟悉日语",)
+
+
 def test_tencent_public_api_search_and_detail_preserve_full_jd(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

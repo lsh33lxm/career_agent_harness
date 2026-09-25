@@ -166,6 +166,84 @@ test("Resume Review Gate full UI flow persists through refresh", async ({ page, 
   }, null, 2));
 });
 
+test("official source panel renders lifecycle health and staged provenance", async ({ page }) => {
+  await prepareDemoPage(page);
+  await page.route("**/api/v1/jobs/official-search", async (route) => {
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify([{
+        staging_id: "staging_e2e_official_1",
+        source_id: "official-cn-tencent-campus",
+        source_ref: "https://join.qq.com/job/e2e-1",
+        raw_artifact_id: "artifact_e2e_1",
+        raw_sha256: "a".repeat(64),
+        url_fingerprint: "b".repeat(64),
+        content_fingerprint: "c".repeat(64),
+        normalized: {
+          title: "平台工程实习生",
+          company: "腾讯",
+          location: "深圳",
+          remote: null,
+          salary: null,
+          requirements: ["熟悉 Python"],
+          source_url: "https://join.qq.com/job/e2e-1",
+        },
+        terms_status: "verified",
+        status: "staged",
+        duplicate_of: null,
+        suggested_score: 0.9,
+        suggested_reasons: [],
+        gaps: [],
+        score_breakdown: {},
+        admitted_job_id: null,
+        admitted_opportunity_id: null,
+      }]),
+    });
+  });
+  await page.route("**/api/v1/jobs/listing-lifecycle*", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([{
+        observation_id: "observation_e2e_1",
+        source_id: "official-cn-tencent-campus",
+        query: "AI",
+        source_ref: "https://join.qq.com/job/e2e-1",
+        url_fingerprint: "b".repeat(64),
+        first_seen_at: "2026-09-25T08:00:00Z",
+        last_seen_at: "2026-09-25T08:00:00Z",
+        last_checked_at: "2026-09-25T09:00:00Z",
+        consecutive_missing: 1,
+        status: "pending_verification",
+        last_success_run_id: "run_e2e_1",
+      }]),
+    });
+  });
+  await page.route("**/api/v1/jobs/source-policies", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([{
+        source_id: "official-cn-tencent-campus",
+        rate_limit_ms: 1000,
+        max_retries: 2,
+        failure_threshold: 3,
+        failure_count: 1,
+        disabled: false,
+        last_error: "上次响应超时",
+        updated_at: "2026-09-25T09:00:00Z",
+      }]),
+    });
+  });
+  await page.goto("/opportunities");
+  await page.getByRole("button", { name: "读取官方岗位" }).click();
+  await expect(page.getByText("平台工程实习生")).toBeVisible();
+  const health = page.getByRole("region", { name: "国内官方校招来源" });
+  await expect(health).toContainText("岗位观察：有效 0 · 待核验 1 · 已失效 0");
+  await expect(health).toContainText("连续失败 1/3");
+  await expect(health).toContainText("上次响应超时");
+  await page.screenshot({ path: join(artifactDir, "13-official-source-lifecycle-health.png"), fullPage: true });
+});
+
 test("API restart preserves the reviewed revision in History and Knowledge", async ({ page }) => {
   const ids = JSON.parse(await readFile(statePath, "utf8")) as {
     application_id: string;

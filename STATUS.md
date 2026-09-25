@@ -1,5 +1,11 @@
 # Agent Career Harness 当前状态
 
+## 2026-09-25 官方来源状态生产浏览器验收
+
+- 新增 Playwright 生产构建用例，使用本地官方来源响应形状 fixture 验证岗位搜索结果、来源健康状态、待核验数量、连续失败次数和最近错误均可见。
+- 用例通过：`official source panel renders lifecycle health and staged provenance`（1 passed）；使用本机缓存 Chromium，外部请求被拦截，截图保存在本地 `artifacts/verification/`，不进入 GitHub。
+- 该证据验证桌面 UI 与既有生命周期 API 的连接，不替代官方站点现场数据验证；腾讯完整 JD 仍为当前唯一已现场验证的完整 JD 来源。
+
 ## 2026-09-25 官方来源状态与失效追踪桌面投影
 
 - 官方来源面板现在读取既有 `listing-lifecycle` 与 `source-policies` 投影，展示来源启用状态、连续失败次数、最近错误，以及岗位观察的有效/待核验/已失效数量和最近检查时间。

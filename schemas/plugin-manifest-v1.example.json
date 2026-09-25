@@ -1,0 +1,32 @@
+{
+  "id": "example-read-only-plugin",
+  "name": "Example Read-only Plugin",
+  "version": "1.0.0",
+  "api_version": "1",
+  "type": "builtin_adapter",
+  "source": {
+    "repo": "builtin://example-read-only-plugin",
+    "ref": "v1",
+    "commit": "builtin-example-read-only-v1",
+    "license": "Apache-2.0"
+  },
+  "capabilities": ["knowledge.search", "health"],
+  "permissions": {
+    "network": [],
+    "filesystem": [],
+    "secrets": [],
+    "external_write": false,
+    "scope": ["read_models"]
+  },
+  "data_contracts": ["PluginEnvelope", "EvidenceRef"],
+  "healthcheck": {"command": "health", "timeout_ms": 5000},
+  "replacement": {"compatible_capabilities": ["knowledge.search"]},
+  "dependencies": [],
+  "core_compatibility": {"min_version": "0.1.0", "max_version": "0.x"},
+  "config_schema": {},
+  "data_migration_version": 0,
+  "cost_limits": {"max_runtime_ms": 5000, "max_output_bytes": 1000000},
+  "user_visible_description": "A deterministic read-only manifest example.",
+  "security_url": "about:blank",
+  "terms_url": "about:blank"
+}

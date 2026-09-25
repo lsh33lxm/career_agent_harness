@@ -1,0 +1,1 @@
+"""Governed source connector contracts."""
